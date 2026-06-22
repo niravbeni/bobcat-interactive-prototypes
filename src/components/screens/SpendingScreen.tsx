@@ -6,7 +6,7 @@ import { QuestionWizard } from "@/components/flow/QuestionWizard";
 import { SPENDING_QUESTIONS } from "@/lib/questions";
 
 export function SpendingScreen() {
-  const { goTo } = useFlow();
+  const { goNext, goBack } = useFlow();
 
   return (
     <AppShell
@@ -28,8 +28,8 @@ export function SpendingScreen() {
       <QuestionWizard
         section="spending"
         questions={SPENDING_QUESTIONS}
-        onComplete={() => goTo("goals")}
-        onExitBack={() => goTo("summary")}
+        onComplete={goNext}
+        onExitBack={goBack}
       />
     </AppShell>
   );

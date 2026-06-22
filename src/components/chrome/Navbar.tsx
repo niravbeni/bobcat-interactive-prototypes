@@ -1,9 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, Info, SquareUser } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Info, SquareUser, FastForward, X } from "lucide-react";
+import { useFlow } from "@/components/flow/FlowProvider";
+import { VARIANTS } from "@/lib/variants";
 
 export function Navbar() {
+  const { variant, steps, stepIndex, goTo } = useFlow();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const skipTo = VARIANTS[variant].skipTo;
+  const skipIndex = skipTo ? steps.indexOf(skipTo.step) : -1;
+  const canSkip = !!skipTo && skipIndex > stepIndex;
+
+  const handleSkip = () => {
+    if (skipTo) goTo(skipTo.step);
+    setOpen(false);
+  };
+
   return (
     <header className="relative flex h-18 w-full items-center bg-ghost-white px-9 3xl:h-20 3xl:px-14">
       <Link
@@ -28,9 +53,63 @@ export function Navbar() {
           <span className="text-base font-semibold tracking-[0.16px] text-black">Gloria</span>
           <ChevronDown className="size-6 text-black" strokeWidth={2} />
         </button>
-        <button className="flex h-9 items-center justify-center rounded-full bg-violet px-4">
-          <span className="text-base font-semibold tracking-[0.16px] text-white">Help</span>
-        </button>
+
+        <div className="relative" ref={ref}>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-haspopup="dialog"
+            className="flex h-9 items-center justify-center rounded-full bg-violet px-4"
+          >
+            <span className="text-base font-semibold tracking-[0.16px] text-white">Help</span>
+          </button>
+
+          {open ? (
+            <div
+              role="dialog"
+              className="absolute right-0 top-[calc(100%+8px)] z-40 w-80 rounded-card border border-stroke-subtle bg-white p-4 shadow-[0_16px_48px_rgba(16,24,32,0.16)]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-base font-semibold text-deep-black">
+                  Need a hand?
+                </h3>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setOpen(false)}
+                  className="-mr-1 -mt-1 rounded-full p-1 text-gray-2 transition-colors hover:bg-ghost-white hover:text-deep-black"
+                >
+                  <X className="size-4" strokeWidth={2} />
+                </button>
+              </div>
+
+              {canSkip && skipTo ? (
+                <>
+                  <p className="mt-1 text-sm leading-[1.5] text-gray-1">
+                    Short on time? Jump straight to{" "}
+                    <span className="font-medium text-deep-black">
+                      {skipTo.label}
+                    </span>
+                    , the heart of this flow.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSkip}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-pill bg-deep-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black"
+                  >
+                    <FastForward className="size-4" strokeWidth={2} />
+                    Skip to {skipTo.label}
+                  </button>
+                </>
+              ) : (
+                <p className="mt-1 text-sm leading-[1.5] text-gray-1">
+                  This is a prototype. Rough answers are fine, you can refine
+                  everything later.
+                </p>
+              )}
+            </div>
+          ) : null}
+        </div>
       </div>
     </header>
   );

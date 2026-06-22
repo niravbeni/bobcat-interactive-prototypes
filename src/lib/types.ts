@@ -23,6 +23,14 @@ export interface ChatMessage {
 /** Conversation phase for the Time and Goals chat. */
 export type GoalsPhase = "asking" | "confirm" | "extra" | "done";
 
+/** A retirement goal used by the card-sort interactions. */
+export interface GoalCard {
+  id: string;
+  label: string;
+  /** Where the card came from: a preset, detected in chat, or user-added. */
+  source: "preset" | "chat" | "custom";
+}
+
 export interface FlowAnswers {
   /** Answers to the Future Income question wizard, keyed by question id. */
   income: AnswerMap;
@@ -36,6 +44,13 @@ export interface FlowAnswers {
   goalsText: string;
   goalsPriorities: string[];
   goalsConfirmed: boolean | null;
+  /** Card-sort variations: the working set of goal cards and their ranked order. */
+  goalCards: GoalCard[];
+  goalRanking: string[];
+  /** Swipe variation: each card's bucket (essential / nice to have / not for me). */
+  goalVerdicts: Record<string, "essential" | "nice" | "skip">;
+  /** Happiness Chapter: selected "vision" mood ids. */
+  vision: string[];
 }
 
 export const initialAnswers: FlowAnswers = {
@@ -55,6 +70,10 @@ export const initialAnswers: FlowAnswers = {
   goalsText: "",
   goalsPriorities: [],
   goalsConfirmed: null,
+  goalCards: [],
+  goalRanking: [],
+  goalVerdicts: {},
+  vision: [],
 };
 
 export type SectionId = "income" | "spending";
@@ -64,4 +83,6 @@ export type StepId =
   | "summary"
   | "spending"
   | "goals"
-  | "complete";
+  | "priorities"
+  | "complete"
+  | "chat";

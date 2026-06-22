@@ -2,7 +2,13 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { FIRST_STEP, STEPS, previousStep } from "@/lib/flow";
+import {
+  VARIANTS,
+  firstStep,
+  isVariantId,
+  pathFor,
+  type VariantId,
+} from "@/lib/variants";
 import {
   initialAnswers,
   type ChatMessage,
@@ -14,7 +20,10 @@ import {
 } from "@/lib/types";
 
 interface FlowContextValue {
+  variant: VariantId;
   step: StepId;
+  steps: StepId[];
+  stepIndex: number;
   answers: FlowAnswers;
   canGoBack: boolean;
   /** Current question index within each wizard section. */
@@ -32,9 +41,18 @@ interface FlowContextValue {
 
 const FlowContext = createContext<FlowContextValue | null>(null);
 
-function stepFromPath(pathname: string): StepId {
-  const seg = pathname.split("/").filter(Boolean)[0];
-  return seg && seg in STEPS ? (seg as StepId) : FIRST_STEP;
+/** Derive the active variant + step id from the current pathname. */
+function locFromPath(pathname: string): { variant: VariantId; step: StepId } {
+  const segs = pathname.split("/").filter(Boolean);
+  if (segs[0] === "flows") {
+    const variant = isVariantId(segs[1] ?? "") ? (segs[1] as VariantId) : "base";
+    const steps = VARIANTS[variant].steps;
+    const step = (segs[2] as StepId) ?? steps[0];
+    return { variant, step: steps.includes(step) ? step : steps[0] };
+  }
+  const baseSteps = VARIANTS.base.steps;
+  const step = (segs[0] as StepId) ?? baseSteps[0];
+  return { variant: "base", step: baseSteps.includes(step) ? step : baseSteps[0] };
 }
 
 export function FlowProvider({ children }: { children: React.ReactNode }) {
@@ -46,7 +64,23 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     spending: 0,
   });
 
-  const step = stepFromPath(pathname);
+  const { variant, step } = locFromPath(pathname);
+  const steps = VARIANTS[variant].steps;
+  const stepIndex = steps.indexOf(step);
+
+  // Reset all answers whenever the active flow changes so data never leaks
+  // between variants. The dashboard ("/") is neutral: leaving it marks the next
+  // flow entry as fresh. Done during render (not an effect) so child screens
+  // mount with already-cleared state and can seed correctly.
+  const [trackedVariant, setTrackedVariant] = useState<VariantId | null>(null);
+  const isDashboard = pathname === "/";
+  if (isDashboard) {
+    if (trackedVariant !== null) setTrackedVariant(null);
+  } else if (trackedVariant !== variant) {
+    setTrackedVariant(variant);
+    setAnswersState(initialAnswers);
+    setSectionIdxState({ income: 0, spending: 0 });
+  }
 
   const setAnswers = useCallback((patch: Partial<FlowAnswers>) => {
     setAnswersState((prev) => ({ ...prev, ...patch }));
@@ -81,33 +115,39 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const goNext = useCallback(() => {
-    const nextId = STEPS[step].next(answers);
-    if (nextId) router.push(`/${nextId}`);
-  }, [step, answers, router]);
+    const next = steps[stepIndex + 1];
+    if (next) router.push(pathFor(variant, next));
+  }, [steps, stepIndex, variant, router]);
 
   const goBack = useCallback(() => {
-    const prev = previousStep(step);
-    router.push(prev ? `/${prev}` : "/");
-  }, [step, router]);
+    if (stepIndex <= 0) {
+      router.push("/");
+      return;
+    }
+    router.push(pathFor(variant, steps[stepIndex - 1]));
+  }, [steps, stepIndex, variant, router]);
 
   const goTo = useCallback(
     (target: StepId) => {
-      router.push(`/${target}`);
+      router.push(pathFor(variant, target));
     },
-    [router],
+    [variant, router],
   );
 
   const restart = useCallback(() => {
     setAnswersState(initialAnswers);
     setSectionIdxState({ income: 0, spending: 0 });
-    router.push(`/${FIRST_STEP}`);
-  }, [router]);
+    router.push(pathFor(variant, firstStep(variant)));
+  }, [variant, router]);
 
   const value = useMemo<FlowContextValue>(
     () => ({
+      variant,
       step,
+      steps,
+      stepIndex,
       answers,
-      canGoBack: previousStep(step) !== null,
+      canGoBack: stepIndex > 0,
       sectionIdx,
       setSectionIdx,
       setAnswers,
@@ -119,7 +159,23 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       goTo,
       restart,
     }),
-    [step, answers, sectionIdx, setSectionIdx, setAnswers, setQuestion, setDetail, appendMessage, goNext, goBack, goTo, restart],
+    [
+      variant,
+      step,
+      steps,
+      stepIndex,
+      answers,
+      sectionIdx,
+      setSectionIdx,
+      setAnswers,
+      setQuestion,
+      setDetail,
+      appendMessage,
+      goNext,
+      goBack,
+      goTo,
+      restart,
+    ],
   );
 
   return <FlowContext.Provider value={value}>{children}</FlowContext.Provider>;

@@ -1,4 +1,4 @@
-import type { QAnswer } from "./types";
+import type { GoalCard, QAnswer } from "./types";
 
 export type RevealKind = "money" | "detail" | "placeholder";
 
@@ -289,3 +289,104 @@ export const GOAL_PROMPTS: string[] = [
   "Is there anything you're worried about, or want to make sure you avoid?",
   "If money were no object, what's one dream you'd love to make happen?",
 ];
+
+/**
+ * Example "answer pearls" aligned to each GOAL_PROMPT. Shown as tappable chips
+ * above the composer so users can see what kind of answer fits, or just click
+ * one instead of typing.
+ */
+export const GOAL_SUGGESTIONS: string[][] = [
+  ["Travel the world", "Spend time with family", "Retire comfortably", "Stay healthy and active"],
+  ["Slow mornings and walks", "Golf and hobbies", "Volunteering", "Looking after grandkids"],
+  ["My partner", "My children and grandkids", "Close friends", "My community"],
+  ["Running out of money", "Healthcare costs", "Being a burden", "Market downturns"],
+  ["A big family trip", "A holiday home", "Help my kids buy a home", "Give to a cause I love"],
+];
+
+/** Fallback pearls for open-ended follow-ups (e.g. "what did I miss?"). */
+export const GOAL_EXTRA_SUGGESTIONS: string[] = [
+  "Leaving an inheritance",
+  "Travelling more",
+  "Healthcare security",
+  "Helping my family",
+];
+
+/** Preset retirement goals used to seed the card-sort interactions. */
+export const RETIREMENT_GOALS: { id: string; label: string }[] = [
+  { id: "travel", label: "Travel & adventure" },
+  { id: "family", label: "Time with family" },
+  { id: "health", label: "Health & fitness" },
+  { id: "hobbies", label: "Hobbies & passions" },
+  { id: "legacy", label: "Leaving a legacy" },
+  { id: "security", label: "Financial security" },
+  { id: "community", label: "Giving back" },
+  { id: "learning", label: "Learning new things" },
+];
+
+/** Map a detected keyword to a preset goal id where one exists. */
+const KEYWORD_TO_PRESET: Record<string, string> = {
+  travel: "travel",
+  adventure: "travel",
+  family: "family",
+  grandchildren: "family",
+  grandkids: "family",
+  children: "family",
+  friends: "family",
+  health: "health",
+  fitness: "health",
+  hobbies: "hobbies",
+  golf: "hobbies",
+  garden: "hobbies",
+  gardening: "hobbies",
+  fishing: "hobbies",
+  music: "hobbies",
+  reading: "learning",
+  learning: "learning",
+  cooking: "hobbies",
+  volunteering: "community",
+  charity: "community",
+  community: "community",
+  security: "security",
+  freedom: "security",
+  independence: "security",
+};
+
+/**
+ * Build the hybrid working set of goal cards: every preset, with any extra
+ * goals detected from the user's chat that don't map onto a preset appended as
+ * "chat" cards. Detected presets are sorted to the front so what the user
+ * actually mentioned leads.
+ */
+export function buildGoalCards(chatText: string): GoalCard[] {
+  const found = findKeywords(chatText);
+  const detectedPresetIds = new Set<string>();
+  const extras: GoalCard[] = [];
+
+  for (const k of found) {
+    const presetId = KEYWORD_TO_PRESET[k];
+    if (presetId) {
+      detectedPresetIds.add(presetId);
+    } else {
+      const id = `chat-${k}`;
+      if (!extras.some((c) => c.id === id)) {
+        extras.push({ id, label: cap(k), source: "chat" });
+      }
+    }
+  }
+
+  const presetCards: GoalCard[] = RETIREMENT_GOALS.map((g) => ({
+    id: g.id,
+    label: g.label,
+    source: "preset" as const,
+  }));
+
+  presetCards.sort((a, b) => {
+    const aHit = detectedPresetIds.has(a.id) ? 0 : 1;
+    const bHit = detectedPresetIds.has(b.id) ? 0 : 1;
+    return aHit - bHit;
+  });
+
+  return [...extras, ...presetCards];
+}
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);

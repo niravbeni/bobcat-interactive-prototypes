@@ -6,7 +6,7 @@ import { QuestionWizard } from "@/components/flow/QuestionWizard";
 import { INCOME_QUESTIONS } from "@/lib/questions";
 
 export function IncomeScreen() {
-  const { goTo, goBack } = useFlow();
+  const { goNext, goBack } = useFlow();
 
   return (
     <AppShell
@@ -18,7 +18,7 @@ export function IncomeScreen() {
       <QuestionWizard
         section="income"
         questions={INCOME_QUESTIONS}
-        onComplete={() => goTo("summary")}
+        onComplete={goNext}
         onExitBack={goBack}
       />
     </AppShell>

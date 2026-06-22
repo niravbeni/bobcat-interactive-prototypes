@@ -21,7 +21,7 @@ const fmt = (n: number) =>
   n.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
 export function SummaryScreen() {
-  const { answers, goBack, goTo, setSectionIdx } = useFlow();
+  const { answers, goBack, goNext, goTo, setSectionIdx } = useFlow();
   const income = answers.income;
 
   // Build the monthly income breakdown from the user's actual answers.
@@ -54,7 +54,7 @@ export function SummaryScreen() {
 
   const startSpending = () => {
     setSectionIdx("spending", 0);
-    goTo("spending");
+    goNext();
   };
 
   const footer = (

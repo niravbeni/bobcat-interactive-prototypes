@@ -2,8 +2,9 @@
 
 import { use, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { SCREENS, isStepId } from "@/components/flow/screens";
-import { FIRST_STEP } from "@/lib/flow";
+import { VariantScreen } from "@/components/flow/variantScreens";
+import { VARIANTS, firstStep } from "@/lib/variants";
+import type { StepId } from "@/lib/types";
 
 export default function StepPage({
   params,
@@ -12,14 +13,13 @@ export default function StepPage({
 }) {
   const { step } = use(params);
   const router = useRouter();
-  const valid = isStepId(step);
+  const valid = VARIANTS.base.steps.includes(step as StepId);
 
   useEffect(() => {
-    if (!valid) router.replace(`/${FIRST_STEP}`);
+    if (!valid) router.replace(`/${firstStep("base")}`);
   }, [valid, router]);
 
   if (!valid) return null;
 
-  const Screen = SCREENS[step];
-  return <Screen />;
+  return <VariantScreen variant="base" step={step as StepId} />;
 }

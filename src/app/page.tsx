@@ -1,69 +1,41 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { VARIANTS, VARIANT_ORDER, firstStep, pathFor } from "@/lib/variants";
+import type { VariantMeta } from "@/lib/variants";
 
-interface Variation {
-  title: string;
-  description: string;
-  href?: string;
-  status: { label: string; tone: "success" | "warning" | "neutral" | "muted" };
-}
+function VariationCard({ v }: { v: VariantMeta }) {
+  const ready = v.status === "ready";
+  const href = pathFor(v.id, firstStep(v.id));
 
-const VARIATIONS: Variation[] = [
-  {
-    title: "Base Flow (Linear)",
-    description:
-      "The core click-through flow: collect future income, summary, spending calculator and retirement goals.",
-    href: "/income",
-    status: { label: "Ready", tone: "success" },
-  },
-  {
-    title: "Linear Chat Flow",
-    description:
-      "The same questions delivered as a conversational, AI-style chat with actions embedded inline.",
-    status: { label: "Coming soon", tone: "muted" },
-  },
-  {
-    title: "Card-sort Goals",
-    description:
-      "A signature moment: prioritize retirement goals with a drag-to-rank card sort inside the flow.",
-    status: { label: "Coming soon", tone: "muted" },
-  },
-  {
-    title: "Happiness Chapter",
-    description:
-      "A breakout interaction that pops out of the linear flow for a richer moment, then returns.",
-    status: { label: "Coming soon", tone: "muted" },
-  },
-];
-
-function VariationCard({ v }: { v: Variation }) {
   const inner = (
     <div className="flex h-full flex-col rounded-card border border-stroke-subtle bg-white p-6 transition-all">
       <div className="flex items-start justify-between gap-3">
         <h2 className="text-xl font-semibold tracking-[-0.01em] text-deep-black">{v.title}</h2>
-        <StatusBadge tone={v.status.tone}>{v.status.label}</StatusBadge>
+        <StatusBadge tone={ready ? "success" : "muted"}>
+          {ready ? "Ready" : "Coming soon"}
+        </StatusBadge>
       </div>
       <p className="mt-3 flex-1 text-base leading-[1.5] text-gray-text">{v.description}</p>
       <span
         className={
-          v.href
+          ready
             ? "mt-6 inline-flex items-center gap-2 text-base font-semibold text-violet"
             : "mt-6 inline-flex items-center gap-2 text-base font-medium text-gray-2"
         }
       >
-        {v.href ? "Start" : "Not built yet"}
-        {v.href ? <ArrowRight className="size-5" strokeWidth={2} /> : null}
+        {ready ? "Start" : "Not built yet"}
+        {ready ? <ArrowRight className="size-5" strokeWidth={2} /> : null}
       </span>
     </div>
   );
 
-  if (!v.href) {
+  if (!ready) {
     return <div className="cursor-not-allowed opacity-70">{inner}</div>;
   }
   return (
     <Link
-      href={v.href}
+      href={href}
       className="block rounded-card outline-none transition-transform hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(16,24,32,0.08)] focus-visible:ring-2 focus-visible:ring-violet"
     >
       {inner}
@@ -90,9 +62,9 @@ export default function Dashboard() {
           You can return here any time from the WTW logo in the top-left.
         </p>
 
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 3xl:grid-cols-4 3xl:gap-6">
-          {VARIATIONS.map((v) => (
-            <VariationCard key={v.title} v={v} />
+        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 3xl:grid-cols-3 3xl:gap-6">
+          {VARIANT_ORDER.map((id) => (
+            <VariationCard key={id} v={VARIANTS[id]} />
           ))}
         </div>
       </section>
