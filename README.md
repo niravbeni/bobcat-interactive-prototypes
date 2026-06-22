@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bobcat — Retirement Onboarding Prototype
 
-## Getting Started
+An interactive, pixel-matched prototype of the WTW "Bobcat" retirement planning
+flow, built with Next.js (App Router), TypeScript and Tailwind CSS. The app is
+structured so new interaction variations (chat-led flow, card-sort goals, the
+"happiness chapter", etc.) can be layered on top of the shared base flow.
 
-First, run the development server:
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The dev server can also be
+run detached (useful for automated checks) with `npm run dev:daemon`, and stopped
+with `npm run dev:stop`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## The flow
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The home page (`/`) is a dashboard for picking a variation. The base flow runs as
+URL-addressable steps so browser back/forward and deep links work:
 
-## Learn More
+```
+/income   → 5-question Future Income wizard
+/summary  → derived income summary (editable chips + breakdown)
+/spending → 5-question Retirement Spending wizard (with a detail breakdown)
+/goals    → "Time and Goals" conversational AI mockup (WhatsApp-style chat)
+/complete → placeholder for where the rest of the app continues
+```
 
-To learn more about Next.js, take a look at the following resources:
+Unknown routes redirect to the first step.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `src/lib/flow.ts` — config-driven step machine (`STEPS`) and deterministic
+  `previousStep()` for back navigation derived from the flow graph.
+- `src/lib/questions.ts` — data definitions for the income/spending wizards and
+  the goals chat prompts/keyword helpers.
+- `src/lib/types.ts` — flow answer model and `StepId`s.
+- `src/components/flow/FlowProvider.tsx` — central state (answers, wizard
+  indices, chat transcript) and navigation helpers via the `useFlow()` hook.
+- `src/components/flow/QuestionWizard.tsx` — generic multiple-choice wizard that
+  reveals money fields, a spending detail block, or an inline placeholder.
+- `src/components/chrome/` — shared `Navbar`, `Sidebar`, `AppShell` layout.
+- `src/components/screens/` — one component per step.
+- `src/components/ui/` — reusable primitives.
 
-## Deploy on Vercel
+Design tokens (colors, type, radii) live in `src/app/globals.css`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` / `dev:daemon` / `dev:stop`
+- `npm run build` / `start`
+- `npm run lint`

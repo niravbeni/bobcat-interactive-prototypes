@@ -4,11 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:daemon": "python3 scripts/daemon-dev.py && sleep 4 && echo 'dev server daemonized -> http://localhost:3000 (logs: /tmp/bobcat-dev.log)'",
+    "dev:stop": "lsof -ti:3000 | xargs kill 2>/dev/null || echo 'nothing on :3000'",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "lucide-react": "^1.21.0",
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -20,6 +23,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "playwright": "^1.61.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
