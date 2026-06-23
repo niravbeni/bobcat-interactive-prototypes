@@ -1,6 +1,8 @@
 export interface QAnswer {
   choice?: string;
   value?: string;
+  /** Wall-clock timestamp of the most recent update, for newest-first lists. */
+  at?: number;
 }
 
 export type AnswerMap = Record<string, QAnswer>;

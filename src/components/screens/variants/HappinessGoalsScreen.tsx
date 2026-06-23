@@ -107,7 +107,7 @@ export function HappinessGoalsScreen() {
     const labels = vision.map(moodLabel).slice(0, 4).join(", ");
     botReply(
       vision.length
-        ? `Beautiful. I've saved your retirement vision: ${labels}. This is the feeling we'll plan towards.`
+        ? `Beautiful. I've saved your retirement vision: ${labels}. This is the feeling we'll plan toward.`
         : "No problem, we can shape your vision later. I've noted that for now.",
       { goalsStage: "done" },
       600,

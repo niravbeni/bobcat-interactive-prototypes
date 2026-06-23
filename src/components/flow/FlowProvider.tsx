@@ -92,7 +92,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         [section]: {
           ...prev[section],
-          [id]: { ...prev[section][id], ...patch },
+          [id]: { ...prev[section][id], ...patch, at: Date.now() },
         },
       }));
     },

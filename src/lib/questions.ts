@@ -306,7 +306,7 @@ export const GOAL_SUGGESTIONS: string[][] = [
 /** Fallback pearls for open-ended follow-ups (e.g. "what did I miss?"). */
 export const GOAL_EXTRA_SUGGESTIONS: string[] = [
   "Leaving an inheritance",
-  "Travelling more",
+  "Traveling more",
   "Healthcare security",
   "Helping my family",
 ];

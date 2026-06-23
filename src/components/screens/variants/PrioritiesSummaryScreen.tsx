@@ -34,7 +34,7 @@ export function PrioritiesSummaryScreen() {
   const subtitle = isSwipe
     ? essentials.length > 0
       ? "These are the goals you marked as essential. We\u2019ll weight your plan around them."
-      : "Here are the goals you leaned towards. We\u2019ll weight your plan around them."
+      : "Here are the goals you leaned toward. We\u2019ll weight your plan around them."
     : "Based on everything you told us, these are the goals that matter most. We\u2019ll weight your plan around the ones at the top.";
 
   return (
@@ -115,7 +115,7 @@ export function PrioritiesSummaryScreen() {
               <h2 className="text-base font-semibold">What happens next</h2>
             </div>
             <p className="mt-2 text-sm leading-[1.5] text-gray-1">
-              Bobcat feeds these priorities into your personalised model. The
+              Bobcat feeds these priorities into your personalized model. The
               ones you flagged as most important shape your projections, your
               recommended contributions, and where we look to cut fees, so your
               plan reflects {topPhrase ? `${topPhrase} first` : "what you care about most"}.

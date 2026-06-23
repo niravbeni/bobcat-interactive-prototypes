@@ -43,7 +43,7 @@ const BASE_STEPS: StepId[] = [
   "goals",
   "complete",
 ];
-const PRIORITISE_STEPS: StepId[] = [
+const PRIORITIZE_STEPS: StepId[] = [
   "income",
   "summary",
   "spending",
@@ -85,16 +85,16 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Goals are shown back to you as cards you can edit, add to, then drag to rank what matters most.",
     status: "ready",
-    steps: PRIORITISE_STEPS,
+    steps: PRIORITIZE_STEPS,
     skipTo: { step: "goals", label: "the goal card sort" },
   },
   swipe: {
     id: "swipe",
-    title: "Swipe to Prioritise",
+    title: "Swipe to Prioritize",
     description:
       "A Tinder-style deck: swipe each retirement priority up, right or left to rank what matters.",
     status: "ready",
-    steps: PRIORITISE_STEPS,
+    steps: PRIORITIZE_STEPS,
     skipTo: { step: "goals", label: "the swipe deck" },
   },
   "chat-cardsort": {
