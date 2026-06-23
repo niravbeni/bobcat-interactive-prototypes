@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { ChevronDown, Pencil } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
+import { EditQuestionModal } from "@/components/v2/EditQuestionModal";
 import { cn } from "@/lib/cn";
 import {
   INCOME_QUESTIONS,
   SPENDING_QUESTIONS,
   type QuestionDef,
 } from "@/lib/questions";
-import type { QAnswer } from "@/lib/types";
+import type { QAnswer, SectionId } from "@/lib/types";
 
 interface SectionItem {
   key: string;
@@ -17,6 +18,8 @@ interface SectionItem {
   value: string;
   /** Sort key — bigger = more recent. */
   at: number;
+  /** If set, clicking the pencil opens the edit modal for this question. */
+  edit?: { section: SectionId; question: QuestionDef };
 }
 
 const ABOUT_YOU: SectionItem[] = [
@@ -27,6 +30,7 @@ const ABOUT_YOU: SectionItem[] = [
 
 /** Map answered income/spending questions to display rows, newest first. */
 function answeredItems(
+  section: SectionId,
   questions: QuestionDef[],
   answers: Record<string, QAnswer>,
 ): SectionItem[] {
@@ -37,11 +41,18 @@ function answeredItems(
       label: q.chipLabel,
       value: q.chipValue(answers[q.id]),
       at: answers[q.id]?.at ?? 0,
+      edit: { section, question: q },
     }))
     .sort((a, b) => b.at - a.at);
 }
 
-function Row({ item }: { item: SectionItem }) {
+function Row({
+  item,
+  onEdit,
+}: {
+  item: SectionItem;
+  onEdit?: () => void;
+}) {
   return (
     <div className="flex items-start justify-between gap-3 py-1.5">
       <div className="flex min-w-0 flex-col">
@@ -52,13 +63,16 @@ function Row({ item }: { item: SectionItem }) {
           {item.value}
         </span>
       </div>
-      <button
-        type="button"
-        aria-label={`Edit ${item.label}`}
-        className="mt-0.5 shrink-0 rounded p-1 text-gray-2 transition-colors hover:text-deep-black"
-      >
-        <Pencil className="size-3.5" strokeWidth={1.75} />
-      </button>
+      {onEdit ? (
+        <button
+          type="button"
+          aria-label={`Edit ${item.label}`}
+          onClick={onEdit}
+          className="mt-0.5 shrink-0 rounded p-1 text-gray-2 transition-colors hover:text-deep-black"
+        >
+          <Pencil className="size-3.5" strokeWidth={1.75} />
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -70,6 +84,7 @@ function Folder({
   open,
   onToggle,
   emptyHint,
+  onEditItem,
 }: {
   id: string;
   label: string;
@@ -77,6 +92,7 @@ function Folder({
   open: boolean;
   onToggle: () => void;
   emptyHint?: string;
+  onEditItem?: (item: SectionItem) => void;
 }) {
   return (
     <div className="flex flex-col">
@@ -103,7 +119,15 @@ function Folder({
               {emptyHint ?? "Nothing added yet"}
             </p>
           ) : (
-            items.map((it) => <Row key={it.key} item={it} />)
+            items.map((it) => (
+              <Row
+                key={it.key}
+                item={it}
+                onEdit={
+                  it.edit && onEditItem ? () => onEditItem(it) : undefined
+                }
+              />
+            ))
           )}
         </div>
       ) : null}
@@ -113,11 +137,20 @@ function Folder({
 
 const REQUIRED_TOTAL = INCOME_QUESTIONS.length + SPENDING_QUESTIONS.length;
 
-export function DetailsSidebar() {
+export function DetailsSidebar({
+  onOpenPreview,
+}: {
+  /** Optional callback invoked when the user clicks the "See your plan" CTA. */
+  onOpenPreview?: () => void;
+} = {}) {
   const { answers } = useFlow();
 
-  const income = answeredItems(INCOME_QUESTIONS, answers.income);
-  const spending = answeredItems(SPENDING_QUESTIONS, answers.spending);
+  const income = answeredItems("income", INCOME_QUESTIONS, answers.income);
+  const spending = answeredItems(
+    "spending",
+    SPENDING_QUESTIONS,
+    answers.spending,
+  );
   const goals: SectionItem[] = answers.goalCards.map((c, i) => ({
     key: c.id,
     label: `Priority ${i + 1}`,
@@ -154,6 +187,15 @@ export function DetailsSidebar() {
     setManual({ section: currentId, openId: openId === id ? null : id });
   const isOpen = (id: string) => openId === id;
 
+  const [editing, setEditing] = useState<{
+    section: SectionId;
+    question: QuestionDef;
+  } | null>(null);
+
+  const handleEditItem = (item: SectionItem) => {
+    if (item.edit) setEditing(item.edit);
+  };
+
   return (
     <aside className="flex w-[335px] shrink-0 flex-col gap-3 rounded-field bg-ghost-white px-4 pb-6 pt-4 3xl:w-[400px] 3xl:px-6 4xl:w-[460px]">
       <Folder
@@ -170,6 +212,7 @@ export function DetailsSidebar() {
         open={isOpen("income")}
         onToggle={() => toggle("income")}
         emptyHint="No income details yet"
+        onEditItem={handleEditItem}
       />
       <Folder
         id="spending"
@@ -178,6 +221,7 @@ export function DetailsSidebar() {
         open={isOpen("spending")}
         onToggle={() => toggle("spending")}
         emptyHint="No spending details yet"
+        onEditItem={handleEditItem}
       />
       <Folder
         id="goals"
@@ -189,20 +233,56 @@ export function DetailsSidebar() {
       />
 
       <div className="mt-auto rounded-card border border-stroke-subtle bg-white p-4">
-        <p className="text-sm leading-snug text-gray-1">
-          Your plan will update once we have initial mandatory data.
-        </p>
-        <div className="mt-3 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-2">
-          <span>Required details</span>
-          <span>{pct}%</span>
-        </div>
-        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-divider">
-          <div
-            className="h-full rounded-full bg-success transition-[width] duration-300 ease-out"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
+        {answers.planRefreshed ? (
+          <>
+            <span className="inline-flex items-center rounded-pill bg-success/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-success">
+              Plan refreshed
+            </span>
+            <p className="mt-2 text-sm leading-snug text-gray-1">
+              Your plan has refreshed. It will now update anytime you add
+              additional information or make edits.
+            </p>
+            <button
+              type="button"
+              onClick={onOpenPreview}
+              className="mt-3 w-full rounded-pill bg-deep-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black"
+            >
+              See your plan
+            </button>
+            <div className="mt-3 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-2">
+              <span>Required details</span>
+              <span>100%</span>
+            </div>
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-divider">
+              <div className="h-full w-full rounded-full bg-success" />
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-sm leading-snug text-gray-1">
+              Your plan will update once we have initial mandatory data.
+            </p>
+            <div className="mt-3 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-2">
+              <span>Required details</span>
+              <span>{pct}%</span>
+            </div>
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-divider">
+              <div
+                className="h-full rounded-full bg-success transition-[width] duration-300 ease-out"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </>
+        )}
       </div>
+
+      {editing ? (
+        <EditQuestionModal
+          section={editing.section}
+          question={editing.question}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
     </aside>
   );
 }

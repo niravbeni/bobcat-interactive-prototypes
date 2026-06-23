@@ -20,6 +20,10 @@ export interface SpendingDetail {
 export interface ChatMessage {
   role: "bot" | "user";
   text: string;
+  /** Optional non-bubble rendering hint, e.g. a milestone pill in-line. */
+  kind?: "pill";
+  /** When kind is "pill", a green-check chip with this label is rendered. */
+  pill?: { label: string };
 }
 
 /** Conversation phase for the Time and Goals chat. */
@@ -53,6 +57,12 @@ export interface FlowAnswers {
   goalVerdicts: Record<string, "essential" | "nice" | "skip">;
   /** Happiness Chapter: selected "vision" mood ids. */
   vision: string[];
+  /** V2 chat: true once the mandatory-info threshold has been crossed. */
+  planRefreshed: boolean;
+  /** V2 chat: true after the user has opened the plan preview at least once. */
+  planPreviewSeen: boolean;
+  /** V2 chat: which top-nav tab is currently active. */
+  v2ActiveTab: "details" | "plan" | "marketplace";
 }
 
 export const initialAnswers: FlowAnswers = {
@@ -76,6 +86,9 @@ export const initialAnswers: FlowAnswers = {
   goalRanking: [],
   goalVerdicts: {},
   vision: [],
+  planRefreshed: false,
+  planPreviewSeen: false,
+  v2ActiveTab: "details",
 };
 
 export type SectionId = "income" | "spending";

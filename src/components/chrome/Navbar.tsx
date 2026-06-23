@@ -7,13 +7,20 @@ import { useFlow } from "@/components/flow/FlowProvider";
 import { VARIANTS, SKIP_INTERACTION_EVENT } from "@/lib/variants";
 import { cn } from "@/lib/cn";
 
-const V2_TABS = ["Your Details", "Your Plan", "Marketplace"] as const;
+type V2TabId = "details" | "plan" | "marketplace";
+const V2_TABS: { id: V2TabId; label: string }[] = [
+  { id: "details", label: "Your Details" },
+  { id: "plan", label: "Your Plan" },
+  { id: "marketplace", label: "Marketplace" },
+];
 
 export function Navbar() {
-  const { variant, steps, stepIndex, goTo } = useFlow();
+  const { variant, steps, stepIndex, goTo, answers, setAnswers } = useFlow();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const isV2 = variant === "linear-chat-v2";
+  const showNotificationDot =
+    isV2 && answers.planRefreshed && !answers.planPreviewSeen;
 
   useEffect(() => {
     if (!open) return;
@@ -68,11 +75,12 @@ export function Navbar() {
       {isV2 ? (
         <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2">
           {V2_TABS.map((tab) => {
-            const active = tab === "Your Details";
+            const active = answers.v2ActiveTab === tab.id;
             return (
               <button
-                key={tab}
+                key={tab.id}
                 type="button"
+                onClick={() => setAnswers({ v2ActiveTab: tab.id })}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex h-9 items-center rounded-full px-4 text-sm font-semibold tracking-[0.16px] transition-colors",
@@ -81,7 +89,7 @@ export function Navbar() {
                     : "border border-stroke-subtle bg-white text-deep-black hover:bg-ghost-white",
                 )}
               >
-                {tab}
+                {tab.label}
               </button>
             );
           })}
@@ -97,10 +105,16 @@ export function Navbar() {
       )}
 
       <div className="ml-auto flex items-center gap-2">
-        <button className="flex h-9 items-center gap-1 rounded-full bg-white pl-3 pr-2">
+        <button className="relative flex h-9 items-center gap-1 rounded-full bg-white pl-3 pr-2">
           <SquareUser className="size-6 text-black" strokeWidth={2} />
           <span className="text-base font-semibold tracking-[0.16px] text-black">Gloria</span>
           <ChevronDown className="size-6 text-black" strokeWidth={2} />
+          {showNotificationDot ? (
+            <span
+              aria-label="Plan updated"
+              className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-success ring-2 ring-ghost-white"
+            />
+          ) : null}
         </button>
 
         <div className="relative" ref={ref}>

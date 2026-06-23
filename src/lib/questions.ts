@@ -33,6 +33,18 @@ export interface QuestionDef {
 
 const money = (v?: string) => (v && v.trim() ? `$${v}` : "$0");
 
+/**
+ * Question ids that count as "mandatory" data for the V2 chat. Once all of
+ * these are answered, the plan-updated milestone fires and the remaining
+ * questions become optional follow-ups.
+ */
+export const MANDATORY_QIDS: ReadonlySet<string> = new Set([
+  "ssBenefit",
+  "pension",
+  "claimAge",
+  "savings",
+]);
+
 export const INCOME_QUESTIONS: QuestionDef[] = [
   {
     id: "ssBenefit",

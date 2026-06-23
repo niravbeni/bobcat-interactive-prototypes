@@ -10,18 +10,21 @@ import { MoneyField } from "@/components/ui/MoneyField";
 import { EnterHint } from "@/components/ui/EnterHint";
 import { Bubble, Composer, TypingBubble } from "@/components/chat/ChatUI";
 import { CardSort } from "@/components/interactions/CardSort";
+import { PlanPreviewModal } from "@/components/v2/PlanPreviewModal";
+import { TabPlaceholder } from "@/components/v2/TabPlaceholder";
 import {
   INCOME_QUESTIONS,
   SPENDING_QUESTIONS,
   GOAL_PROMPTS,
   GOAL_SUGGESTIONS,
+  MANDATORY_QIDS,
   buildGoalCards,
 } from "@/lib/questions";
 import { SKIP_INTERACTION_EVENT } from "@/lib/variants";
 import type { QOption, QuestionDef } from "@/lib/questions";
 import type { ChatMessage, GoalCard, SectionId } from "@/lib/types";
 import { AskSendIcon } from "@/components/ui/AskSendIcon";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, CheckCircle2 } from "lucide-react";
 
 interface Turn {
   section: SectionId;
@@ -33,7 +36,12 @@ const TURNS: Turn[] = [
   ...SPENDING_QUESTIONS.map((q) => ({ section: "spending" as const, q })),
 ];
 
-type Mode = "options" | "money" | "goals" | "rank" | "done";
+type Mode = "options" | "money" | "checkpoint" | "goals" | "rank" | "done";
+
+const CHECKPOINT_OPTIONS = [
+  { id: "continue", label: "Yes, let's keep going" },
+  { id: "preview", label: "See my updated plan first" },
+];
 
 /**
  * V2 of the linear chat flow. Same conversational onboarding, but when the chat
@@ -54,6 +62,8 @@ export function LinearChatV2Screen() {
   const [scrolled, setScrolled] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [askDraft, setAskDraft] = useState("");
+  const [resumeIdx, setResumeIdx] = useState<number | null>(null);
+  const [planPreviewOpen, setPlanPreviewOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const seeded = useRef(false);
 
@@ -84,11 +94,14 @@ export function LinearChatV2Screen() {
   }, [messages, typing, mode, askOpen]);
 
   // Whenever the user moves forward in the flow (new question, new mode), close
-  // any open ask-a-question composer so it doesn't linger across steps.
+  // any open ask-a-question composer so it doesn't linger across steps. This is
+  // a small UI reset, intentionally driven from a sync effect.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setAskOpen(false);
     setAskDraft("");
   }, [qi, mode]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const botSay = (text: string, after?: () => void, delay = 700) => {
     setTyping(true);
@@ -138,6 +151,51 @@ export function LinearChatV2Screen() {
     }
   };
 
+  /**
+   * True when answering question `qId` completes the full mandatory set for the
+   * first time. Uses live `answers` plus the just-answered id (because the
+   * setQuestion state update is async).
+   */
+  const completesMandatorySet = (qId: string) => {
+    if (answers.planRefreshed) return false;
+    if (!MANDATORY_QIDS.has(qId)) return false;
+    const answered = new Set<string>(
+      [
+        ...Object.entries(answers.income).filter(([, a]) => a.choice).map(
+          ([k]) => k,
+        ),
+        ...Object.entries(answers.spending).filter(([, a]) => a.choice).map(
+          ([k]) => k,
+        ),
+        qId,
+      ],
+    );
+    for (const id of MANDATORY_QIDS) {
+      if (!answered.has(id)) return false;
+    }
+    return true;
+  };
+
+  /**
+   * Drop the inline "Plan Updated" pill into the chat, flip the refreshed flag
+   * (so the sidebar and nav dot update), and offer the user a choice between
+   * continuing and previewing the plan.
+   */
+  const triggerMilestone = (nextIdx: number) => {
+    appendMessage({
+      role: "bot",
+      kind: "pill",
+      text: "Plan Updated",
+      pill: { label: "Plan Updated" },
+    });
+    setAnswers({ planRefreshed: true });
+    setResumeIdx(nextIdx);
+    botSay(
+      "Okay we've covered all the mandatory information. Do you want to improve the accuracy of your plan by answering some optional questions?",
+      () => setMode("checkpoint"),
+    );
+  };
+
   const pickOption = (opt: QOption) => {
     const { section, q } = TURNS[qi];
     setQuestion(section, q.id, { choice: opt.id });
@@ -148,6 +206,8 @@ export function LinearChatV2Screen() {
       setMoneyValue(q.moneyDefault ?? "");
       setMode("money");
       botSay("Great, what amount should I use? (you can edit later)");
+    } else if (completesMandatorySet(q.id)) {
+      triggerMilestone(qi + 1);
     } else {
       advance(qi + 1);
     }
@@ -159,7 +219,27 @@ export function LinearChatV2Screen() {
     appendMessage({ role: "user", text: `$${moneyValue || "0"}` });
     setPendingOption(null);
     setMode("options");
-    advance(qi + 1);
+    if (completesMandatorySet(q.id)) {
+      triggerMilestone(qi + 1);
+    } else {
+      advance(qi + 1);
+    }
+  };
+
+  const pickCheckpoint = (optionId: string) => {
+    const opt = CHECKPOINT_OPTIONS.find((o) => o.id === optionId);
+    if (!opt) return;
+    appendMessage({ role: "user", text: opt.label });
+    if (optionId === "continue") {
+      const next = resumeIdx ?? qi + 1;
+      setResumeIdx(null);
+      advance(next);
+    } else {
+      // Stay in checkpoint mode so the user can still pick "Yes, let's keep
+      // going" after closing the preview.
+      setAnswers({ planPreviewSeen: true });
+      setPlanPreviewOpen(true);
+    }
   };
 
   // Enter confirms the amount even if the field isn't focused. The field handles
@@ -226,7 +306,28 @@ export function LinearChatV2Screen() {
           : "";
 
   return (
-    <AppShell fill customSidebar={<DetailsSidebar />}>
+    <AppShell
+      fill
+      customSidebar={
+        <DetailsSidebar
+          onOpenPreview={() => {
+            setAnswers({ planPreviewSeen: true });
+            setPlanPreviewOpen(true);
+          }}
+        />
+      }
+    >
+      {answers.v2ActiveTab === "plan" ? (
+        <TabPlaceholder
+          title="Your plan will live here"
+          copy="We're still designing this view. It'll show your forecast, priorities, and what to refine next."
+        />
+      ) : answers.v2ActiveTab === "marketplace" ? (
+        <TabPlaceholder
+          title="Marketplace coming soon"
+          copy="Browse curated products and services that fit your plan. This is a placeholder while we design the real experience."
+        />
+      ) : (
       <div className="flex min-h-0 w-full flex-1 flex-col">
         <BackButton onClick={goBack} label="All details" size={36} />
 
@@ -245,11 +346,23 @@ export function LinearChatV2Screen() {
               : undefined
           }
         >
-          {messages.map((m, i) => (
-            <Bubble key={i} role={m.role}>
-              {m.text}
-            </Bubble>
-          ))}
+          {messages.map((m, i) =>
+            m.kind === "pill" ? (
+              <div key={i} className="flex">
+                <span className="inline-flex items-center gap-1.5 rounded-pill bg-white px-3 py-1.5 text-sm font-medium text-deep-black shadow-[0_1px_2px_rgba(16,24,32,0.06)]">
+                  {m.pill?.label ?? m.text}
+                  <CheckCircle2
+                    className="size-4 text-success"
+                    strokeWidth={2}
+                  />
+                </span>
+              </div>
+            ) : (
+              <Bubble key={i} role={m.role}>
+                {m.text}
+              </Bubble>
+            ),
+          )}
           {typing ? <TypingBubble /> : null}
 
           {/* The interaction lives inside the same scroll as the chat, so the
@@ -316,6 +429,21 @@ export function LinearChatV2Screen() {
                       Ask a question
                     </button>
                   )}
+                </div>
+              ) : null}
+
+              {mode === "checkpoint" ? (
+                <div className="overflow-hidden rounded-card bg-white p-1">
+                  {CHECKPOINT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => pickCheckpoint(opt.id)}
+                      className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-base text-deep-black transition-colors hover:bg-divider/60"
+                    >
+                      <span>{opt.label}</span>
+                    </button>
+                  ))}
                 </div>
               ) : null}
 
@@ -392,6 +520,11 @@ export function LinearChatV2Screen() {
           ) : null}
         </div>
       </div>
+      )}
+
+      {planPreviewOpen ? (
+        <PlanPreviewModal onClose={() => setPlanPreviewOpen(false)} />
+      ) : null}
     </AppShell>
   );
 }
