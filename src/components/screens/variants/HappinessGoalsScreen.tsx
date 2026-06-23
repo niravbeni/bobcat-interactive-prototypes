@@ -136,7 +136,7 @@ export function HappinessGoalsScreen() {
 
         <div
           ref={scrollRef}
-          className="mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1"
+          className="scrollbar-slim mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1"
         >
           {messages.map((m, i) => (
             <Bubble key={i} role={m.role}>

@@ -21,7 +21,7 @@ export function CardSortGoalsScreen() {
         .filter((m) => m.role === "user")
         .map((m) => m.text)
         .join(" ");
-      setAnswers({ goalCards: buildGoalCards(chatText) });
+      setAnswers({ goalCards: buildGoalCards(chatText).slice(0, 5) });
     }
   }, [cards.length, answers.goalsMessages, setAnswers]);
 
@@ -30,11 +30,6 @@ export function CardSortGoalsScreen() {
   const rename = (id: string, label: string) =>
     setCards(cards.map((c) => (c.id === id ? { ...c, label } : c)));
   const remove = (id: string) => setCards(cards.filter((c) => c.id !== id));
-  const add = (label: string) =>
-    setCards([
-      ...cards,
-      { id: `custom-${Date.now()}`, label, source: "custom" },
-    ]);
 
   const handleContinue = () => {
     setAnswers({ goalRanking: cards.map((c) => c.id) });
@@ -65,16 +60,15 @@ export function CardSortGoalsScreen() {
         </h1>
         <p className="mt-3 text-sm tracking-[-0.28px] text-black/75">
           Top of the list gets the most weight in your plan. Rename or remove any
-          goal, or add your own, then continue.
+          goal, then continue.
         </p>
 
-        <div className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className="scrollbar-slim mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
           <CardSort
             cards={cards}
             onReorder={setCards}
             onRename={rename}
             onRemove={remove}
-            onAdd={add}
           />
         </div>
 

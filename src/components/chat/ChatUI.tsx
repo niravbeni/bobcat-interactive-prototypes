@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/cn";
 import { AskSendIcon } from "@/components/ui/AskSendIcon";
+import { EnterHint } from "@/components/ui/EnterHint";
 import { Mic } from "lucide-react";
 
 export function Bubble({
@@ -107,6 +108,8 @@ export function Composer({
         <AskSendIcon className="size-[38px]" />
       </button>
       </div>
+
+      {value.trim() ? <EnterHint className="px-1" /> : null}
     </div>
   );
 }

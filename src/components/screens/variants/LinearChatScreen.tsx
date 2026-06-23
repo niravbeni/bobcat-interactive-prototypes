@@ -6,6 +6,7 @@ import { AppShell } from "@/components/chrome/AppShell";
 import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
 import { MoneyField } from "@/components/ui/MoneyField";
+import { EnterHint } from "@/components/ui/EnterHint";
 import { Bubble, Composer, TypingBubble } from "@/components/chat/ChatUI";
 import {
   INCOME_QUESTIONS,
@@ -114,6 +115,22 @@ export function LinearChatScreen() {
     advance(qi + 1);
   };
 
+  // Enter confirms the amount even if the field isn't focused. The field handles
+  // its own Enter, so we skip when an input/textarea is focused (no double).
+  useEffect(() => {
+    if (mode !== "money" || typing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      e.preventDefault();
+      confirmMoney();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, typing, moneyValue, qi]);
+
   const sendGoal = (raw: string) => {
     const text = raw.trim();
     if (!text) return;
@@ -162,7 +179,7 @@ export function LinearChatScreen() {
 
         <div
           ref={scrollRef}
-          className="mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1"
+          className="scrollbar-slim mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1"
         >
           {messages.map((m, i) => (
             <Bubble key={i} role={m.role}>
@@ -195,16 +212,21 @@ export function LinearChatScreen() {
           ) : null}
 
           {mode === "money" && !typing ? (
-            <div className="flex items-end gap-3">
+            <div>
               <MoneyField
                 value={moneyValue}
                 onChange={setMoneyValue}
+                onSubmit={confirmMoney}
                 helper={pendingOption?.helper}
-                className="flex-1"
               />
-              <Button variant="blue" size="md" onClick={confirmMoney}>
-                Confirm
-              </Button>
+              <div
+                className={`${pendingOption?.helper ? "mt-2" : "mt-5"} flex items-center justify-start gap-3`}
+              >
+                <Button variant="blue" size="md" onClick={confirmMoney}>
+                  Confirm
+                </Button>
+                <EnterHint />
+              </div>
             </div>
           ) : null}
 

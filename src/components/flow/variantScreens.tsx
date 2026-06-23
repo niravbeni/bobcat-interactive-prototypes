@@ -4,6 +4,7 @@ import type { StepId } from "@/lib/types";
 import { IncomeScreen } from "@/components/screens/IncomeScreen";
 import { SummaryScreen } from "@/components/screens/SummaryScreen";
 import { SpendingScreen } from "@/components/screens/SpendingScreen";
+import { ReviewScreen } from "@/components/screens/ReviewScreen";
 import { GoalsScreen } from "@/components/screens/GoalsScreen";
 import { CompleteScreen } from "@/components/screens/CompleteScreen";
 
@@ -13,6 +14,7 @@ import { PrioritiesSummaryScreen } from "@/components/screens/variants/Prioritie
 import { ChatBreakoutGoalsScreen } from "@/components/screens/variants/ChatBreakoutGoalsScreen";
 import { HappinessGoalsScreen } from "@/components/screens/variants/HappinessGoalsScreen";
 import { LinearChatScreen } from "@/components/screens/variants/LinearChatScreen";
+import { LinearChatV2Screen } from "@/components/screens/variants/LinearChatV2Screen";
 
 /** The income/summary/spending/complete steps are identical across variants. */
 function sharedStep(step: StepId) {
@@ -23,6 +25,8 @@ function sharedStep(step: StepId) {
       return <SummaryScreen />;
     case "spending":
       return <SpendingScreen />;
+    case "review":
+      return <ReviewScreen />;
     case "complete":
       return <CompleteScreen />;
     default:
@@ -58,6 +62,8 @@ export function VariantScreen({
       return step === "goals" ? <HappinessGoalsScreen /> : sharedStep(step);
     case "linear-chat":
       return step === "chat" ? <LinearChatScreen /> : sharedStep(step);
+    case "linear-chat-v2":
+      return step === "chat" ? <LinearChatV2Screen /> : sharedStep(step);
     default:
       return null;
   }

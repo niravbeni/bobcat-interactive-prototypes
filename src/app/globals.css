@@ -90,6 +90,26 @@ button:disabled,
   }
 }
 
+/* Slim, unobtrusive scrollbar for chat / scrollable panels */
+.scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 24, 32, 0.18) transparent;
+}
+.scrollbar-slim::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-slim::-webkit-scrollbar-thumb {
+  background-color: rgba(16, 24, 32, 0.18);
+  border-radius: 9999px;
+}
+.scrollbar-slim::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(16, 24, 32, 0.32);
+}
+
 /* Hide number input spinners for money fields */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {

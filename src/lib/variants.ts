@@ -1,6 +1,10 @@
 import type { StepId } from "./types";
 
+/** Window event a flow screen listens for to jump to its in-step interaction. */
+export const SKIP_INTERACTION_EVENT = "bobcat:skip-interaction";
+
 export type VariantId =
+  | "linear-chat-v2"
   | "base"
   | "cardsort"
   | "swipe"
@@ -21,13 +25,29 @@ export interface VariantMeta {
    * standard income/summary/spending setup before a differentiating moment).
    */
   skipTo?: { step: StepId; label: string };
+  /**
+   * For flows whose signature interaction lives *inside* a single step (e.g. the
+   * linear chat), the Help menu fires an in-flow skip event the screen listens
+   * for, rather than navigating to a different step.
+   */
+  skipInFlow?: { label: string };
+  /** Highlight this flow on the dashboard (e.g. the active client deliverable). */
+  featured?: boolean;
 }
 
-const BASE_STEPS: StepId[] = ["income", "summary", "spending", "goals", "complete"];
+const BASE_STEPS: StepId[] = [
+  "income",
+  "summary",
+  "spending",
+  "review",
+  "goals",
+  "complete",
+];
 const PRIORITISE_STEPS: StepId[] = [
   "income",
   "summary",
   "spending",
+  "review",
   "goals",
   "priorities",
   "complete",
@@ -40,6 +60,16 @@ const PRIORITISE_STEPS: StepId[] = [
  * Time and Goals experience.
  */
 export const VARIANTS: Record<VariantId, VariantMeta> = {
+  "linear-chat-v2": {
+    id: "linear-chat-v2",
+    title: "Linear Chat Flow V2",
+    description:
+      "Work-in-progress iteration of the conversational flow, being shaped as a client deliverable.",
+    status: "ready",
+    steps: ["chat", "complete"],
+    skipInFlow: { label: "the goals chat" },
+    featured: true,
+  },
   base: {
     id: "base",
     title: "Base Flow (Linear)",
@@ -96,6 +126,7 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
 };
 
 export const VARIANT_ORDER: VariantId[] = [
+  "linear-chat-v2",
   "base",
   "cardsort",
   "swipe",

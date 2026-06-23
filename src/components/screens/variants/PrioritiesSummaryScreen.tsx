@@ -68,7 +68,7 @@ export function PrioritiesSummaryScreen() {
           {subtitle}
         </p>
 
-        <div className="mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className="scrollbar-slim mt-6 min-h-0 flex-1 overflow-y-auto pr-1">
           <ol className="flex flex-col gap-2">
             {shown.map((card, i) => {
               const isTop = isSwipe || i < 2;

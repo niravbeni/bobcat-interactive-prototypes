@@ -82,6 +82,7 @@ export type StepId =
   | "income"
   | "summary"
   | "spending"
+  | "review"
   | "goals"
   | "priorities"
   | "complete"

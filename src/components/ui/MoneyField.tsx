@@ -5,6 +5,7 @@ import { cn } from "@/lib/cn";
 export function MoneyField({
   value,
   onChange,
+  onSubmit,
   trailing,
   helper,
   variant = "white",
@@ -12,6 +13,8 @@ export function MoneyField({
 }: {
   value: string;
   onChange?: (v: string) => void;
+  /** Fired when the user presses Enter in the field. */
+  onSubmit?: () => void;
   trailing?: React.ReactNode;
   helper?: string;
   variant?: "white" | "field";
@@ -32,13 +35,19 @@ export function MoneyField({
           inputMode="decimal"
           value={value}
           onChange={(e) => onChange?.(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onSubmit?.();
+            }
+          }}
           className="ml-2 w-full bg-transparent text-2xl leading-[1.6] text-black outline-none placeholder:text-gray-text"
           placeholder="0.00"
         />
         {trailing ? <div className="ml-3 shrink-0">{trailing}</div> : null}
       </div>
       {helper ? (
-        <p className="px-6 py-2 text-base leading-[1.6] text-gray-text">{helper}</p>
+        <p className="px-6 pt-1.5 text-right text-sm leading-snug text-gray-text">{helper}</p>
       ) : null}
     </div>
   );

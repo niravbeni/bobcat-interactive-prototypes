@@ -3,13 +3,22 @@ import { ArrowRight } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { VARIANTS, VARIANT_ORDER, firstStep, pathFor } from "@/lib/variants";
 import type { VariantMeta } from "@/lib/variants";
+import { cn } from "@/lib/cn";
 
 function VariationCard({ v }: { v: VariantMeta }) {
   const ready = v.status === "ready";
+  const featured = Boolean(v.featured) && ready;
   const href = pathFor(v.id, firstStep(v.id));
 
   const inner = (
-    <div className="flex h-full flex-col rounded-card border border-stroke-subtle bg-white p-6 transition-all">
+    <div
+      className={cn(
+        "flex h-full flex-col rounded-card p-6 transition-all",
+        featured
+          ? "border-2 border-violet bg-gradient-to-br from-violet/[0.08] to-white shadow-[0_10px_40px_rgba(127,53,178,0.12)]"
+          : "border border-stroke-subtle bg-white",
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <h2 className="text-xl font-semibold tracking-[-0.01em] text-deep-black">{v.title}</h2>
         <StatusBadge tone={ready ? "success" : "muted"}>
@@ -17,16 +26,23 @@ function VariationCard({ v }: { v: VariantMeta }) {
         </StatusBadge>
       </div>
       <p className="mt-3 flex-1 text-base leading-[1.5] text-gray-text">{v.description}</p>
-      <span
-        className={
-          ready
-            ? "mt-6 inline-flex items-center gap-2 text-base font-semibold text-violet"
-            : "mt-6 inline-flex items-center gap-2 text-base font-medium text-gray-2"
-        }
-      >
-        {ready ? "Start" : "Not built yet"}
-        {ready ? <ArrowRight className="size-5" strokeWidth={2} /> : null}
-      </span>
+      {featured ? (
+        <span className="mt-6 inline-flex w-fit items-center gap-2 rounded-pill bg-violet px-5 py-2.5 text-base font-semibold text-white transition-opacity group-hover:opacity-90">
+          Start
+          <ArrowRight className="size-5" strokeWidth={2} />
+        </span>
+      ) : (
+        <span
+          className={
+            ready
+              ? "mt-6 inline-flex items-center gap-2 text-base font-semibold text-violet"
+              : "mt-6 inline-flex items-center gap-2 text-base font-medium text-gray-2"
+          }
+        >
+          {ready ? "Start" : "Not built yet"}
+          {ready ? <ArrowRight className="size-5" strokeWidth={2} /> : null}
+        </span>
+      )}
     </div>
   );
 
@@ -36,7 +52,7 @@ function VariationCard({ v }: { v: VariantMeta }) {
   return (
     <Link
       href={href}
-      className="block rounded-card outline-none transition-transform hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(16,24,32,0.08)] focus-visible:ring-2 focus-visible:ring-violet"
+      className="group block rounded-card outline-none transition-transform hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(16,24,32,0.08)] focus-visible:ring-2 focus-visible:ring-violet"
     >
       {inner}
     </Link>

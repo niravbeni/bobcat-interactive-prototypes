@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Info, SquareUser, FastForward, X } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
-import { VARIANTS } from "@/lib/variants";
+import { VARIANTS, SKIP_INTERACTION_EVENT } from "@/lib/variants";
 
 export function Navbar() {
   const { variant, steps, stepIndex, goTo } = useFlow();
@@ -24,8 +24,18 @@ export function Navbar() {
   const skipIndex = skipTo ? steps.indexOf(skipTo.step) : -1;
   const canSkip = !!skipTo && skipIndex > stepIndex;
 
+  // In-flow skip: the interaction lives inside the current step, so we ask the
+  // active screen to jump to it rather than navigating.
+  const skipInFlow = VARIANTS[variant].skipInFlow;
+  const canFlowSkip = !!skipInFlow && stepIndex === 0;
+  const skipLabel = skipTo?.label ?? skipInFlow?.label;
+
   const handleSkip = () => {
-    if (skipTo) goTo(skipTo.step);
+    if (canSkip && skipTo) {
+      goTo(skipTo.step);
+    } else if (canFlowSkip) {
+      window.dispatchEvent(new CustomEvent(SKIP_INTERACTION_EVENT));
+    }
     setOpen(false);
   };
 
@@ -83,12 +93,12 @@ export function Navbar() {
                 </button>
               </div>
 
-              {canSkip && skipTo ? (
+              {(canSkip || canFlowSkip) && skipLabel ? (
                 <>
                   <p className="mt-1 text-sm leading-[1.5] text-gray-1">
                     Short on time? Jump straight to{" "}
                     <span className="font-medium text-deep-black">
-                      {skipTo.label}
+                      {skipLabel}
                     </span>
                     , the heart of this flow.
                   </p>
@@ -98,7 +108,7 @@ export function Navbar() {
                     className="mt-3 flex w-full items-center justify-center gap-2 rounded-pill bg-deep-black px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black"
                   >
                     <FastForward className="size-4" strokeWidth={2} />
-                    Skip to {skipTo.label}
+                    Skip to {skipLabel}
                   </button>
                 </>
               ) : (

@@ -65,7 +65,7 @@ export function BreakoutOverlay({
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-8 py-6">{children}</div>
+        <div className="scrollbar-slim flex-1 overflow-y-auto px-8 py-6">{children}</div>
 
         {onSave ? (
           <footer className="flex items-center justify-end gap-3 border-t border-stroke-subtle px-8 py-5">
