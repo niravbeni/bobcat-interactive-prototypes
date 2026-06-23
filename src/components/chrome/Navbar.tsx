@@ -19,8 +19,6 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const isV2 = variant === "linear-chat-v2";
-  const showNotificationDot =
-    isV2 && answers.planRefreshed && !answers.planPreviewSeen;
 
   useEffect(() => {
     if (!open) return;
@@ -76,20 +74,36 @@ export function Navbar() {
         <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2">
           {V2_TABS.map((tab) => {
             const active = answers.v2ActiveTab === tab.id;
+            const showDot =
+              tab.id === "plan" &&
+              answers.planRefreshed &&
+              !answers.planPreviewSeen;
             return (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setAnswers({ v2ActiveTab: tab.id })}
+                onClick={() => {
+                  const patch: Partial<typeof answers> = {
+                    v2ActiveTab: tab.id,
+                  };
+                  if (tab.id === "plan") patch.planPreviewSeen = true;
+                  setAnswers(patch);
+                }}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-9 items-center rounded-full px-4 text-sm font-semibold tracking-[0.16px] transition-colors",
+                  "relative flex h-9 items-center rounded-full px-4 text-sm font-semibold tracking-[0.16px] transition-colors",
                   active
                     ? "bg-stratosphere text-white"
                     : "border border-stroke-subtle bg-white text-deep-black hover:bg-ghost-white",
                 )}
               >
                 {tab.label}
+                {showDot ? (
+                  <span
+                    aria-label="Plan ready"
+                    className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-success ring-2 ring-ghost-white"
+                  />
+                ) : null}
               </button>
             );
           })}
@@ -105,16 +119,10 @@ export function Navbar() {
       )}
 
       <div className="ml-auto flex items-center gap-2">
-        <button className="relative flex h-9 items-center gap-1 rounded-full bg-white pl-3 pr-2">
+        <button className="flex h-9 items-center gap-1 rounded-full bg-white pl-3 pr-2">
           <SquareUser className="size-6 text-black" strokeWidth={2} />
           <span className="text-base font-semibold tracking-[0.16px] text-black">Gloria</span>
           <ChevronDown className="size-6 text-black" strokeWidth={2} />
-          {showNotificationDot ? (
-            <span
-              aria-label="Plan updated"
-              className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-success ring-2 ring-ghost-white"
-            />
-          ) : null}
         </button>
 
         <div className="relative" ref={ref}>
@@ -122,7 +130,7 @@ export function Navbar() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-haspopup="dialog"
-            className="flex h-9 items-center justify-center rounded-full bg-violet px-4"
+            className="flex h-9 items-center justify-center rounded-full bg-deep-black px-4 transition-colors hover:bg-black"
           >
             <span className="text-base font-semibold tracking-[0.16px] text-white">Help</span>
           </button>
