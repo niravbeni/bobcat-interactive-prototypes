@@ -83,6 +83,13 @@ export function LinearChatV2Screen() {
     });
   }, [messages, typing, mode, askOpen]);
 
+  // Whenever the user moves forward in the flow (new question, new mode), close
+  // any open ask-a-question composer so it doesn't linger across steps.
+  useEffect(() => {
+    setAskOpen(false);
+    setAskDraft("");
+  }, [qi, mode]);
+
   const botSay = (text: string, after?: () => void, delay = 700) => {
     setTyping(true);
     window.setTimeout(() => {
