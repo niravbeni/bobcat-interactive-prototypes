@@ -24,7 +24,7 @@ import { SKIP_INTERACTION_EVENT } from "@/lib/variants";
 import type { QOption, QuestionDef } from "@/lib/questions";
 import type { ChatMessage, GoalCard, SectionId } from "@/lib/types";
 import { AskSendIcon } from "@/components/ui/AskSendIcon";
-import { ArrowUp, CheckCircle2 } from "lucide-react";
+import { ArrowUp, CheckCircle2, X } from "lucide-react";
 
 interface Turn {
   section: SectionId;
@@ -395,6 +395,17 @@ export function LinearChatV2Screen() {
                         placeholder="Type your question…"
                         className="flex-1 bg-transparent text-sm text-deep-black outline-none placeholder:text-gray-text"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAskOpen(false);
+                          setAskDraft("");
+                        }}
+                        aria-label="Close question composer"
+                        className="flex size-8 shrink-0 items-center justify-center rounded-full text-gray-2 transition-colors hover:bg-divider/60"
+                      >
+                        <X className="size-4" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => askQuestion(askDraft)}
