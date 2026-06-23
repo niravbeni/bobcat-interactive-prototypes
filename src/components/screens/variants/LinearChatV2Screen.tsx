@@ -49,6 +49,7 @@ export function LinearChatV2Screen() {
   const [pendingOption, setPendingOption] = useState<QOption | null>(null);
   const [moneyValue, setMoneyValue] = useState("");
   const [goalDraft, setGoalDraft] = useState("");
+  const [scrolled, setScrolled] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const seeded = useRef(false);
 
@@ -227,13 +228,18 @@ export function LinearChatV2Screen() {
 
         <div
           ref={scrollRef}
+          onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 4)}
           className="scrollbar-slim mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4 pr-3"
-          style={{
-            maskImage:
-              "linear-gradient(to bottom, transparent 0, black 36px)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, transparent 0, black 36px)",
-          }}
+          style={
+            scrolled
+              ? {
+                  maskImage:
+                    "linear-gradient(to bottom, transparent 0, black 36px)",
+                  WebkitMaskImage:
+                    "linear-gradient(to bottom, transparent 0, black 36px)",
+                }
+              : undefined
+          }
         >
           {messages.map((m, i) => (
             <Bubble key={i} role={m.role}>
