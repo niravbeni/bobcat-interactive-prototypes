@@ -296,14 +296,6 @@ export function LinearChatV2Screen() {
   };
 
   const current = TURNS[qi];
-  const progressLabel =
-    mode === "goals"
-      ? "Your goals"
-      : mode === "rank"
-        ? "Rank your goals"
-        : mode === "done"
-          ? "All done"
-          : "";
 
   return (
     <AppShell
@@ -369,12 +361,6 @@ export function LinearChatV2Screen() {
               whole thing reads as one continuous thread with a single scrollbar. */}
           {!typing ? (
             <div className="flex flex-col gap-3 pt-2">
-              {progressLabel ? (
-                <p className="text-xs font-medium uppercase tracking-[0.12em] text-gray-2">
-                  {progressLabel}
-                </p>
-              ) : null}
-
               {mode === "options" ? (
                 <div className="flex flex-col gap-3">
                   <div className="overflow-hidden rounded-card bg-white p-1">
