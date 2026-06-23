@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { FlowProvider } from "@/components/flow/FlowProvider";
+import { PasswordGate } from "@/components/chrome/PasswordGate";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -22,7 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
       <body className="min-h-full">
-        <FlowProvider>{children}</FlowProvider>
+        <PasswordGate>
+          <FlowProvider>{children}</FlowProvider>
+        </PasswordGate>
       </body>
     </html>
   );
