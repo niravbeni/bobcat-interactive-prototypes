@@ -11,6 +11,7 @@ export function AppShell({
   fill = false,
   sidebar,
   customSidebar,
+  hideSidebar = false,
 }: {
   children: React.ReactNode;
   footer?: React.ReactNode;
@@ -20,13 +21,15 @@ export function AppShell({
   sidebar?: SidebarProps;
   /** Replace the default <Sidebar/> entirely with a custom node (e.g. V2 chat). */
   customSidebar?: React.ReactNode;
+  /** Render no left column at all (full-width main, e.g. V2 details menu). */
+  hideSidebar?: boolean;
 }) {
   return (
     <div className={cn("flex flex-col bg-white", fill ? "h-screen overflow-hidden" : "min-h-screen")}>
       <div className={cn("flex w-full flex-1 flex-col", fill && "min-h-0")}>
         <Navbar />
         <div className={cn("flex flex-1 gap-5 px-5 py-5 3xl:gap-7 3xl:px-7 3xl:py-6", fill && "min-h-0")}>
-          {customSidebar ?? <Sidebar {...sidebar} />}
+          {hideSidebar ? null : (customSidebar ?? <Sidebar {...sidebar} />)}
           <main className={cn("flex min-w-0 flex-1 flex-col", fill && "min-h-0")}>
             <div
               className={cn(

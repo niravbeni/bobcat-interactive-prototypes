@@ -15,6 +15,9 @@ import { ChatBreakoutGoalsScreen } from "@/components/screens/variants/ChatBreak
 import { HappinessGoalsScreen } from "@/components/screens/variants/HappinessGoalsScreen";
 import { LinearChatScreen } from "@/components/screens/variants/LinearChatScreen";
 import { LinearChatV2Screen } from "@/components/screens/variants/LinearChatV2Screen";
+import { OutlookDashboardScreen } from "@/components/screens/variants/OutlookDashboardScreen";
+import { DetailsMenuScreen } from "@/components/screens/variants/DetailsMenuScreen";
+import { MarketplaceScreen } from "@/components/screens/variants/MarketplaceScreen";
 
 /** The income/summary/spending/complete steps are identical across variants. */
 function sharedStep(step: StepId) {
@@ -63,7 +66,11 @@ export function VariantScreen({
     case "linear-chat":
       return step === "chat" ? <LinearChatScreen /> : sharedStep(step);
     case "linear-chat-v2":
-      return step === "chat" ? <LinearChatV2Screen /> : sharedStep(step);
+      if (step === "outlook") return <OutlookDashboardScreen />;
+      if (step === "details") return <DetailsMenuScreen />;
+      if (step === "marketplace") return <MarketplaceScreen />;
+      if (step === "chat") return <LinearChatV2Screen />;
+      return sharedStep(step);
     default:
       return null;
   }

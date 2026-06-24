@@ -59,7 +59,7 @@ export function CardSortGoalsScreen() {
           <span className="text-violet">Drag to rank what matters most.</span>
         </h1>
         <p className="mt-3 text-sm tracking-[-0.28px] text-black/75">
-          Top of the list gets the most weight in your plan. Rename or remove any
+          Top of the list gets the most weight in your outlook. Rename or remove any
           goal, then continue.
         </p>
 

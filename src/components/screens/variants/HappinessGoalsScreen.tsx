@@ -45,7 +45,7 @@ export function HappinessGoalsScreen() {
       seeded.current = true;
       setAnswers({
         goalsMessages: [
-          { role: "bot", text: "Hi Gloria, this last part is the fun bit. The more you tell me, the better I can tailor your plan." },
+          { role: "bot", text: "Hi Gloria, this last part is the fun bit. The more you tell me, the better I can tailor your outlook." },
           { role: "bot", text: GOAL_PROMPTS[0] },
         ],
         goalsStage: "asking",

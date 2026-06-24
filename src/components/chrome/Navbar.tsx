@@ -6,19 +6,29 @@ import { ChevronDown, Info, SquareUser, FastForward, X } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { VARIANTS, SKIP_INTERACTION_EVENT } from "@/lib/variants";
 import { cn } from "@/lib/cn";
+import type { StepId } from "@/lib/types";
 
 type V2TabId = "details" | "plan" | "marketplace";
-const V2_TABS: { id: V2TabId; label: string }[] = [
-  { id: "details", label: "Your Details" },
-  { id: "plan", label: "Your Plan" },
-  { id: "marketplace", label: "Marketplace" },
+const V2_TABS: { id: V2TabId; label: string; step: StepId }[] = [
+  { id: "details", label: "Your Details", step: "details" },
+  { id: "plan", label: "Your Outlook", step: "outlook" },
+  { id: "marketplace", label: "Marketplace", step: "marketplace" },
 ];
 
 export function Navbar() {
-  const { variant, steps, stepIndex, goTo, answers, setAnswers } = useFlow();
+  const { variant, step, steps, stepIndex, goTo, answers, setAnswers } =
+    useFlow();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const isV2 = variant === "linear-chat-v2";
+
+  // Which top-nav tab is highlighted, derived from the current step.
+  const activeTab: V2TabId =
+    step === "outlook"
+      ? "plan"
+      : step === "marketplace"
+        ? "marketplace"
+        : "details";
 
   useEffect(() => {
     if (!open) return;
@@ -34,9 +44,10 @@ export function Navbar() {
   const canSkip = !!skipTo && skipIndex > stepIndex;
 
   // In-flow skip: the interaction lives inside the current step, so we ask the
-  // active screen to jump to it rather than navigating.
+  // active screen to jump to it rather than navigating. The V2 chat owns this
+  // interaction, so it's only offered while on the chat step.
   const skipInFlow = VARIANTS[variant].skipInFlow;
-  const canFlowSkip = !!skipInFlow && stepIndex === 0;
+  const canFlowSkip = !!skipInFlow && step === "chat";
   const skipLabel = skipTo?.label ?? skipInFlow?.label;
 
   const handleSkip = () => {
@@ -73,7 +84,7 @@ export function Navbar() {
       {isV2 ? (
         <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2">
           {V2_TABS.map((tab) => {
-            const active = answers.v2ActiveTab === tab.id;
+            const active = activeTab === tab.id;
             const showDot =
               tab.id === "plan" &&
               answers.planRefreshed &&
@@ -83,11 +94,8 @@ export function Navbar() {
                 key={tab.id}
                 type="button"
                 onClick={() => {
-                  const patch: Partial<typeof answers> = {
-                    v2ActiveTab: tab.id,
-                  };
-                  if (tab.id === "plan") patch.planPreviewSeen = true;
-                  setAnswers(patch);
+                  if (tab.id === "plan") setAnswers({ planPreviewSeen: true });
+                  goTo(tab.step);
                 }}
                 aria-current={active ? "page" : undefined}
                 className={cn(

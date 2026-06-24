@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useMotionValue, useTransform, animate } from "motion/react";
 import { Check, CheckCheck, X, RotateCcw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -14,7 +14,7 @@ export interface SwipeResult {
   decisions: Record<string, SwipeVerdict>;
 }
 
-const VERDICTS: Record<
+export const VERDICTS: Record<
   SwipeVerdict,
   { label: string; color: string; icon: LucideIcon }
 > = {
@@ -30,15 +30,22 @@ export function CardSwipe({
   items,
   onComplete,
   onStatusChange,
+  showResults = true,
 }: {
   items: Priority[];
   onComplete: (result: SwipeResult) => void;
   /** Notifies the parent when the deck has been fully sorted (results view). */
   onStatusChange?: (done: boolean) => void;
+  /**
+   * When false, skips the built-in results summary and fires `onComplete`
+   * automatically once the deck is fully sorted. Defaults to true.
+   */
+  showResults?: boolean;
 }) {
   const [index, setIndex] = useState(0);
   const [decisions, setDecisions] = useState<Record<string, SwipeVerdict>>({});
   const [trigger, setTrigger] = useState<SwipeVerdict | null>(null);
+  const completedRef = useRef(false);
 
   const current = items[index];
   const done = index >= items.length;
@@ -60,9 +67,18 @@ export function CardSwipe({
   useEffect(() => {
     if (done) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") setTrigger("skip");
-      else if (e.key === "ArrowRight") setTrigger("nice");
-      else if (e.key === "ArrowUp") setTrigger("essential");
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setTrigger("skip");
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setTrigger("nice");
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setTrigger("essential");
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -87,7 +103,19 @@ export function CardSwipe({
     return g;
   }, [decisions, items]);
 
+  useEffect(() => {
+    if (showResults || !done || completedRef.current) return;
+    completedRef.current = true;
+    const ranking = [
+      ...grouped.essential,
+      ...grouped.nice,
+      ...grouped.skip,
+    ].map((p) => p.id);
+    onComplete({ ranking, decisions });
+  }, [showResults, done, grouped, decisions, onComplete]);
+
   if (done) {
+    if (!showResults) return null;
     return (
       <Results
         grouped={grouped}
@@ -108,7 +136,7 @@ export function CardSwipe({
     <div className="flex w-full flex-col items-center">
       <ProgressBar current={index} total={items.length} />
 
-      <div className="relative mt-7 h-[320px] w-full max-w-[360px] sm:h-[350px]">
+      <div className="relative mt-2 h-[320px] w-full max-w-[360px] sm:h-[350px]">
         {[2, 1].map((depth) => {
           const card = items[index + depth];
           if (!card) return null;
@@ -121,7 +149,7 @@ export function CardSwipe({
                 zIndex: 1,
               }}
             >
-              <div style={{ opacity: depth === 1 ? 0.85 : 0.45 }}>
+              <div className="h-full" style={{ opacity: depth === 1 ? 0.85 : 0.45 }}>
                 <CardFace priority={card} />
               </div>
             </div>
@@ -231,7 +259,7 @@ function CardFace({ priority }: { priority: Priority }) {
   const isNeed = priority.category === "need";
   return (
     <div className="flex h-full flex-col p-7">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center">
         <span
           className="grid size-12 place-items-center rounded-2xl"
           style={{
@@ -241,15 +269,12 @@ function CardFace({ priority }: { priority: Priority }) {
         >
           <Icon size={24} strokeWidth={2.1} />
         </span>
-        <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-2">
-          {isNeed ? "Need" : "Want"}
-        </span>
       </div>
 
       <div className="flex flex-1 flex-col justify-center">
         <h2
           className="m-0 text-[26px] font-bold leading-[1.12] text-deep-black sm:text-[28px]"
-          style={{ letterSpacing: "-0.02em", textWrap: "balance" }}
+          style={{ letterSpacing: "-0.02em" }}
         >
           {priority.title}
         </h2>
@@ -311,19 +336,12 @@ function ActionButton({
 }
 
 function ProgressBar({ current, total }: { current: number; total: number }) {
-  const pct = current / total;
+  const position = Math.min(current + 1, total);
   return (
-    <div className="flex w-full max-w-[380px] items-center gap-3">
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-stroke-subtle">
-        <motion.div
-          className="h-full w-full origin-left rounded-full bg-violet"
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: pct }}
-          transition={{ type: "spring", stiffness: 200, damping: 26 }}
-        />
-      </div>
-      <span className="min-w-[42px] text-right text-[13px] font-semibold tabular-nums text-gray-1">
-        {current}/{total}
+    <div className="mx-auto flex w-full max-w-[360px] justify-end">
+      <span className="text-[12px] font-semibold tabular-nums text-gray-1">
+        {position}
+        <span className="text-gray-2"> / {total}</span>
       </span>
     </div>
   );

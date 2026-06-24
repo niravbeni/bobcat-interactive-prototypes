@@ -95,47 +95,51 @@ export function EditQuestionModal({
           </Bubble>
 
           {question.prefill ? (
-            <MoneyField
-              value={value}
-              onChange={setValue}
-              onSubmit={save}
-              trailing={
-                question.prefill.badge ? (
-                  <MandarinBadge>{question.prefill.badge}</MandarinBadge>
-                ) : undefined
-              }
-            />
+            <div className="w-full max-w-sm self-start">
+              <MoneyField
+                value={value}
+                onChange={setValue}
+                onSubmit={save}
+                trailing={
+                  question.prefill.badge ? (
+                    <MandarinBadge>{question.prefill.badge}</MandarinBadge>
+                  ) : undefined
+                }
+              />
+            </div>
           ) : null}
 
-          <div className="overflow-hidden rounded-card bg-white p-1">
+          <div className="grid w-fit grid-cols-1 self-start overflow-hidden rounded-card bg-white p-1">
             {question.options.map((o) => (
               <button
                 key={o.id}
                 type="button"
                 onClick={() => handleSelect(o.id)}
-                className={`flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-base transition-colors ${
+                className={`whitespace-nowrap rounded-lg px-4 py-3 text-left text-base transition-colors ${
                   choice === o.id
                     ? "bg-deep-black text-white"
                     : "text-deep-black hover:bg-divider/60"
                 }`}
               >
-                <span>{o.label}</span>
+                {o.label}
               </button>
             ))}
           </div>
 
           {selectedOption?.reveal === "money" ? (
-            <MoneyField
-              value={value}
-              onChange={setValue}
-              onSubmit={save}
-              trailing={
-                selectedOption.badge ? (
-                  <MandarinBadge>{selectedOption.badge}</MandarinBadge>
-                ) : undefined
-              }
-              helper={selectedOption.helper}
-            />
+            <div className="w-full max-w-sm self-start">
+              <MoneyField
+                value={value}
+                onChange={setValue}
+                onSubmit={save}
+                trailing={
+                  selectedOption.badge ? (
+                    <MandarinBadge>{selectedOption.badge}</MandarinBadge>
+                  ) : undefined
+                }
+                helper={selectedOption.helper}
+              />
+            </div>
           ) : null}
 
           {selectedOption?.reveal === "detail" ? <SpendingDetail /> : null}

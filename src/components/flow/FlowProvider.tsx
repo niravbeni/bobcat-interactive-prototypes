@@ -30,7 +30,14 @@ interface FlowContextValue {
   sectionIdx: Record<SectionId, number>;
   setSectionIdx: (section: SectionId, idx: number) => void;
   setAnswers: (patch: Partial<FlowAnswers>) => void;
-  setQuestion: (section: SectionId, id: string, patch: Partial<QAnswer>) => void;
+  setQuestion: (
+    section: SectionId,
+    id: string,
+    patch: Partial<QAnswer>,
+    /** When `bump` is false the recency timestamp is preserved (e.g. for quick
+     * slider nudges that shouldn't re-order the details panel). */
+    opts?: { bump?: boolean },
+  ) => void;
   setDetail: (patch: Partial<SpendingDetail>) => void;
   appendMessage: (msg: ChatMessage) => void;
   goNext: () => void;
@@ -87,14 +94,26 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setQuestion = useCallback(
-    (section: SectionId, id: string, patch: Partial<QAnswer>) => {
-      setAnswersState((prev) => ({
-        ...prev,
-        [section]: {
-          ...prev[section],
-          [id]: { ...prev[section][id], ...patch, at: Date.now() },
-        },
-      }));
+    (
+      section: SectionId,
+      id: string,
+      patch: Partial<QAnswer>,
+      opts?: { bump?: boolean },
+    ) => {
+      setAnswersState((prev) => {
+        const prevAt = prev[section][id]?.at ?? Date.now();
+        return {
+          ...prev,
+          [section]: {
+            ...prev[section],
+            [id]: {
+              ...prev[section][id],
+              ...patch,
+              at: opts?.bump === false ? prevAt : Date.now(),
+            },
+          },
+        };
+      });
     },
     [],
   );

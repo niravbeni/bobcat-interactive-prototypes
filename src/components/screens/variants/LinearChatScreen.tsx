@@ -56,7 +56,7 @@ export function LinearChatScreen() {
     const intro: ChatMessage[] = [
       {
         role: "bot",
-        text: "Hi Gloria, let's build your plan together right here in chat. I'll ask a few quick questions, just tap or type your answers.",
+        text: "Hi Gloria, let's build your outlook together right here in chat. I'll ask a few quick questions, just tap or type your answers.",
       },
       { role: "bot", text: questionText(TURNS[0].q) },
     ];
@@ -141,7 +141,7 @@ export function LinearChatScreen() {
     if (answered >= GOAL_TURNS) {
       setMode("done");
       botSay(
-        "That's everything I need. I've saved your income, spending and goals, your Bobcat plan is ready to build on.",
+        "That's everything I need. I've saved your income, spending and goals, your Bobcat outlook is ready to build on.",
       );
     } else {
       botSay(GOAL_PROMPTS[answered]);
@@ -174,7 +174,7 @@ export function LinearChatScreen() {
         <BackButton onClick={goBack} />
 
         <h2 className="mt-6 text-2xl font-bold text-deep-black">
-          Build your plan
+          Build your outlook
         </h2>
 
         <div

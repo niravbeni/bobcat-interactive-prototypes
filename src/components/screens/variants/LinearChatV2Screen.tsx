@@ -8,18 +8,18 @@ import { BackButton } from "@/components/ui/BackButton";
 import { Button } from "@/components/ui/Button";
 import { MoneyField } from "@/components/ui/MoneyField";
 import { EnterHint } from "@/components/ui/EnterHint";
-import { Bubble, Composer, TypingBubble } from "@/components/chat/ChatUI";
-import { CardSort } from "@/components/interactions/CardSort";
+import { Bubble, TypingBubble } from "@/components/chat/ChatUI";
+import {
+  PriorityRankFlow,
+  type PriorityRankResult,
+} from "@/components/interactions/PriorityRankFlow";
 import { PlanPreviewModal } from "@/components/v2/PlanPreviewModal";
-import { TabPlaceholder } from "@/components/v2/TabPlaceholder";
 import {
   INCOME_QUESTIONS,
   SPENDING_QUESTIONS,
-  GOAL_PROMPTS,
-  GOAL_SUGGESTIONS,
   MANDATORY_QIDS,
-  buildGoalCards,
 } from "@/lib/questions";
+import { RETIREMENT_PRIORITIES } from "@/lib/priorities";
 import { SKIP_INTERACTION_EVENT } from "@/lib/variants";
 import type { QOption, QuestionDef } from "@/lib/questions";
 import type { ChatMessage, GoalCard, SectionId } from "@/lib/types";
@@ -36,7 +36,7 @@ const TURNS: Turn[] = [
   ...SPENDING_QUESTIONS.map((q) => ({ section: "spending" as const, q })),
 ];
 
-type Mode = "options" | "money" | "checkpoint" | "goals" | "rank" | "done";
+type Mode = "options" | "money" | "checkpoint" | "priorities" | "done";
 
 const CHECKPOINT_OPTIONS = [
   { id: "continue", label: "Yes, let's keep going" },
@@ -49,22 +49,28 @@ const CHECKPOINT_OPTIONS = [
  * (no modal) so the user ranks what matters most without leaving the chat.
  */
 export function LinearChatV2Screen() {
-  const { answers, setAnswers, setQuestion, appendMessage, goNext, goBack } =
-    useFlow();
+  const {
+    answers,
+    setAnswers,
+    setQuestion,
+    appendMessage,
+    goNext,
+    goBack,
+    goTo,
+  } = useFlow();
   const messages = answers.goalsMessages;
-  const cards = answers.goalCards;
   const [typing, setTyping] = useState(false);
   const [qi, setQi] = useState(0);
   const [mode, setMode] = useState<Mode>("options");
   const [pendingOption, setPendingOption] = useState<QOption | null>(null);
   const [moneyValue, setMoneyValue] = useState("");
-  const [goalDraft, setGoalDraft] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [askDraft, setAskDraft] = useState("");
   const [resumeIdx, setResumeIdx] = useState<number | null>(null);
   const [planPreviewOpen, setPlanPreviewOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const seeded = useRef(false);
 
   const questionText = (q: QuestionDef) =>
@@ -77,7 +83,7 @@ export function LinearChatV2Screen() {
     const intro: ChatMessage[] = [
       {
         role: "bot",
-        text: "Hi Gloria, let's build your plan together right here in chat. I'll ask a few quick questions, just tap or type your answers.",
+        text: "Hi Gloria, let's build your outlook together right here in chat. I'll ask a few quick questions, just tap or type your answers.",
       },
       { role: "bot", text: questionText(TURNS[0].q) },
     ];
@@ -92,6 +98,25 @@ export function LinearChatV2Screen() {
       behavior: "smooth",
     });
   }, [messages, typing, mode, askOpen]);
+
+  // Keep the chat pinned to the bottom as the in-chat interactions (e.g. the
+  // swipe → sort → rank priorities flow) grow or reflow vertically, so the
+  // latest activity stays visible. Only sticks when the user is already near the
+  // bottom, so scrolling up to read history isn't fought.
+  useEffect(() => {
+    const viewport = scrollRef.current;
+    const content = contentRef.current;
+    if (!viewport || !content) return;
+    const ro = new ResizeObserver(() => {
+      const distanceFromBottom =
+        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+      if (distanceFromBottom < 220) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
+    });
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, []);
 
   // Whenever the user moves forward in the flow (new question, new mode), close
   // any open ask-a-question composer so it doesn't linger across steps. This is
@@ -123,8 +148,8 @@ export function LinearChatV2Screen() {
     );
   };
 
-  // Help → skip ahead to the goals chat (the lead-in just before ranking), so
-  // the user answers one question and then naturally lands on the card sort.
+  // Help → skip ahead to the priorities interaction, so the user lands directly
+  // on the swipe → sort → rank flow without finishing every question.
   useEffect(() => {
     const onSkip = () => {
       setTyping(false);
@@ -133,8 +158,10 @@ export function LinearChatV2Screen() {
         role: "bot",
         text: "Sure, let's skip ahead to the part that matters most, your goals.",
       });
-      setMode("goals");
-      botSay(GOAL_PROMPTS[0]);
+      setMode("priorities");
+      botSay(
+        "Last thing — let's figure out what matters most. Swipe through these, then fine-tune.",
+      );
     };
     window.addEventListener(SKIP_INTERACTION_EVENT, onSkip);
     return () => window.removeEventListener(SKIP_INTERACTION_EVENT, onSkip);
@@ -146,8 +173,10 @@ export function LinearChatV2Screen() {
       setQi(nextIndex);
       botSay(questionText(TURNS[nextIndex].q), () => setMode("options"));
     } else {
-      setMode("goals");
-      botSay(GOAL_PROMPTS[0]);
+      setMode("priorities");
+      botSay(
+        "Last thing — let's figure out what matters most. Swipe through these, then fine-tune.",
+      );
     }
   };
 
@@ -191,7 +220,7 @@ export function LinearChatV2Screen() {
     setAnswers({ planRefreshed: true });
     setResumeIdx(nextIdx);
     botSay(
-      "Okay we've covered all the mandatory information. Do you want to improve the accuracy of your plan by answering some optional questions?",
+      "Okay we've covered all the mandatory information. Do you want to improve the accuracy of your outlook by answering some optional questions?",
       () => setMode("checkpoint"),
     );
   };
@@ -258,40 +287,26 @@ export function LinearChatV2Screen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, typing, moneyValue, qi]);
 
-  // One open question to gather context, then surface the goals as draggable
-  // cards inline so the user can rank them right inside the chat.
-  const sendGoal = (raw: string) => {
-    const text = raw.trim();
-    if (!text) return;
-    appendMessage({ role: "user", text });
-    setGoalDraft("");
-
-    const priorUser = messages.filter((m) => m.role === "user").map((m) => m.text);
-    const chatText = [...priorUser, text].join(" ");
-
-    botSay(
-      "Thanks. I've turned that into a set of goals below. Drag to rank what matters most, rename or remove any, then save.",
-      () => {
-        setAnswers({ goalCards: buildGoalCards(chatText).slice(0, 5) });
-        setMode("rank");
-      },
-    );
-  };
-
-  const setCards = (next: GoalCard[]) => setAnswers({ goalCards: next });
-  const renameCard = (id: string, label: string) =>
-    setCards(cards.map((c) => (c.id === id ? { ...c, label } : c)));
-  const removeCard = (id: string) => setCards(cards.filter((c) => c.id !== id));
-
-  const saveRanking = () => {
-    setAnswers({ goalRanking: cards.map((c) => c.id) });
-    const top = cards[0]?.label;
-    appendMessage({ role: "user", text: "Here's my ranking." });
+  // The inline swipe → sort → rank flow returns the full ranking plus each
+  // card's bucket; turn that into ordered goal cards and close out the chat.
+  const handlePrioritiesDone = (result: PriorityRankResult) => {
+    const byId = new Map(RETIREMENT_PRIORITIES.map((p) => [p.id, p]));
+    const goalCards: GoalCard[] = result.ranking
+      .map((id) => byId.get(id))
+      .filter((p): p is NonNullable<typeof p> => Boolean(p))
+      .map((p) => ({ id: p.id, label: p.title, source: "preset" as const }));
+    setAnswers({
+      goalRanking: result.ranking,
+      goalCards,
+      goalVerdicts: result.decisions,
+    });
+    const top = goalCards[0]?.label;
+    appendMessage({ role: "user", text: "Here's what matters most." });
     setMode("done");
     botSay(
       top
-        ? `Perfect. I'll weight your plan around ${top.toLowerCase()} first, then the rest in order. That's everything I need, your Bobcat plan is ready to build on.`
-        : "Perfect, that's everything I need. Your Bobcat plan is ready to build on.",
+        ? `Perfect. I'll weight your outlook around ${top.toLowerCase()} first, then the rest in order. That's everything I need, your Bobcat outlook is ready to build on.`
+        : "Perfect, that's everything I need. Your Bobcat outlook is ready to build on.",
     );
   };
 
@@ -302,31 +317,21 @@ export function LinearChatV2Screen() {
       fill
       customSidebar={
         <DetailsSidebar
+          variant="chat"
           onOpenPreview={() => {
             setAnswers({ planPreviewSeen: true });
-            setPlanPreviewOpen(true);
+            goTo("outlook");
           }}
         />
       }
     >
-      {answers.v2ActiveTab === "plan" ? (
-        <TabPlaceholder
-          title="Your plan will live here"
-          copy="We're still designing this view. It'll show your forecast, priorities, and what to refine next."
-        />
-      ) : answers.v2ActiveTab === "marketplace" ? (
-        <TabPlaceholder
-          title="Marketplace coming soon"
-          copy="Browse curated products and services that fit your plan. This is a placeholder while we design the real experience."
-        />
-      ) : (
       <div className="flex min-h-0 w-full flex-1 flex-col">
         <BackButton onClick={goBack} label="All details" size={36} />
 
         <div
           ref={scrollRef}
           onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 4)}
-          className="scrollbar-slim mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-4 pr-3"
+          className="scrollbar-slim mt-5 min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-4 pr-1"
           style={
             scrolled
               ? {
@@ -338,6 +343,7 @@ export function LinearChatV2Screen() {
               : undefined
           }
         >
+          <div ref={contentRef} className="flex flex-col gap-4">
           {messages.map((m, i) =>
             m.kind === "pill" ? (
               <div key={i} className="flex">
@@ -363,21 +369,21 @@ export function LinearChatV2Screen() {
             <div className="flex flex-col gap-3 pt-2">
               {mode === "options" ? (
                 <div className="flex flex-col gap-3">
-                  <div className="overflow-hidden rounded-card bg-white p-1">
+                  <div className="grid w-fit grid-cols-1 self-start overflow-hidden rounded-card bg-white p-1">
                     {current.q.options.map((opt) => (
                       <button
                         key={opt.id}
                         type="button"
                         onClick={() => pickOption(opt)}
-                        className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-base text-deep-black transition-colors hover:bg-divider/60"
+                        className="whitespace-nowrap rounded-lg px-4 py-3 text-left text-base text-deep-black transition-colors hover:bg-divider/60"
                       >
-                        <span>{opt.label}</span>
+                        {opt.label}
                       </button>
                     ))}
                   </div>
 
                   {askOpen ? (
-                    <div className="flex items-center gap-2 rounded-card border border-stroke-subtle bg-white px-3 py-2">
+                    <div className="ai-glow flex items-center gap-2 rounded-card border border-violet/40 bg-white px-3 py-2">
                       <AskSendIcon className="size-6 shrink-0" />
                       <input
                         autoFocus
@@ -430,22 +436,22 @@ export function LinearChatV2Screen() {
               ) : null}
 
               {mode === "checkpoint" ? (
-                <div className="overflow-hidden rounded-card bg-white p-1">
+                <div className="grid w-fit grid-cols-1 self-start overflow-hidden rounded-card bg-white p-1">
                   {CHECKPOINT_OPTIONS.map((opt) => (
                     <button
                       key={opt.id}
                       type="button"
                       onClick={() => pickCheckpoint(opt.id)}
-                      className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-base text-deep-black transition-colors hover:bg-divider/60"
+                      className="whitespace-nowrap rounded-lg px-4 py-3 text-left text-base text-deep-black transition-colors hover:bg-divider/60"
                     >
-                      <span>{opt.label}</span>
+                      {opt.label}
                     </button>
                   ))}
                 </div>
               ) : null}
 
               {mode === "money" ? (
-                <div>
+                <div className="flex w-full max-w-sm flex-col self-start">
                   <MoneyField
                     value={moneyValue}
                     onChange={setMoneyValue}
@@ -463,47 +469,22 @@ export function LinearChatV2Screen() {
                 </div>
               ) : null}
 
-              {mode === "goals" ? (
-                <div className="flex flex-col gap-3">
-                  <div className="overflow-hidden rounded-card bg-white p-1">
-                    {GOAL_SUGGESTIONS[0].map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => sendGoal(s)}
-                        className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-base text-deep-black transition-colors hover:bg-divider/60"
-                      >
-                        <span>{s}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <Composer
-                    value={goalDraft}
-                    onChange={setGoalDraft}
-                    onSend={() => sendGoal(goalDraft)}
-                  />
-                </div>
-              ) : null}
-
-              {mode === "rank" ? (
-                <div className="flex flex-col gap-3">
-                  <CardSort
-                    cards={cards}
-                    onReorder={setCards}
-                    onRename={renameCard}
-                    onRemove={removeCard}
-                  />
-                  <div className="flex justify-start">
-                    <Button
-                      variant="blue"
-                      size="md"
-                      onClick={saveRanking}
-                      disabled={cards.length === 0}
-                    >
-                      Save ranking
-                    </Button>
-                  </div>
-                </div>
+              {mode === "priorities" ? (
+                <PriorityRankFlow
+                  onDone={handlePrioritiesDone}
+                  onEnterSort={() =>
+                    appendMessage({
+                      role: "bot",
+                      text: "Drag any card to a different group to fine-tune your choices.",
+                    })
+                  }
+                  onEnterRank={() =>
+                    appendMessage({
+                      role: "bot",
+                      text: "Drag to order what matters most. Most important on the right.",
+                    })
+                  }
+                />
               ) : null}
 
               {mode === "done" ? (
@@ -515,9 +496,9 @@ export function LinearChatV2Screen() {
               ) : null}
             </div>
           ) : null}
+          </div>
         </div>
       </div>
-      )}
 
       {planPreviewOpen ? (
         <PlanPreviewModal onClose={() => setPlanPreviewOpen(false)} />

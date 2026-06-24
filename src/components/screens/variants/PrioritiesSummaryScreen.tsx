@@ -33,9 +33,9 @@ export function PrioritiesSummaryScreen() {
 
   const subtitle = isSwipe
     ? essentials.length > 0
-      ? "These are the goals you marked as essential. We\u2019ll weight your plan around them."
-      : "Here are the goals you leaned toward. We\u2019ll weight your plan around them."
-    : "Based on everything you told us, these are the goals that matter most. We\u2019ll weight your plan around the ones at the top.";
+      ? "These are the goals you marked as essential. We\u2019ll weight your outlook around them."
+      : "Here are the goals you leaned toward. We\u2019ll weight your outlook around them."
+    : "Based on everything you told us, these are the goals that matter most. We\u2019ll weight your outlook around the ones at the top.";
 
   return (
     <AppShell
@@ -122,7 +122,7 @@ export function PrioritiesSummaryScreen() {
             </p>
             <div className="mt-3 flex items-center gap-2 text-xs font-medium text-success">
               <TrendingUp className="size-4" strokeWidth={2} />
-              Your plan will update to reflect this.
+              Your outlook will update to reflect this.
             </div>
           </div>
         </div>

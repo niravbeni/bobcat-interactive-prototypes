@@ -1,9 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/cn";
-import { AskSendIcon } from "@/components/ui/AskSendIcon";
 import { EnterHint } from "@/components/ui/EnterHint";
-import { Mic } from "lucide-react";
+import { ArrowUp, Mic } from "lucide-react";
 
 export function Bubble({
   role,
@@ -103,9 +102,9 @@ export function Composer({
         onClick={onSend}
         disabled={!value.trim()}
         aria-label="Send"
-        className="shrink-0 rounded-full transition-opacity hover:opacity-80 disabled:opacity-40"
+        className="grid size-[38px] shrink-0 place-items-center rounded-full bg-violet text-white transition-opacity hover:opacity-90 disabled:opacity-40"
       >
-        <AskSendIcon className="size-[38px]" />
+        <ArrowUp className="size-5" strokeWidth={2.5} />
       </button>
       </div>
 

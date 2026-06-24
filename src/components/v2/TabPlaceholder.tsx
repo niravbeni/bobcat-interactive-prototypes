@@ -2,7 +2,7 @@
 
 /**
  * Fills the V2 main panel with the same dark "Placeholder" treatment used by
- * the plan preview, for tabs that don't have real content yet (Your Plan,
+ * the plan preview, for tabs that don't have real content yet (Your Outlook,
  * Marketplace).
  */
 export function TabPlaceholder({

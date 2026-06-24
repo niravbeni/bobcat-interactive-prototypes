@@ -4,11 +4,22 @@ import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 
 /**
- * Fullscreen placeholder takeover for the plan preview. Used both from the
- * chat checkpoint option and the sidebar "See your outlook" CTA. Matches the
- * dark "Placeholder" treatment used elsewhere in the prototype.
+ * Fullscreen dark "Placeholder" takeover used wherever a destination is not yet
+ * designed (e.g. booking an advisor, the Marketplace tab, the plan preview).
  */
-export function PlanPreviewModal({ onClose }: { onClose: () => void }) {
+export function FullscreenPlaceholder({
+  eyebrow = "Plan preview",
+  title,
+  copy,
+  backLabel = "Back",
+  onClose,
+}: {
+  eyebrow?: string;
+  title: string;
+  copy: string;
+  backLabel?: string;
+  onClose: () => void;
+}) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -21,7 +32,7 @@ export function PlanPreviewModal({ onClose }: { onClose: () => void }) {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Your outlook preview"
+      aria-label={title}
       className="fixed inset-0 z-50 flex flex-col bg-deep-black text-white"
     >
       <div className="flex items-center justify-between px-8 py-6">
@@ -31,10 +42,10 @@ export function PlanPreviewModal({ onClose }: { onClose: () => void }) {
           className="inline-flex items-center gap-2 rounded-pill bg-white/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/15"
         >
           <ArrowLeft className="size-4" strokeWidth={2} />
-          Back to chat
+          {backLabel}
         </button>
         <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/40">
-          Plan preview
+          {eyebrow}
         </p>
       </div>
 
@@ -42,13 +53,10 @@ export function PlanPreviewModal({ onClose }: { onClose: () => void }) {
         <p className="text-xs font-medium uppercase tracking-[0.4em] text-white/40">
           Placeholder
         </p>
-        <p className="max-w-2xl text-5xl font-semibold tracking-[-0.02em] leading-[1.1]">
-          Your outlook preview will appear here
+        <p className="max-w-2xl text-5xl font-semibold leading-[1.1] tracking-[-0.02em]">
+          {title}
         </p>
-        <p className="mt-2 max-w-xl text-lg text-white/55">
-          We&rsquo;re still designing this view. It&rsquo;ll show your forecast,
-          priorities, and what to refine next.
-        </p>
+        <p className="mt-2 max-w-xl text-lg text-white/55">{copy}</p>
       </div>
     </div>
   );

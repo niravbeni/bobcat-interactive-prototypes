@@ -54,7 +54,7 @@ export function Sidebar({ planBadge, detailsBadges, subSections }: SidebarProps)
   return (
     <aside className="flex w-[335px] shrink-0 flex-col rounded-field bg-ghost-white px-4 pb-6 pt-4 3xl:w-[400px] 3xl:px-6 4xl:w-[460px]">
       <div className="flex flex-col gap-3">
-        <PlanPill label="Your Plan" badges={planBadge ? [planBadge] : undefined} />
+        <PlanPill label="Your Outlook" badges={planBadge ? [planBadge] : undefined} />
         <PlanPill label="Details" badges={detailsBadges} />
 
         {subSections && subSections.length > 0 ? (

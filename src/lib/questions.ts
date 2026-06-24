@@ -176,7 +176,7 @@ export const SPENDING_QUESTIONS: QuestionDef[] = [
     id: "healthcare",
     lead: "How would you describe your expected",
     highlight: "healthcare costs?",
-    subtitle: "We'll stress-test your plan against this",
+    subtitle: "We'll stress-test your outlook against this",
     options: [
       { id: "low", label: "Low — I'm in good health" },
       { id: "average", label: "About average" },

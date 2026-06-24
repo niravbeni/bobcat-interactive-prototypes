@@ -63,6 +63,14 @@ export interface FlowAnswers {
   planPreviewSeen: boolean;
   /** V2 chat: which top-nav tab is currently active. */
   v2ActiveTab: "details" | "plan" | "marketplace";
+  /** V2 outlook dashboard: which scenario the Plan Conditions slider is set to. */
+  planCondition: "worst" | "typical" | "best";
+  /**
+   * V2 outlook dashboard: continuous Plan Conditions position, 0 (worst) → 50
+   * (typical) → 100 (best). Drives interpolated card values; the discrete
+   * `planCondition` mirrors the nearest key point.
+   */
+  planConditionT: number;
 }
 
 export const initialAnswers: FlowAnswers = {
@@ -89,6 +97,8 @@ export const initialAnswers: FlowAnswers = {
   planRefreshed: false,
   planPreviewSeen: false,
   v2ActiveTab: "details",
+  planCondition: "typical",
+  planConditionT: 50,
 };
 
 export type SectionId = "income" | "spending";
@@ -101,4 +111,7 @@ export type StepId =
   | "goals"
   | "priorities"
   | "complete"
-  | "chat";
+  | "chat"
+  | "outlook"
+  | "details"
+  | "marketplace";

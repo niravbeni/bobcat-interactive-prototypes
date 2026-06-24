@@ -51,7 +51,7 @@ export function GoalsScreen() {
       seeded.current = true;
       setAnswers({
         goalsMessages: [
-          { role: "bot", text: "Hi Gloria, this last part is the fun bit. The more you tell me, the better I can tailor your plan." },
+          { role: "bot", text: "Hi Gloria, this last part is the fun bit. The more you tell me, the better I can tailor your outlook." },
           { role: "bot", text: GOAL_PROMPTS[0] },
         ],
         goalsStage: "asking",
@@ -88,7 +88,7 @@ export function GoalsScreen() {
     setAnswers({ goalsText: "" });
 
     if (stage === "extra") {
-      botReply("Thanks, that really helps. I've added it to your plan.", {
+      botReply("Thanks, that really helps. I've added it to your outlook.", {
         goalsStage: "done",
       });
       return;
@@ -114,7 +114,7 @@ export function GoalsScreen() {
   const confirmYes = () => {
     appendMessage({ role: "user", text: "Yes, that's right" });
     botReply(
-      `Perfect. I'll personalize your Bobcat plan around ${phrase(goalsPriorities)} and everything you've told me.`,
+      `Perfect. I'll personalize your Bobcat outlook around ${phrase(goalsPriorities)} and everything you've told me.`,
       { goalsConfirmed: true, goalsStage: "done" },
     );
   };

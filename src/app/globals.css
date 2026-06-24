@@ -110,6 +110,70 @@ button:disabled,
   background-color: rgba(16, 24, 32, 0.32);
 }
 
+/* Range slider — slim track with a round stratosphere thumb */
+.slider-slim {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
+}
+.slider-slim::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-divider);
+}
+.slider-slim::-moz-range-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-divider);
+}
+.slider-slim::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -6px;
+  height: 16px;
+  width: 16px;
+  border-radius: 9999px;
+  background: var(--color-stratosphere);
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(16, 24, 32, 0.25);
+}
+.slider-slim::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 9999px;
+  background: var(--color-stratosphere);
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(16, 24, 32, 0.25);
+}
+
+/* Siri-style purple glow for the AI "Ask a question" composer.
+   Uses an inset glow + animated border so it stays visible even when the
+   surrounding scroll container clips outer box-shadows. */
+@keyframes aiGlow {
+  0%,
+  100% {
+    border-color: rgba(127, 53, 178, 0.25);
+    box-shadow: inset 0 0 6px 0 rgba(127, 53, 178, 0.06);
+  }
+  50% {
+    border-color: rgba(127, 53, 178, 0.5);
+    box-shadow: inset 0 0 10px 0 rgba(127, 53, 178, 0.14);
+  }
+}
+.ai-glow {
+  animation: aiGlow 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-glow {
+    animation: none;
+    border-color: rgba(127, 53, 178, 0.4);
+    box-shadow: inset 0 0 8px 0 rgba(127, 53, 178, 0.1);
+  }
+}
+
 /* Hide number input spinners for money fields */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {

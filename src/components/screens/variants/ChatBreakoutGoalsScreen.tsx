@@ -48,7 +48,7 @@ export function ChatBreakoutGoalsScreen() {
       seeded.current = true;
       setAnswers({
         goalsMessages: [
-          { role: "bot", text: "Hi Gloria, this last part is the fun bit. The more you tell me, the better I can tailor your plan." },
+          { role: "bot", text: "Hi Gloria, this last part is the fun bit. The more you tell me, the better I can tailor your outlook." },
           { role: "bot", text: GOAL_PROMPTS[0] },
         ],
         goalsStage: "asking",
@@ -112,7 +112,7 @@ export function ChatBreakoutGoalsScreen() {
       .join("   ");
     setAnswers({ goalRanking: cards.map((c) => c.id) });
     botReply(
-      `Perfect. Here's how you ranked things: ${top}. I'll weight your Bobcat plan around these.`,
+      `Perfect. Here's how you ranked things: ${top}. I'll weight your Bobcat outlook around these.`,
       { goalsStage: "done" },
       600,
     );

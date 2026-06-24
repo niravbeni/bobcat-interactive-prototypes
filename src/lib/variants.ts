@@ -66,7 +66,7 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Work-in-progress iteration of the conversational flow, being shaped as a client deliverable.",
     status: "ready",
-    steps: ["chat", "complete"],
+    steps: ["outlook", "details", "chat", "complete", "marketplace"],
     skipInFlow: { label: "the goals chat" },
     featured: true,
   },
@@ -110,7 +110,7 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     id: "happiness",
     title: "Happiness Chapter",
     description:
-      "A breakout that pops out of the flow: picture your retirement on a mood board, saved back to your plan.",
+      "A breakout that pops out of the flow: picture your retirement on a mood board, saved back to your outlook.",
     status: "ready",
     steps: BASE_STEPS,
     skipTo: { step: "goals", label: "the happiness chapter" },
