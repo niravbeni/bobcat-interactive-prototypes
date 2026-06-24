@@ -1,13 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { AppShell } from "@/components/chrome/AppShell";
-import { BackButton } from "@/components/ui/BackButton";
+import { BasicDetailsBar } from "@/components/v2/BasicDetailsBar";
 import { Button } from "@/components/ui/Button";
-import { CardSort } from "@/components/interactions/CardSort";
+import {
+  PriorityRankFlow,
+  priorityCardsFromRanking,
+  type PriorityRankResult,
+} from "@/components/interactions/PriorityRankFlow";
 import { EditQuestionModal } from "@/components/v2/EditQuestionModal";
+import {
+  ABOUT_FIELDS,
+  aboutValue,
+  EditAboutFieldModal,
+  type AboutField,
+} from "@/components/v2/EditAboutFieldModal";
 import {
   INCOME_QUESTIONS,
   SPENDING_QUESTIONS,
@@ -15,6 +24,7 @@ import {
   RETIREMENT_GOALS,
   type QuestionDef,
 } from "@/lib/questions";
+import { cn } from "@/lib/cn";
 import type { GoalCard, SectionId } from "@/lib/types";
 
 /** First five preset goals, used to seed the ranking when none exist yet. */
@@ -24,11 +34,11 @@ const DEFAULT_GOAL_CARDS: GoalCard[] = RETIREMENT_GOALS.slice(0, 5).map((g) => (
   source: "preset" as const,
 }));
 
-type SectionKey = "about" | "income" | "spending" | "goals";
+type TabKey = "about" | "income" | "spending" | "goals";
 
-const SECTIONS: { id: SectionKey; label: string }[] = [
-  { id: "about", label: "About You" },
-  { id: "income", label: "Income" },
+const TABS: { id: TabKey; label: string }[] = [
+  { id: "about", label: "About you" },
+  { id: "income", label: "Assets" },
   { id: "spending", label: "Spending" },
   { id: "goals", label: "Goals" },
 ];
@@ -43,23 +53,28 @@ interface FieldRow {
 }
 
 export function DetailsMenuScreen() {
-  const { answers, goTo, setAnswers } = useFlow();
-  const [openSection, setOpenSection] = useState<SectionKey | null>(null);
+  const { answers, setAnswers } = useFlow();
+  const [tab, setTab] = useState<TabKey>("about");
 
-  // Show preset goals by default so the ranking is never empty; any edit commits
-  // the working set to state. The chat flow can refine these later.
+  // Show preset goals by default so the summary is never empty; the full
+  // swipe → sort → rank process below commits a fresh ranking.
   const goalCards = answers.goalCards.length
     ? answers.goalCards
     : DEFAULT_GOAL_CARDS;
-  const setCards = (next: GoalCard[]) => setAnswers({ goalCards: next });
-  const renameCard = (id: string, label: string) =>
-    setCards(goalCards.map((c) => (c.id === id ? { ...c, label } : c)));
-  const removeCard = (id: string) =>
-    setCards(goalCards.filter((c) => c.id !== id));
+  const [goalsUpdating, setGoalsUpdating] = useState(false);
+  const handleGoalsDone = (result: PriorityRankResult) => {
+    setAnswers({
+      goalRanking: result.ranking,
+      goalCards: priorityCardsFromRanking(result.ranking),
+      goalVerdicts: result.decisions,
+    });
+    setGoalsUpdating(false);
+  };
   const [editing, setEditing] = useState<{
     section: SectionId;
     question: QuestionDef;
   } | null>(null);
+  const [editingAbout, setEditingAbout] = useState<AboutField | null>(null);
 
   const questionRows = (
     section: SectionId,
@@ -78,112 +93,135 @@ export function DetailsMenuScreen() {
       };
     });
 
-  const aboutRows: FieldRow[] = [
-    { key: "name", label: "Name", value: "Gloria", answered: true, required: true },
-    { key: "age", label: "Age", value: "62", answered: true, required: true },
-    { key: "retiring", label: "Retiring", value: "2031", answered: true, required: false },
-  ];
-
-  const goalRows: FieldRow[] = answers.goalCards.length
-    ? answers.goalCards.map((c, i) => ({
-        key: c.id,
-        label: `Priority ${i + 1}`,
-        value: c.label,
-        answered: true,
-        required: false,
-      }))
-    : [{ key: "none", label: "Goals", value: "Empty", answered: false, required: false }];
-
-  const rowsFor = (section: SectionKey): FieldRow[] => {
-    if (section === "about") return aboutRows;
-    if (section === "income") return questionRows("income", INCOME_QUESTIONS);
-    if (section === "spending")
-      return questionRows("spending", SPENDING_QUESTIONS);
-    return goalRows;
-  };
-
-  const activeLabel = SECTIONS.find((s) => s.id === openSection)?.label ?? "";
+  const activeLabel = TABS.find((t) => t.id === tab)?.label ?? "";
 
   return (
-    <AppShell fill hideSidebar>
-      {openSection === null ? (
-        <div className="flex min-h-0 w-full flex-1 flex-col">
-          <BackButton
-            onClick={() => goTo("outlook")}
-            label="Your outlook"
-            size={36}
-          />
-          <div className="mx-auto mt-6 flex w-full max-w-[640px] flex-col">
-          <div className="flex flex-col gap-4 rounded-field bg-ghost-white p-5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-lg font-medium text-deep-black">
-              Your outlook will update once we have initial mandatory data.
-            </p>
-            <Button
-              variant="blue"
-              size="md"
-              className="shrink-0"
-              onClick={() => goTo("chat")}
-            >
-              Add extra details
-            </Button>
-          </div>
-
-          <h1 className="mt-8 text-3xl font-semibold tracking-[-0.01em] text-deep-black">
-            Your details
-          </h1>
-
-          <div className="mt-5 flex flex-col gap-3">
-            {SECTIONS.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setOpenSection(s.id)}
-                className="flex h-14 items-center justify-between rounded-field bg-divider px-5 text-left transition-colors hover:bg-divider/80"
-              >
-                <span className="text-lg font-semibold text-deep-black">
-                  {s.label}
-                </span>
-                <ChevronRight
-                  className="size-5 text-deep-black"
-                  strokeWidth={2}
-                />
-              </button>
-            ))}
-          </div>
+    <AppShell fill hideSidebar card={false} footer={<BasicDetailsBar />}>
+      <div className="flex min-h-0 w-full flex-1 flex-col">
+        {/* Section tabs — segmented toggle */}
+        <div className="flex justify-center">
+          <div
+            role="tablist"
+            className="inline-flex items-center gap-1 rounded-full border border-stroke-subtle bg-ghost-white p-1"
+          >
+            {TABS.map((t) => {
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  onClick={() => setTab(t.id)}
+                  aria-selected={active}
+                  className={cn(
+                    "h-9 rounded-full px-5 text-sm font-semibold tracking-[0.16px] transition-colors",
+                    active
+                      ? "bg-deep-black text-white shadow-[0_1px_2px_rgba(16,24,32,0.18)]"
+                      : "text-gray-1 hover:text-deep-black",
+                  )}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
         </div>
-      ) : (
-        <div className="flex min-h-0 w-full flex-1 flex-col">
-          <BackButton
-            onClick={() => setOpenSection(null)}
-            label="All details"
-            size={36}
-          />
 
-          <div className="scrollbar-slim mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
-            <h2 className="text-center text-2xl font-semibold tracking-[-0.01em] text-deep-black">
+        {/* Section content — the goals ranking fills the available height so it
+            fits the screen without scrolling; other tabs scroll as needed. */}
+        {tab === "goals" && goalsUpdating ? (
+          <div className="mx-auto mt-6 flex min-h-0 w-full max-w-[560px] flex-1 flex-col rounded-field bg-ghost-white p-5 sm:p-6">
+            <PriorityRankFlow
+              fit
+              onDone={handleGoalsDone}
+              onExit={() => setGoalsUpdating(false)}
+            />
+          </div>
+        ) : (
+        <div className="scrollbar-slim mx-auto mt-6 flex min-h-0 w-full max-w-[560px] flex-1 flex-col overflow-y-auto">
+          <div className="w-full rounded-field bg-ghost-white p-4 sm:p-5">
+            <h2 className="text-xl font-semibold tracking-[-0.01em] text-deep-black">
               {activeLabel}
             </h2>
 
-            {openSection === "goals" ? (
-              <div className="mx-auto mt-6 flex w-full max-w-[520px] flex-col gap-4">
-                <p className="text-center text-sm leading-snug text-gray-2">
-                  Drag to re-rank your priorities. We weight your outlook from
-                  the top down.
+            {tab === "about" ? (
+              <div className="mt-4 flex flex-col gap-2">
+                {ABOUT_FIELDS.map((f) => {
+                  const value = aboutValue(f, answers.about);
+                  const answered = Boolean(value);
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setEditingAbout(f)}
+                      className="flex items-center justify-between gap-4 rounded-3xl border border-stroke-subtle bg-white px-5 py-3 text-left transition-colors hover:border-deep-black/30"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-2">
+                          {f.label}
+                        </span>
+                        {f.required ? (
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-mandarin">
+                            Required
+                          </span>
+                        ) : null}
+                      </div>
+                      <span
+                        className={
+                          answered
+                            ? "text-base font-semibold text-deep-black"
+                            : "text-base text-gray-2"
+                        }
+                      >
+                        {answered ? value : (f.placeholder ?? "Empty")}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : tab === "goals" ? (
+              <div className="mt-5 flex flex-col gap-3">
+                <p className="text-sm leading-snug text-gray-2">
+                  Your priorities, ranked most to least important. We weight your
+                  outlook from the top down.
                 </p>
-                <CardSort
-                  cards={goalCards}
-                  onReorder={setCards}
-                  onRename={renameCard}
-                  onRemove={removeCard}
-                />
+                <ol className="flex flex-col gap-2">
+                  {goalCards.slice(0, 5).map((c, i) => (
+                    <li
+                      key={c.id}
+                      className="flex items-center gap-3 rounded-field border border-stroke-subtle bg-white px-4 py-3"
+                    >
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-violet/10 text-xs font-semibold text-violet">
+                        {i + 1}
+                      </span>
+                      <span className="text-base font-medium text-deep-black">
+                        {c.label}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+                <div className="flex justify-start pt-1">
+                  <Button
+                    variant="blue"
+                    size="md"
+                    onClick={() => setGoalsUpdating(true)}
+                  >
+                    Update priorities
+                  </Button>
+                </div>
               </div>
             ) : (
-              <div className="mx-auto mt-6 flex w-full max-w-[520px] flex-col gap-3">
-              {rowsFor(openSection).map((row) => {
-                const editable = Boolean(row.edit);
-                const content = (
-                  <>
+              <div className="mt-4 flex flex-col gap-2">
+                {questionRows(
+                  tab,
+                  tab === "income" ? INCOME_QUESTIONS : SPENDING_QUESTIONS,
+                ).map((row) => (
+                  <button
+                    key={row.key}
+                    type="button"
+                    onClick={() => setEditing(row.edit!)}
+                    className="flex items-center justify-between gap-4 rounded-3xl border border-stroke-subtle bg-white px-5 py-3 text-left transition-colors hover:border-deep-black/30"
+                  >
                     <div className="flex flex-col">
                       <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-gray-2">
                         {row.label}
@@ -203,38 +241,27 @@ export function DetailsMenuScreen() {
                     >
                       {row.value}
                     </span>
-                  </>
-                );
-
-                return editable ? (
-                  <button
-                    key={row.key}
-                    type="button"
-                    onClick={() => setEditing(row.edit!)}
-                    className="flex items-center justify-between gap-4 rounded-field border border-stroke-subtle bg-white px-4 py-3 text-left transition-colors hover:border-deep-black/30"
-                  >
-                    {content}
                   </button>
-                ) : (
-                  <div
-                    key={row.key}
-                    className="flex items-center justify-between gap-4 rounded-field border border-stroke-subtle bg-white px-4 py-3"
-                  >
-                    {content}
-                  </div>
-                );
-              })}
+                ))}
               </div>
             )}
           </div>
         </div>
-      )}
+        )}
+      </div>
 
       {editing ? (
         <EditQuestionModal
           section={editing.section}
           question={editing.question}
           onClose={() => setEditing(null)}
+        />
+      ) : null}
+
+      {editingAbout ? (
+        <EditAboutFieldModal
+          field={editingAbout}
+          onClose={() => setEditingAbout(null)}
         />
       ) : null}
     </AppShell>

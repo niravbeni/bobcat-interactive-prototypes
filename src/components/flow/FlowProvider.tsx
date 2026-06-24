@@ -17,6 +17,7 @@ import {
   type SectionId,
   type SpendingDetail,
   type StepId,
+  type V2ChatState,
 } from "@/lib/types";
 
 interface FlowContextValue {
@@ -40,6 +41,8 @@ interface FlowContextValue {
   ) => void;
   setDetail: (patch: Partial<SpendingDetail>) => void;
   appendMessage: (msg: ChatMessage) => void;
+  /** Patch the persisted V2 chat progress (safe inside async callbacks). */
+  setV2Chat: (patch: Partial<V2ChatState>) => void;
   goNext: () => void;
   goBack: () => void;
   goTo: (step: StepId) => void;
@@ -89,6 +92,19 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     setSectionIdxState({ income: 0, spending: 0 });
   }
 
+  // Remember which of the two "Details" sub-pages (form vs chat) was last
+  // viewed, so the Details nav button can return the user to where they were.
+  // Done during render (like the variant reset above) and guarded so it can't
+  // loop.
+  if (
+    (step === "details" || step === "chat") &&
+    answers.lastDetailsView !== step
+  ) {
+    setAnswersState((prev) =>
+      prev.lastDetailsView === step ? prev : { ...prev, lastDetailsView: step },
+    );
+  }
+
   const setAnswers = useCallback((patch: Partial<FlowAnswers>) => {
     setAnswersState((prev) => ({ ...prev, ...patch }));
   }, []);
@@ -126,6 +142,13 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     setAnswersState((prev) => ({
       ...prev,
       goalsMessages: [...prev.goalsMessages, msg],
+    }));
+  }, []);
+
+  const setV2Chat = useCallback((patch: Partial<V2ChatState>) => {
+    setAnswersState((prev) => ({
+      ...prev,
+      v2Chat: { ...prev.v2Chat, ...patch },
     }));
   }, []);
 
@@ -173,6 +196,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setQuestion,
       setDetail,
       appendMessage,
+      setV2Chat,
       goNext,
       goBack,
       goTo,
@@ -190,6 +214,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setQuestion,
       setDetail,
       appendMessage,
+      setV2Chat,
       goNext,
       goBack,
       goTo,

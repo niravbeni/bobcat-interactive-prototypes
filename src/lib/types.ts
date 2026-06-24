@@ -29,6 +29,35 @@ export interface ChatMessage {
 /** Conversation phase for the Time and Goals chat. */
 export type GoalsPhase = "asking" | "confirm" | "extra" | "done";
 
+/** Interaction mode of the V2 linear chat at a given moment. */
+export type V2ChatMode =
+  | "options"
+  | "money"
+  | "checkpoint"
+  | "priorities"
+  | "done";
+
+/**
+ * Persisted progress of the V2 linear chat so the conversation survives
+ * navigating between the chat and the details page (and only resets when the
+ * user returns to the flow picker). The transcript itself lives in
+ * `goalsMessages`; this tracks where in the script the user is.
+ */
+export interface V2ChatState {
+  /** Whether the intro + first question have been seeded into the transcript. */
+  seeded: boolean;
+  /** Current question index into the V2 chat's TURNS list. */
+  qi: number;
+  /** Which inline interaction is currently shown. */
+  mode: V2ChatMode;
+  /** When in "money" mode, the id of the option that revealed the amount. */
+  pendingOptionId: string | null;
+  /** Draft amount while in "money" mode. */
+  moneyValue: string;
+  /** Question index to resume at after the mandatory-set checkpoint. */
+  resumeIdx: number | null;
+}
+
 /** A retirement goal used by the card-sort interactions. */
 export interface GoalCard {
   id: string;
@@ -38,6 +67,8 @@ export interface GoalCard {
 }
 
 export interface FlowAnswers {
+  /** Personal "About you" free-text details, keyed by field id. */
+  about: AnswerMap;
   /** Answers to the Future Income question wizard, keyed by question id. */
   income: AnswerMap;
   /** Answers to the Retirement Spending question wizard, keyed by question id. */
@@ -46,6 +77,8 @@ export interface FlowAnswers {
   detail: SpendingDetail;
   /** Goals chat transcript + derived state. */
   goalsMessages: ChatMessage[];
+  /** V2 linear chat progress, kept so the conversation persists across nav. */
+  v2Chat: V2ChatState;
   goalsStage: GoalsPhase;
   goalsText: string;
   goalsPriorities: string[];
@@ -63,6 +96,12 @@ export interface FlowAnswers {
   planPreviewSeen: boolean;
   /** V2 chat: which top-nav tab is currently active. */
   v2ActiveTab: "details" | "plan" | "marketplace";
+  /**
+   * V2: the last-viewed sub-page within the "Details" tab — either the form
+   * (`details`) or the conversational (`chat`) view — so the Details nav button
+   * returns to wherever the user last was.
+   */
+  lastDetailsView: "details" | "chat";
   /** V2 outlook dashboard: which scenario the Plan Conditions slider is set to. */
   planCondition: "worst" | "typical" | "best";
   /**
@@ -74,6 +113,7 @@ export interface FlowAnswers {
 }
 
 export const initialAnswers: FlowAnswers = {
+  about: {},
   income: {},
   spending: {},
   detail: {
@@ -86,6 +126,14 @@ export const initialAnswers: FlowAnswers = {
     hobbies: "",
   },
   goalsMessages: [],
+  v2Chat: {
+    seeded: false,
+    qi: 0,
+    mode: "options",
+    pendingOptionId: null,
+    moneyValue: "",
+    resumeIdx: null,
+  },
   goalsStage: "asking",
   goalsText: "",
   goalsPriorities: [],
@@ -97,6 +145,7 @@ export const initialAnswers: FlowAnswers = {
   planRefreshed: false,
   planPreviewSeen: false,
   v2ActiveTab: "details",
+  lastDetailsView: "details",
   planCondition: "typical",
   planConditionT: 50,
 };

@@ -15,7 +15,7 @@ export function Bubble({
   return (
     <div
       className={cn(
-        "max-w-[80%] rounded-2xl px-5 py-3 text-lg leading-[1.4]",
+        "max-w-[80%] whitespace-pre-line rounded-2xl px-5 py-3 text-lg leading-[1.4]",
         isBot
           ? "self-start rounded-tl-sm border border-stroke-subtle bg-white text-deep-black"
           : "self-end rounded-tr-sm bg-violet text-white",

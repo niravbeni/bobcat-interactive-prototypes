@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { AppShell } from "@/components/chrome/AppShell";
 import { DetailsSidebar } from "@/components/chrome/DetailsSidebar";
+import { BasicDetailsBar } from "@/components/v2/BasicDetailsBar";
 import { Button } from "@/components/ui/Button";
 import { SnapSlider } from "@/components/ui/SnapSlider";
 import { FullscreenPlaceholder } from "@/components/v2/FullscreenPlaceholder";
@@ -73,14 +74,14 @@ function OutlookCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[300px] flex-col rounded-field bg-ghost-white p-5 sm:min-h-[320px] sm:p-6">
+    <div className="flex min-h-0 flex-1 flex-col rounded-field bg-ghost-white p-5 sm:p-6">
       <p className="text-center text-3xl font-semibold tracking-[-0.01em] text-deep-black 3xl:text-4xl">
         {value}
       </p>
       <p className="mx-auto mt-2 max-w-[200px] text-center text-sm leading-snug text-gray-text">
         {caption}
       </p>
-      <div className="mt-6 flex flex-1 flex-col justify-end">{children}</div>
+      <div className="mt-4 flex min-h-0 flex-1 flex-col justify-end">{children}</div>
     </div>
   );
 }
@@ -120,8 +121,8 @@ function IncomeVisual({ conditionT }: { conditionT: number }) {
   const factor = 0.65 + (Math.min(100, Math.max(0, conditionT)) / 100) * 0.35;
   const bars = barsAt(t).map((h) => Math.min(1, h * factor));
   return (
-    <div className="flex h-full flex-col gap-5">
-      <div className="relative min-h-[120px] flex-1">
+    <div className="flex h-full min-h-0 flex-col gap-4">
+      <div className="relative min-h-[72px] flex-1">
         <div className="absolute inset-x-0 top-1/2 h-px bg-deep-black" />
         <div className="flex h-full items-center justify-center gap-4 sm:gap-5">
           {bars.map((h, i) => (
@@ -154,7 +155,7 @@ function ConeVisual({ opening }: { opening: number }) {
   const outer = Math.max(6, Math.round(opening * 46));
   const inner = Math.max(3, Math.round(outer * 0.5));
   return (
-    <div className="relative h-full min-h-[140px]">
+    <div className="relative h-full min-h-[80px]">
       <div className="absolute inset-x-0 top-1/2 h-px bg-deep-black" />
       <svg
         viewBox="0 0 100 100"
@@ -220,7 +221,7 @@ function FeeVisual({
   altBar: number;
 }) {
   return (
-    <div className="flex h-full min-h-[140px] items-stretch justify-center gap-8 sm:gap-10">
+    <div className="flex h-full min-h-[80px] items-stretch justify-center gap-8 sm:gap-10">
       <FeeBar label="Current plan" value={currentFee} frac={1} solid />
       <FeeBar label="Alternative plan" value={altFee} frac={altBar} />
     </div>
@@ -228,12 +229,17 @@ function FeeVisual({
 }
 
 export function OutlookDashboardScreen() {
-  const { answers, goTo } = useFlow();
+  const { answers } = useFlow();
   const [advisorOpen, setAdvisorOpen] = useState(false);
   const preset = planAt(answers.planConditionT);
 
   return (
-    <AppShell fill card={false} customSidebar={<DetailsSidebar variant="outlook" />}>
+    <AppShell
+      fill
+      card={false}
+      customSidebar={<DetailsSidebar variant="outlook" />}
+      footer={<BasicDetailsBar />}
+    >
       <div className="scrollbar-slim flex min-h-0 w-full flex-1 flex-col gap-5 overflow-y-auto rounded-field bg-white p-5 3xl:p-7">
         {/* Top section — heading + actions in one card */}
         <div className="flex flex-col gap-5 rounded-field bg-ghost-white p-5 sm:p-6 xl:p-8">
@@ -244,34 +250,33 @@ export function OutlookDashboardScreen() {
               alt=""
               className="size-24 shrink-0 object-contain sm:size-36 3xl:size-44"
             />
-            <h1 className="text-xl font-semibold leading-[1.25] tracking-[-0.01em] text-deep-black sm:text-2xl 3xl:text-3xl">
-              A first look... Your current outlook.
-              <br />
-              More confidence, less lost to fees.
-            </h1>
+            <div className="flex flex-col gap-2">
+              <h1 className="text-xl font-semibold leading-[1.25] tracking-[-0.01em] text-deep-black sm:text-2xl 3xl:text-3xl">
+                A first look... Your current outlook.
+                <br />
+                More confidence, less lost to fees.
+              </h1>
+              <p className="max-w-[420px] text-sm leading-snug text-gray-text sm:text-base">
+                Based on the details you&rsquo;ve shared so far. Keep adding
+                information to sharpen these numbers and see how lower fees could
+                grow your retirement.
+              </p>
+            </div>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             <Button
               variant="outline"
               size="md"
-              className="w-full sm:w-auto"
+              className="ai-glow w-full !border-violet/40 !text-violet hover:!bg-violet/5 sm:w-auto"
               onClick={() => setAdvisorOpen(true)}
             >
               Book a chat to advisor
-            </Button>
-            <Button
-              variant="blue"
-              size="md"
-              className="w-full sm:w-auto"
-              onClick={() => goTo("details")}
-            >
-              Continue adding details
             </Button>
           </div>
         </div>
 
         {/* Metrics — three separate tall cards in a row */}
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 md:grid-cols-3">
+        <div className="grid min-h-0 flex-1 auto-rows-fr grid-cols-1 gap-5 md:grid-cols-3">
           <OutlookCard
             value={preset.income}
             caption="income per month, more security over time"

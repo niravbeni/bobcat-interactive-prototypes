@@ -9,15 +9,6 @@ export function CompleteScreen() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-deep-black px-6 text-center text-white">
-      <button
-        type="button"
-        onClick={goBack}
-        className="absolute left-8 top-8 inline-flex items-center gap-2 text-sm text-white/50 transition-colors hover:text-white"
-      >
-        <ArrowLeft className="size-5" strokeWidth={2} />
-        Back
-      </button>
-
       <p className="text-xs font-medium uppercase tracking-[0.4em] text-white/40">
         Placeholder
       </p>
@@ -27,9 +18,20 @@ export function CompleteScreen() {
         against Bobcat&rsquo;s lower-fee recommendation.
       </p>
 
-      <Button variant="blue" size="lg" className="mt-10" onClick={restart}>
-        Start over
-      </Button>
+      <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
+        <Button
+          variant="outline"
+          size="lg"
+          className="gap-2"
+          onClick={goBack}
+        >
+          <ArrowLeft className="size-5" strokeWidth={2} />
+          Go back
+        </Button>
+        <Button variant="blue" size="lg" onClick={restart}>
+          Start over
+        </Button>
+      </div>
     </div>
   );
 }

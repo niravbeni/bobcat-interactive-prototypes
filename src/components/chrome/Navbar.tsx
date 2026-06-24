@@ -10,9 +10,9 @@ import type { StepId } from "@/lib/types";
 
 type V2TabId = "details" | "plan" | "marketplace";
 const V2_TABS: { id: V2TabId; label: string; step: StepId }[] = [
-  { id: "details", label: "Your Details", step: "details" },
-  { id: "plan", label: "Your Outlook", step: "outlook" },
-  { id: "marketplace", label: "Marketplace", step: "marketplace" },
+  { id: "details", label: "Details", step: "details" },
+  { id: "plan", label: "Outlook", step: "outlook" },
+  { id: "marketplace", label: "Market", step: "marketplace" },
 ];
 
 export function Navbar() {
@@ -60,11 +60,11 @@ export function Navbar() {
   };
 
   return (
-    <header className="relative flex h-18 w-full items-center bg-ghost-white px-9 3xl:h-20 3xl:px-14">
+    <header className="relative flex h-18 w-full items-center gap-3 bg-ghost-white px-4 sm:px-6 xl:px-9 3xl:h-20 3xl:gap-4 3xl:px-14">
       <Link
         href="/"
         aria-label="Back to dashboard"
-        className="inline-flex items-center text-deep-black transition-opacity hover:opacity-60"
+        className="inline-flex shrink-0 items-center text-deep-black transition-opacity hover:opacity-60"
       >
         <svg
           width="90"
@@ -82,63 +82,77 @@ export function Navbar() {
       </Link>
 
       {isV2 ? (
-        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2">
-          {V2_TABS.map((tab) => {
-            const active = activeTab === tab.id;
-            const showDot =
-              tab.id === "plan" &&
-              answers.planRefreshed &&
-              !answers.planPreviewSeen;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  if (tab.id === "plan") setAnswers({ planPreviewSeen: true });
-                  goTo(tab.step);
-                }}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "relative flex h-9 items-center rounded-full px-4 text-sm font-semibold tracking-[0.16px] transition-colors",
-                  active
-                    ? "bg-stratosphere text-white"
-                    : "border border-stroke-subtle bg-white text-deep-black hover:bg-ghost-white",
-                )}
-              >
-                {tab.label}
-                {showDot ? (
-                  <span
-                    aria-label="Plan ready"
-                    className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-success ring-2 ring-ghost-white"
-                  />
-                ) : null}
-              </button>
-            );
-          })}
+        <div className="pointer-events-none absolute left-1/2 top-1/2 flex max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 justify-center">
+          <div
+            role="tablist"
+            className="pointer-events-auto inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-stroke-subtle bg-white p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {V2_TABS.map((tab) => {
+              const active = activeTab === tab.id;
+              const showDot =
+                tab.id === "plan" &&
+                answers.planRefreshed &&
+                !answers.planPreviewSeen;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  onClick={() => {
+                    if (tab.id === "plan") setAnswers({ planPreviewSeen: true });
+                    // The Details tab covers two sub-pages (form + chat); return
+                    // the user to whichever they last viewed.
+                    if (tab.id === "details") {
+                      goTo(answers.lastDetailsView);
+                      return;
+                    }
+                    goTo(tab.step);
+                  }}
+                  aria-selected={active}
+                  className={cn(
+                    "relative flex h-9 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 text-sm font-semibold tracking-[0.16px] transition-colors sm:px-5",
+                    active
+                      ? "bg-deep-black text-white shadow-[0_1px_2px_rgba(16,24,32,0.18)]"
+                      : "text-deep-black hover:bg-ghost-white",
+                  )}
+                >
+                  {tab.label}
+                  {showDot ? (
+                    <span
+                      aria-label="Plan ready"
+                      className="absolute right-1 top-1 size-2.5 rounded-full bg-success ring-2 ring-white"
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
         </div>
       ) : (
-        <div className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-[7px] rounded-xl px-3 py-1">
-          <Info className="size-5 text-ink" strokeWidth={2} />
-          <p className="text-sm font-medium leading-[1.4] tracking-[-0.42px] text-ink">
+        <div className="pointer-events-none hidden min-w-0 flex-1 items-center justify-center gap-[7px] px-3 py-1 xl:flex">
+          <Info className="size-5 shrink-0 text-ink" strokeWidth={2} />
+          <p className="truncate text-sm font-medium leading-[1.4] tracking-[-0.42px] text-ink">
             Rough answers are fine, you&rsquo;ll refine and add more information later.{" "}
             <span className="underline">Learn more</span>
           </p>
         </div>
       )}
 
-      <div className="ml-auto flex items-center gap-2">
-        <button className="flex h-9 items-center gap-1 rounded-full bg-white pl-3 pr-2">
-          <SquareUser className="size-6 text-black" strokeWidth={2} />
-          <span className="text-base font-semibold tracking-[0.16px] text-black">Gloria</span>
-          <ChevronDown className="size-6 text-black" strokeWidth={2} />
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        <button className="flex h-9 shrink-0 items-center gap-1 rounded-full bg-white pl-2.5 pr-2 sm:pl-3">
+          <SquareUser className="size-6 shrink-0 text-black" strokeWidth={2} />
+          <span className="hidden text-base font-semibold tracking-[0.16px] text-black sm:inline">
+            Gloria
+          </span>
+          <ChevronDown className="size-6 shrink-0 text-black" strokeWidth={2} />
         </button>
 
-        <div className="relative" ref={ref}>
+        <div className="relative shrink-0" ref={ref}>
           <button
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-haspopup="dialog"
-            className="flex h-9 items-center justify-center rounded-full bg-deep-black px-4 transition-colors hover:bg-black"
+            className="flex h-9 items-center justify-center rounded-full bg-gray-1 px-3 transition-colors hover:brightness-110 sm:px-4"
           >
             <span className="text-base font-semibold tracking-[0.16px] text-white">Help</span>
           </button>
@@ -190,6 +204,7 @@ export function Navbar() {
           ) : null}
         </div>
       </div>
+
     </header>
   );
 }

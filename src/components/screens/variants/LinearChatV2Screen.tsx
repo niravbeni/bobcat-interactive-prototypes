@@ -54,32 +54,33 @@ export function LinearChatV2Screen() {
     setAnswers,
     setQuestion,
     appendMessage,
+    setV2Chat,
     goNext,
     goBack,
     goTo,
   } = useFlow();
   const messages = answers.goalsMessages;
+  // Conversation progress is persisted in the flow so it survives navigating
+  // between the chat and the details page; it only resets at the flow picker.
+  const { qi, mode, moneyValue, pendingOptionId, resumeIdx } = answers.v2Chat;
+  const setQi = (v: number) => setV2Chat({ qi: v });
+  const setMode = (v: Mode) => setV2Chat({ mode: v });
+  const setMoneyValue = (v: string) => setV2Chat({ moneyValue: v });
+  const setResumeIdx = (v: number | null) => setV2Chat({ resumeIdx: v });
   const [typing, setTyping] = useState(false);
-  const [qi, setQi] = useState(0);
-  const [mode, setMode] = useState<Mode>("options");
-  const [pendingOption, setPendingOption] = useState<QOption | null>(null);
-  const [moneyValue, setMoneyValue] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [askDraft, setAskDraft] = useState("");
-  const [resumeIdx, setResumeIdx] = useState<number | null>(null);
   const [planPreviewOpen, setPlanPreviewOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const seeded = useRef(false);
 
   const questionText = (q: QuestionDef) =>
     [q.lead, q.highlight].filter(Boolean).join(" ") +
     (q.subtitle ? ` (${q.subtitle.toLowerCase()})` : "");
 
   useEffect(() => {
-    if (seeded.current) return;
-    seeded.current = true;
+    if (answers.v2Chat.seeded) return;
     const intro: ChatMessage[] = [
       {
         role: "bot",
@@ -88,9 +89,8 @@ export function LinearChatV2Screen() {
       { role: "bot", text: questionText(TURNS[0].q) },
     ];
     setAnswers({ goalsMessages: intro });
-    setQi(0);
-    setMode("options");
-  }, [setAnswers]);
+    setV2Chat({ seeded: true, qi: 0, mode: "options" });
+  }, [answers.v2Chat.seeded, setAnswers, setV2Chat]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -231,7 +231,7 @@ export function LinearChatV2Screen() {
     appendMessage({ role: "user", text: opt.label });
 
     if (opt.reveal === "money") {
-      setPendingOption(opt);
+      setV2Chat({ pendingOptionId: opt.id });
       setMoneyValue(q.moneyDefault ?? "");
       setMode("money");
       botSay("Great, what amount should I use? (you can edit later)");
@@ -246,7 +246,7 @@ export function LinearChatV2Screen() {
     const { section, q } = TURNS[qi];
     setQuestion(section, q.id, { value: moneyValue });
     appendMessage({ role: "user", text: `$${moneyValue || "0"}` });
-    setPendingOption(null);
+    setV2Chat({ pendingOptionId: null });
     setMode("options");
     if (completesMandatorySet(q.id)) {
       triggerMilestone(qi + 1);
@@ -300,8 +300,20 @@ export function LinearChatV2Screen() {
       goalCards,
       goalVerdicts: result.decisions,
     });
-    const top = goalCards[0]?.label;
-    appendMessage({ role: "user", text: "Here's what matters most." });
+
+    // List the priorities the user actually kept (essential / nice to have),
+    // most important first, as their own chat message so the ranking is
+    // captured in the transcript.
+    const rankedLabels = result.ranking
+      .filter((id) => result.decisions[id] !== "skip")
+      .map((id) => byId.get(id)?.title)
+      .filter((l): l is string => Boolean(l));
+    const top = rankedLabels[0] ?? goalCards[0]?.label;
+    const listText = rankedLabels.length
+      ? "Here's how I'd rank what matters most:\n" +
+        rankedLabels.map((label, i) => `${i + 1}. ${label}`).join("\n")
+      : "Here's what matters most.";
+    appendMessage({ role: "user", text: listText });
     setMode("done");
     botSay(
       top
@@ -311,6 +323,8 @@ export function LinearChatV2Screen() {
   };
 
   const current = TURNS[qi];
+  const pendingOption =
+    current?.q.options.find((o) => o.id === pendingOptionId) ?? null;
 
   return (
     <AppShell
@@ -470,21 +484,27 @@ export function LinearChatV2Screen() {
               ) : null}
 
               {mode === "priorities" ? (
-                <PriorityRankFlow
-                  onDone={handlePrioritiesDone}
-                  onEnterSort={() =>
-                    appendMessage({
-                      role: "bot",
-                      text: "Drag any card to a different group to fine-tune your choices.",
-                    })
-                  }
-                  onEnterRank={() =>
-                    appendMessage({
-                      role: "bot",
-                      text: "Drag to order what matters most. Most important on the right.",
-                    })
-                  }
-                />
+                <div className="relative">
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-gradient-to-t from-card to-transparent"
+                  />
+                  <PriorityRankFlow
+                    onDone={handlePrioritiesDone}
+                    onEnterSort={() =>
+                      appendMessage({
+                        role: "bot",
+                        text: "Drag any card to a different group to fine-tune your choices.",
+                      })
+                    }
+                    onEnterRank={() =>
+                      appendMessage({
+                        role: "bot",
+                        text: "Drag to order what matters most. Most important on the right.",
+                      })
+                    }
+                  />
+                </div>
               ) : null}
 
               {mode === "done" ? (

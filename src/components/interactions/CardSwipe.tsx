@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useMotionValue, useTransform, animate } from "motion/react";
 import { Check, CheckCheck, X, RotateCcw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/cn";
 import type { Priority } from "@/lib/priorities";
 
 export type SwipeVerdict = "essential" | "nice" | "skip";
@@ -31,6 +32,7 @@ export function CardSwipe({
   onComplete,
   onStatusChange,
   showResults = true,
+  fit = false,
 }: {
   items: Priority[];
   onComplete: (result: SwipeResult) => void;
@@ -41,6 +43,11 @@ export function CardSwipe({
    * automatically once the deck is fully sorted. Defaults to true.
    */
   showResults?: boolean;
+  /**
+   * Make the deck fill available height (flex) instead of a fixed height, so
+   * the swipe step fits a constrained screen without scrolling.
+   */
+  fit?: boolean;
 }) {
   const [index, setIndex] = useState(0);
   const [decisions, setDecisions] = useState<Record<string, SwipeVerdict>>({});
@@ -133,10 +140,22 @@ export function CardSwipe({
   }
 
   return (
-    <div className="flex w-full flex-col items-center">
+    <div
+      className={cn(
+        "flex w-full flex-col items-center",
+        fit && "h-full min-h-0",
+      )}
+    >
       <ProgressBar current={index} total={items.length} />
 
-      <div className="relative mt-2 h-[320px] w-full max-w-[360px] sm:h-[350px]">
+      <div
+        className={cn(
+          "relative mt-2 w-full",
+          fit
+            ? "mb-7 max-w-[260px] min-h-[180px] max-h-[380px] flex-1"
+            : "h-[320px] w-full max-w-[360px] sm:h-[350px]",
+        )}
+      >
         {[2, 1].map((depth) => {
           const card = items[index + depth];
           if (!card) return null;
@@ -150,7 +169,7 @@ export function CardSwipe({
               }}
             >
               <div className="h-full" style={{ opacity: depth === 1 ? 0.85 : 0.45 }}>
-                <CardFace priority={card} />
+                <CardFace priority={card} compact={fit} />
               </div>
             </div>
           );
@@ -161,15 +180,21 @@ export function CardSwipe({
           priority={current}
           trigger={trigger}
           onCommitted={onCommitted}
+          compact={fit}
         />
       </div>
 
-      <div className="mt-7 flex items-center gap-3 sm:gap-4">
+      <div
+        className={cn(
+          "flex shrink-0 items-center gap-3 sm:gap-4",
+          fit ? "mt-4" : "mt-7",
+        )}
+      >
         <ActionButton verdict="skip" onClick={() => setTrigger("skip")} />
         <ActionButton verdict="essential" onClick={() => setTrigger("essential")} />
         <ActionButton verdict="nice" onClick={() => setTrigger("nice")} />
       </div>
-      <p className="mt-4 text-center text-[12.5px] text-gray-2">
+      <p className="mt-4 shrink-0 text-center text-[12.5px] text-gray-2">
         Swipe the card or use the buttons · ↑ essential · → nice to have · ← not
         for me
       </p>
@@ -181,10 +206,12 @@ function SwipeCard({
   priority,
   trigger,
   onCommitted,
+  compact,
 }: {
   priority: Priority;
   trigger: SwipeVerdict | null;
   onCommitted: (v: SwipeVerdict) => void;
+  compact?: boolean;
 }) {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -245,7 +272,7 @@ function SwipeCard({
       transition={{ type: "spring", stiffness: 440, damping: 34 }}
       className="absolute inset-0 cursor-grab touch-none select-none overflow-hidden rounded-[26px] border border-stroke-subtle bg-white shadow-[0_24px_48px_-16px_rgba(16,24,32,0.22)] active:cursor-grabbing"
     >
-      <CardFace priority={priority} />
+      <CardFace priority={priority} compact={compact} />
 
       <Stamp style={{ opacity: essentialOpacity }} verdict="essential" position="top" />
       <Stamp style={{ opacity: niceOpacity }} verdict="nice" position="left" />
@@ -254,31 +281,53 @@ function SwipeCard({
   );
 }
 
-function CardFace({ priority }: { priority: Priority }) {
+function CardFace({
+  priority,
+  compact,
+}: {
+  priority: Priority;
+  compact?: boolean;
+}) {
   const Icon = priority.icon;
   const isNeed = priority.category === "need";
   return (
-    <div className="flex h-full flex-col p-7">
-      <div className="flex items-center">
+    <div className={cn("flex h-full flex-col", compact ? "p-6" : "p-7")}>
+      <div className={cn("flex items-center", compact && "mt-auto")}>
         <span
-          className="grid size-12 place-items-center rounded-2xl"
+          className={cn(
+            "grid place-items-center",
+            compact ? "size-11 rounded-xl" : "size-12 rounded-2xl",
+          )}
           style={{
             background: isNeed ? "#f3e9fb" : "#fbe9f5",
             color: isNeed ? "#7f35b2" : "#c900ac",
           }}
         >
-          <Icon size={24} strokeWidth={2.1} />
+          <Icon size={compact ? 22 : 24} strokeWidth={2.1} />
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col justify-center">
+      <div
+        className={cn(
+          "flex flex-col",
+          compact ? "mb-auto mt-5 gap-2.5" : "flex-1 justify-center",
+        )}
+      >
         <h2
-          className="m-0 text-[26px] font-bold leading-[1.12] text-deep-black sm:text-[28px]"
+          className={cn(
+            "m-0 font-bold leading-[1.12] text-deep-black",
+            compact ? "text-[21px]" : "text-[26px] sm:text-[28px]",
+          )}
           style={{ letterSpacing: "-0.02em" }}
         >
           {priority.title}
         </h2>
-        <p className="mt-3 text-[15px] leading-[1.5] text-gray-1">
+        <p
+          className={cn(
+            "leading-[1.5] text-gray-1",
+            compact ? "text-[13.5px]" : "mt-3 text-[15px]",
+          )}
+        >
           {priority.question}
         </p>
       </div>

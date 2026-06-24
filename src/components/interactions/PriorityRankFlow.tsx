@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -22,7 +22,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, GripVertical } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import {
@@ -32,110 +32,240 @@ import {
   type SwipeVerdict,
 } from "@/components/interactions/CardSwipe";
 import { RETIREMENT_PRIORITIES, type Priority } from "@/lib/priorities";
+import type { GoalCard } from "@/lib/types";
 
 export interface PriorityRankResult {
   ranking: string[];
   decisions: Record<string, SwipeVerdict>;
 }
 
+/** Map a ranked id list to ordered preset goal cards (for the details menu). */
+export function priorityCardsFromRanking(ranking: string[]): GoalCard[] {
+  const byId = new Map(RETIREMENT_PRIORITIES.map((p) => [p.id, p]));
+  return ranking
+    .map((id) => byId.get(id))
+    .filter((p): p is Priority => Boolean(p))
+    .map((p) => ({ id: p.id, label: p.title, source: "preset" as const }));
+}
+
 type Phase = "swipe" | "sort" | "rank";
+const PHASES: Phase[] = ["swipe", "sort", "rank"];
+const PHASE_LABEL: Record<Phase, string> = {
+  swipe: "Swipe",
+  sort: "Sort",
+  rank: "Rank",
+};
 
 /** Buckets laid out left → right along the sort line. */
 const BUCKET_ORDER: SwipeVerdict[] = ["skip", "nice", "essential"];
 
+/**
+ * Build the rank list (essential then nice) from the sort decisions, preserving
+ * any existing order so navigating back and forth doesn't reshuffle the user's
+ * ranking.
+ */
+function keepersFrom(
+  decisions: Record<string, SwipeVerdict>,
+  prev: string[],
+): string[] {
+  const ordered = RETIREMENT_PRIORITIES.filter(
+    (p) => decisions[p.id] === "essential",
+  )
+    .concat(RETIREMENT_PRIORITIES.filter((p) => decisions[p.id] === "nice"))
+    .map((p) => p.id);
+  const kept = prev.filter((id) => ordered.includes(id));
+  const added = ordered.filter((id) => !kept.includes(id));
+  return [...kept, ...added];
+}
+
 export function PriorityRankFlow({
   onDone,
+  onExit,
   onEnterSort,
   onEnterRank,
+  fit = false,
 }: {
   onDone: (result: PriorityRankResult) => void;
-  /** Fired once when the swipe deck is finished and the sort phase begins. */
+  /** Back from the first (swipe) phase — e.g. cancel and return to a summary. */
+  onExit?: () => void;
+  /** Fired once when the sort phase is first reached. */
   onEnterSort?: () => void;
-  /** Fired once when the sort phase is finished and the rank phase begins. */
+  /** Fired once when the rank phase is first reached. */
   onEnterRank?: () => void;
+  /**
+   * Fill the available height instead of using the swipe deck's fixed height.
+   * Used where the flow must fit a screen without adding scroll (details menu).
+   */
+  fit?: boolean;
 }) {
   const [phase, setPhase] = useState<Phase>("swipe");
   const [decisions, setDecisions] = useState<Record<string, SwipeVerdict>>({});
   const [ranking, setRanking] = useState<string[]>([]);
+  const enteredSort = useRef(false);
+  const enteredRank = useRef(false);
 
   const byId = useMemo(
     () => new Map(RETIREMENT_PRIORITIES.map((p) => [p.id, p])),
     [],
   );
 
+  const swipeComplete = RETIREMENT_PRIORITIES.every((p) =>
+    Boolean(decisions[p.id]),
+  );
+
+  const enterSort = () => {
+    setPhase("sort");
+    if (!enteredSort.current) {
+      enteredSort.current = true;
+      onEnterSort?.();
+    }
+  };
+
+  const enterRank = () => {
+    setRanking((prev) => keepersFrom(decisions, prev));
+    setPhase("rank");
+    if (!enteredRank.current) {
+      enteredRank.current = true;
+      onEnterRank?.();
+    }
+  };
+
   const handleSwipeComplete = (result: SwipeResult) => {
     setDecisions(result.decisions);
-    setPhase("sort");
-    onEnterSort?.();
+    enterSort();
   };
 
-  const handleSortContinue = (next: Record<string, SwipeVerdict>) => {
-    setDecisions(next);
-    const keepers = RETIREMENT_PRIORITIES.filter(
-      (p) => next[p.id] === "essential",
-    )
-      .concat(RETIREMENT_PRIORITIES.filter((p) => next[p.id] === "nice"))
-      .map((p) => p.id);
-    setRanking(keepers);
-    setPhase("rank");
-    onEnterRank?.();
-  };
-
-  const handleSave = () => {
+  const commit = () => {
     const skipped = RETIREMENT_PRIORITIES.filter(
       (p) => decisions[p.id] === "skip" || !decisions[p.id],
     ).map((p) => p.id);
     onDone({ ranking: [...ranking, ...skipped], decisions });
   };
 
-  if (phase === "swipe") {
-    return (
-      <div className="w-full">
-        <CardSwipe
-          items={RETIREMENT_PRIORITIES}
-          showResults={false}
-          onComplete={handleSwipeComplete}
-        />
-      </div>
-    );
-  }
+  const canBack = phase !== "swipe" || Boolean(onExit);
+  const goBack = () => {
+    if (phase === "rank") setPhase("sort");
+    else if (phase === "sort") setPhase("swipe");
+    else onExit?.();
+  };
 
-  if (phase === "sort") {
-    return (
-      <SortPhase
-        byId={byId}
-        decisions={decisions}
-        onContinue={handleSortContinue}
-      />
-    );
-  }
+  const canForward =
+    phase === "swipe"
+      ? swipeComplete
+      : phase === "sort"
+        ? true
+        : ranking.length > 0;
+  const goForward = () => {
+    if (phase === "swipe") enterSort();
+    else if (phase === "sort") enterRank();
+    else commit();
+  };
+
+  const stepIndex = PHASES.indexOf(phase);
 
   return (
-    <RankPhase
-      byId={byId}
-      ranking={ranking}
-      onReorder={setRanking}
-      onSave={handleSave}
-    />
+    <div
+      className={cn(
+        "rounded-card border border-stroke-subtle bg-white p-4 shadow-[0_1px_2px_rgba(16,24,32,0.06)]",
+        // In fit mode the parent constrains height; otherwise pin a fixed height
+        // so the block is the same size across all three phases (swipe/sort/rank).
+        fit ? "flex h-full min-h-0 flex-col" : "flex h-[600px] flex-col",
+      )}
+    >
+      <div className="mb-3 flex shrink-0 items-center gap-1.5">
+        <NavButton kind="back" disabled={!canBack} onClick={goBack} />
+        <span className="ml-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-2">
+          Step {stepIndex + 1} of 3 · {PHASE_LABEL[phase]}
+        </span>
+      </div>
+
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col",
+          !fit && "justify-center",
+        )}
+      >
+        {phase === "swipe" ? (
+          <CardSwipe
+            items={RETIREMENT_PRIORITIES}
+            showResults={false}
+            onComplete={handleSwipeComplete}
+            fit={fit}
+          />
+        ) : phase === "sort" ? (
+          <SortPhase value={decisions} byId={byId} onChange={setDecisions} />
+        ) : (
+          <RankPhase byId={byId} ranking={ranking} onReorder={setRanking} />
+        )}
+      </div>
+
+      {phase !== "swipe" ? (
+        <div className="mt-4 flex shrink-0 justify-end">
+          <Button
+            variant="blue"
+            size="md"
+            onClick={goForward}
+            disabled={!canForward}
+            className="gap-1.5 disabled:opacity-40"
+          >
+            {phase === "rank" ? (
+              <>
+                Confirm ranking
+                <Check className="size-4" strokeWidth={2.4} />
+              </>
+            ) : (
+              <>
+                Continue
+                <ArrowRight className="size-4" strokeWidth={2.4} />
+              </>
+            )}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function NavButton({
+  kind,
+  disabled,
+  onClick,
+}: {
+  kind: "back" | "forward" | "commit";
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  const Icon = kind === "back" ? ArrowLeft : kind === "commit" ? Check : ArrowRight;
+  const label = kind === "back" ? "Back" : kind === "commit" ? "Save" : "Next";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={cn(
+        "grid size-8 place-items-center rounded-full border transition-colors",
+        kind === "commit" && !disabled
+          ? "border-stratosphere bg-stratosphere text-white hover:brightness-110"
+          : "border-stroke-subtle bg-white text-deep-black hover:bg-ghost-white",
+        disabled && "cursor-not-allowed opacity-40 hover:bg-white",
+      )}
+    >
+      <Icon className="size-4" strokeWidth={2.4} />
+    </button>
   );
 }
 
 function SortPhase({
+  value,
   byId,
-  decisions,
-  onContinue,
+  onChange,
 }: {
+  value: Record<string, SwipeVerdict>;
   byId: Map<string, Priority>;
-  decisions: Record<string, SwipeVerdict>;
-  onContinue: (next: Record<string, SwipeVerdict>) => void;
+  onChange: (next: Record<string, SwipeVerdict>) => void;
 }) {
-  const [working, setWorking] = useState<Record<string, SwipeVerdict>>(() => {
-    const seeded: Record<string, SwipeVerdict> = {};
-    RETIREMENT_PRIORITIES.forEach((p) => {
-      seeded[p.id] = decisions[p.id] ?? "skip";
-    });
-    return seeded;
-  });
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -150,10 +280,10 @@ function SortPhase({
       essential: [],
     };
     RETIREMENT_PRIORITIES.forEach((p) => {
-      grouped[working[p.id] ?? "skip"].push(p);
+      grouped[value[p.id] ?? "skip"].push(p);
     });
     return grouped;
-  }, [working]);
+  }, [value]);
 
   const handleDragEnd = (e: DragEndEvent) => {
     setActiveId(null);
@@ -161,54 +291,44 @@ function SortPhase({
     if (!over) return;
     const verdict = over.id as SwipeVerdict;
     if (!BUCKET_ORDER.includes(verdict)) return;
-    setWorking((w) =>
-      w[String(active.id)] === verdict
-        ? w
-        : { ...w, [String(active.id)]: verdict },
-    );
+    if (value[String(active.id)] === verdict) return;
+    onChange({ ...value, [String(active.id)]: verdict });
   };
 
   const activeCard = activeId ? byId.get(activeId) : null;
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={(e: DragStartEvent) => setActiveId(String(e.active.id))}
-        onDragEnd={handleDragEnd}
-        onDragCancel={() => setActiveId(null)}
-      >
-        <div className="relative grid grid-cols-3 gap-2">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-[16.66%] top-[5px] h-px bg-stroke-subtle"
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={(e: DragStartEvent) => setActiveId(String(e.active.id))}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveId(null)}
+    >
+      <div className="relative grid grid-cols-3 gap-2">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-[16.66%] top-[5px] h-px bg-stroke-subtle"
+        />
+        {BUCKET_ORDER.map((verdict) => (
+          <BucketColumn
+            key={verdict}
+            verdict={verdict}
+            cards={buckets[verdict]}
+            activeId={activeId}
           />
-          {BUCKET_ORDER.map((verdict) => (
-            <BucketColumn
-              key={verdict}
-              verdict={verdict}
-              cards={buckets[verdict]}
-              activeId={activeId}
-            />
-          ))}
-        </div>
-        <DragOverlay>
-          {activeCard ? (
-            <SortChipContent
-              priority={activeCard}
-              verdict={working[activeCard.id] ?? "skip"}
-              dragging
-            />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-      <div className="flex justify-start pt-1">
-        <Button variant="blue" size="md" onClick={() => onContinue(working)}>
-          Continue
-        </Button>
+        ))}
       </div>
-    </div>
+      <DragOverlay>
+        {activeCard ? (
+          <SortChipContent
+            priority={activeCard}
+            verdict={value[activeCard.id] ?? "skip"}
+            dragging
+          />
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
 
@@ -228,7 +348,7 @@ function BucketColumn({
     <div className="relative flex flex-col items-center gap-2">
       <div className="flex flex-col items-center gap-1">
         <span
-          className="size-2.5 rounded-full ring-4 ring-card"
+          className="size-2.5 rounded-full ring-4 ring-white"
           style={{ background: v.color }}
           aria-hidden
         />
@@ -321,12 +441,10 @@ function RankPhase({
   byId,
   ranking,
   onReorder,
-  onSave,
 }: {
   byId: Map<string, Priority>;
   ranking: string[];
   onReorder: (ids: string[]) => void;
-  onSave: () => void;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
@@ -349,6 +467,14 @@ function RankPhase({
   };
 
   const activeCard = activeId ? byId.get(activeId) : null;
+
+  if (ranking.length === 0) {
+    return (
+      <p className="py-6 text-center text-sm text-gray-2">
+        Mark a few cards as essential or nice to have, then rank them here.
+      </p>
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -391,16 +517,6 @@ function RankPhase({
           ) : null}
         </DragOverlay>
       </DndContext>
-      <div className="flex justify-start">
-        <Button
-          variant="blue"
-          size="md"
-          onClick={onSave}
-          disabled={ranking.length === 0}
-        >
-          Save ranking
-        </Button>
-      </div>
     </div>
   );
 }
