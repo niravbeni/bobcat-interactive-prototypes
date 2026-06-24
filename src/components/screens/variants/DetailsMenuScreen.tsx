@@ -107,7 +107,13 @@ export function DetailsMenuScreen() {
   return (
     <AppShell fill hideSidebar>
       {openSection === null ? (
-        <div className="mx-auto flex w-full max-w-[640px] flex-col">
+        <div className="flex min-h-0 w-full flex-1 flex-col">
+          <BackButton
+            onClick={() => goTo("outlook")}
+            label="Your outlook"
+            size={36}
+          />
+          <div className="mx-auto mt-6 flex w-full max-w-[640px] flex-col">
           <div className="flex flex-col gap-4 rounded-field bg-ghost-white p-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-lg font-medium text-deep-black">
               Your outlook will update once we have initial mandatory data.
@@ -143,6 +149,7 @@ export function DetailsMenuScreen() {
                 />
               </button>
             ))}
+          </div>
           </div>
         </div>
       ) : (
