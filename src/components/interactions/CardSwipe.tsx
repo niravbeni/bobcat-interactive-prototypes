@@ -291,8 +291,13 @@ function CardFace({
   const Icon = priority.icon;
   const isNeed = priority.category === "need";
   return (
-    <div className={cn("flex h-full flex-col", compact ? "p-6" : "p-7")}>
-      <div className={cn("flex items-center", compact && "mt-auto")}>
+    <div
+      className={cn(
+        "flex h-full flex-col",
+        compact ? "p-6" : "p-7",
+      )}
+    >
+      <div className="flex items-center">
         <span
           className={cn(
             "grid place-items-center",
@@ -310,7 +315,7 @@ function CardFace({
       <div
         className={cn(
           "flex flex-col",
-          compact ? "mb-auto mt-5 gap-2.5" : "flex-1 justify-center",
+          compact ? "mt-6 gap-3" : "flex-1 justify-center",
         )}
       >
         <h2

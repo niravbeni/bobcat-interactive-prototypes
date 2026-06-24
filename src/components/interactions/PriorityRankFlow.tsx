@@ -166,10 +166,12 @@ export function PriorityRankFlow({
   return (
     <div
       className={cn(
-        "rounded-card border border-stroke-subtle bg-white p-4 shadow-[0_1px_2px_rgba(16,24,32,0.06)]",
-        // In fit mode the parent constrains height; otherwise pin a fixed height
-        // so the block is the same size across all three phases (swipe/sort/rank).
-        fit ? "flex h-full min-h-0 flex-col" : "flex h-[600px] flex-col",
+        // In fit mode (details menu) the surrounding grey panel is the container,
+        // so the flow itself is transparent. In the chat (non-fit) it's a white
+        // card with a fixed height so it's the same size across all three phases.
+        fit
+          ? "flex h-full min-h-0 flex-col"
+          : "flex h-[600px] flex-col rounded-card border border-stroke-subtle bg-white p-4 shadow-[0_1px_2px_rgba(16,24,32,0.06)]",
       )}
     >
       <div className="mb-3 flex shrink-0 items-center gap-1.5">
