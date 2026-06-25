@@ -40,6 +40,8 @@ interface FlowContextValue {
     opts?: { bump?: boolean },
   ) => void;
   setDetail: (patch: Partial<SpendingDetail>) => void;
+  /** Store an "About you" field value (timestamped for newest-first display). */
+  setAbout: (id: string, value: string) => void;
   appendMessage: (msg: ChatMessage) => void;
   /** Patch the persisted V2 chat progress (safe inside async callbacks). */
   setV2Chat: (patch: Partial<V2ChatState>) => void;
@@ -138,6 +140,13 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     setAnswersState((prev) => ({ ...prev, detail: { ...prev.detail, ...patch } }));
   }, []);
 
+  const setAbout = useCallback((id: string, value: string) => {
+    setAnswersState((prev) => ({
+      ...prev,
+      about: { ...prev.about, [id]: { value, at: Date.now() } },
+    }));
+  }, []);
+
   const appendMessage = useCallback((msg: ChatMessage) => {
     setAnswersState((prev) => ({
       ...prev,
@@ -195,6 +204,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setAnswers,
       setQuestion,
       setDetail,
+      setAbout,
       appendMessage,
       setV2Chat,
       goNext,
@@ -213,6 +223,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       setAnswers,
       setQuestion,
       setDetail,
+      setAbout,
       appendMessage,
       setV2Chat,
       goNext,

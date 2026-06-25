@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { AppShell } from "@/components/chrome/AppShell";
 import { DetailsSidebar } from "@/components/chrome/DetailsSidebar";
+import { narrativeSidebarItems } from "@/components/narrative/sidebarItems";
 import { BasicDetailsBar } from "@/components/v2/BasicDetailsBar";
 import { Button } from "@/components/ui/Button";
 import { SnapSlider } from "@/components/ui/SnapSlider";
@@ -229,15 +230,22 @@ function FeeVisual({
 }
 
 export function OutlookDashboardScreen() {
-  const { answers } = useFlow();
+  const { answers, variant } = useFlow();
   const [advisorOpen, setAdvisorOpen] = useState(false);
   const preset = planAt(answers.planConditionT);
+
+  // In the narrative flow the live data lives in `answers.about`, so feed those
+  // same rows to the Outlook panel; the v2 flow keeps its question-derived rows.
+  const narrativeItems =
+    variant === "narrative" ? narrativeSidebarItems(answers.about) : null;
 
   return (
     <AppShell
       fill
       card={false}
-      customSidebar={<DetailsSidebar variant="outlook" />}
+      customSidebar={
+        <DetailsSidebar variant="outlook" {...(narrativeItems ?? {})} />
+      }
       footer={<BasicDetailsBar />}
     >
       <div className="scrollbar-slim flex min-h-0 w-full flex-1 flex-col gap-5 overflow-y-auto rounded-field bg-white p-5 3xl:p-7">

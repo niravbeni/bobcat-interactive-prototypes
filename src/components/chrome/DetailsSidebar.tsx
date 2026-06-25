@@ -11,9 +11,10 @@ import {
   SPENDING_QUESTIONS,
   type QuestionDef,
 } from "@/lib/questions";
+import type { NarrativeProgress } from "@/components/narrative/sidebarItems";
 import type { QAnswer, SectionId } from "@/lib/types";
 
-interface SectionItem {
+export interface SectionItem {
   key: string;
   label: string;
   value: string;
@@ -134,19 +135,27 @@ function Row({
   item,
   onEdit,
   onMoneyChange,
+  fullWidth = false,
 }: {
   item: SectionItem;
   onEdit?: () => void;
   onMoneyChange?: (section: SectionId, id: string, value: string) => void;
+  /** Span both grid columns (used for rows with a money slider). */
+  fullWidth?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-1.5 py-1.5">
-      <div className="flex items-start justify-between gap-3">
+    <div
+      className={cn(
+        "flex min-w-0 flex-col gap-1.5 py-1.5",
+        fullWidth && "col-span-2",
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col">
           <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-gray-2">
             {item.label}
           </span>
-          <span className="truncate text-sm font-medium text-deep-black">
+          <span className="break-words text-sm font-medium text-deep-black">
             {item.value}
           </span>
         </div>
@@ -174,6 +183,17 @@ function Row({
   );
 }
 
+/** Per-folder content/behavior, independent of position/open state. */
+interface FolderConfig {
+  label: string;
+  items: SectionItem[];
+  emptyHint?: string;
+  onEditItem?: (item: SectionItem) => void;
+  onMoneyChange?: (section: SectionId, id: string, value: string) => void;
+  /** Show the edit pencil on every row, even rows without an `edit` payload. */
+  editable?: boolean;
+}
+
 function Folder({
   id,
   label,
@@ -183,15 +203,11 @@ function Folder({
   emptyHint,
   onEditItem,
   onMoneyChange,
-}: {
+  editable = false,
+}: FolderConfig & {
   id: string;
-  label: string;
-  items: SectionItem[];
   open: boolean;
   onToggle: () => void;
-  emptyHint?: string;
-  onEditItem?: (item: SectionItem) => void;
-  onMoneyChange?: (section: SectionId, id: string, value: string) => void;
 }) {
   return (
     <div className="flex flex-col">
@@ -212,22 +228,27 @@ function Folder({
         />
       </button>
       {open ? (
-        <div id={`details-folder-${id}`} className="flex flex-col px-4 pt-2">
+        <div id={`details-folder-${id}`} className="px-4 pt-2">
           {items.length === 0 ? (
             <p className="py-1.5 text-xs italic text-gray-2">
               {emptyHint ?? "Nothing added yet"}
             </p>
           ) : (
-            items.map((it) => (
-              <Row
-                key={it.key}
-                item={it}
-                onEdit={
-                  it.edit && onEditItem ? () => onEditItem(it) : undefined
-                }
-                onMoneyChange={onMoneyChange}
-              />
-            ))
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+              {items.map((it) => (
+                <Row
+                  key={it.key}
+                  item={it}
+                  fullWidth={Boolean(it.money)}
+                  onEdit={
+                    onEditItem && (editable || it.edit)
+                      ? () => onEditItem(it)
+                      : undefined
+                  }
+                  onMoneyChange={onMoneyChange}
+                />
+              ))}
+            </div>
           )}
         </div>
       ) : null}
@@ -244,26 +265,51 @@ const CONDITION_SNAP_POINTS = [0, 50, 100];
 export function DetailsSidebar({
   variant = "chat",
   onOpenPreview,
+  aboutItems = ABOUT_YOU,
+  onEditAbout,
+  incomeItems,
+  spendingItems,
+  goalsItems,
+  onEditMadlib,
+  openSection,
+  progress,
 }: {
   /** Controls the bottom card: progress/refresh (chat) or Plan Conditions (outlook). */
   variant?: "chat" | "outlook";
   /** Optional callback invoked when the user clicks the "See your outlook" CTA. */
   onOpenPreview?: () => void;
+  /** Override the "About You" rows (e.g. live values from the narrative flow). */
+  aboutItems?: SectionItem[];
+  /** When set, About You rows show an edit pencil; called with the row's key. */
+  onEditAbout?: (fieldId: string) => void;
+  /** Override the Income rows (e.g. live values from the narrative flow). */
+  incomeItems?: SectionItem[];
+  /** Override the Spending rows (e.g. live values from the narrative flow). */
+  spendingItems?: SectionItem[];
+  /** Override the Goals rows (e.g. live values from the narrative flow). */
+  goalsItems?: SectionItem[];
+  /** When set, Income/Spending/Goals rows show an edit pencil (narrative mode). */
+  onEditMadlib?: (fieldId: string) => void;
+  /** Force a folder open (e.g. the section of the current narrative page). */
+  openSection?: string;
+  /** Narrative progress (required vs optional). Overrides the v2 percent bar. */
+  progress?: NarrativeProgress;
 } = {}) {
   const { answers, setQuestion, setAnswers } = useFlow();
 
-  const income = answeredItems("income", INCOME_QUESTIONS, answers.income);
-  const spending = answeredItems(
-    "spending",
-    SPENDING_QUESTIONS,
-    answers.spending,
-  );
-  const goals: SectionItem[] = answers.goalCards.map((c, i) => ({
-    key: c.id,
-    label: `Priority ${i + 1}`,
-    value: c.label,
-    at: -i,
-  }));
+  const income =
+    incomeItems ?? answeredItems("income", INCOME_QUESTIONS, answers.income);
+  const spending =
+    spendingItems ??
+    answeredItems("spending", SPENDING_QUESTIONS, answers.spending);
+  const goals: SectionItem[] =
+    goalsItems ??
+    answers.goalCards.map((c, i) => ({
+      key: c.id,
+      label: `Priority ${i + 1}`,
+      value: c.label,
+      at: -i,
+    }));
 
   const answered = income.length + spending.length;
   const pct = Math.round((answered / REQUIRED_TOTAL) * 100);
@@ -274,13 +320,14 @@ export function DetailsSidebar({
   // override until the section changes again (we tie the override to the
   // current section so a stale override is automatically dropped).
   const currentId: string =
-    goals.length > 0
+    openSection ??
+    (goals.length > 0
       ? "goals"
       : spending.length > 0
         ? "spending"
         : income.length > 0
           ? "income"
-          : "about";
+          : "about");
 
   const [manual, setManual] = useState<{
     section: string;
@@ -312,46 +359,71 @@ export function DetailsSidebar({
     setQuestion(section, id, { value }, { bump: false });
   };
 
+  // Per-section folder config (distinct props per folder). Rendered in a
+  // computed order so the active narrative section can float to the top.
+  const SECTION_ORDER = ["about", "income", "spending", "goals"] as const;
+  const folderProps: Record<string, FolderConfig> = {
+    about: {
+      label: "About You",
+      items: aboutItems,
+      emptyHint: "No details yet",
+      editable: Boolean(onEditAbout),
+      onEditItem: onEditAbout ? (it) => onEditAbout(it.key) : undefined,
+    },
+    income: {
+      label: "Income",
+      items: income,
+      emptyHint: "No income details yet",
+      editable: Boolean(onEditMadlib),
+      onEditItem: onEditMadlib
+        ? (it) => onEditMadlib(it.key)
+        : handleEditItem,
+      onMoneyChange: onEditMadlib ? undefined : handleMoneyChange,
+    },
+    spending: {
+      label: "Spending",
+      items: spending,
+      emptyHint: "No spending details yet",
+      editable: Boolean(onEditMadlib),
+      onEditItem: onEditMadlib
+        ? (it) => onEditMadlib(it.key)
+        : handleEditItem,
+      onMoneyChange: onEditMadlib ? undefined : handleMoneyChange,
+    },
+    goals: {
+      label: "Goals",
+      items: goals,
+      emptyHint: "No goals ranked yet",
+      editable: Boolean(onEditMadlib),
+      onEditItem: onEditMadlib ? (it) => onEditMadlib(it.key) : undefined,
+    },
+  };
+
+  // Active section first, the rest in canonical order. When `openSection` is
+  // absent (v2 chat/outlook) the order is unchanged.
+  const orderedIds: string[] =
+    openSection && SECTION_ORDER.includes(openSection as never)
+      ? [openSection, ...SECTION_ORDER.filter((id) => id !== openSection)]
+      : [...SECTION_ORDER];
+
   return (
     <aside className="flex w-[335px] shrink-0 flex-col gap-3 rounded-field bg-ghost-white px-4 pb-6 pt-4 3xl:w-[400px] 3xl:px-6 4xl:w-[460px]">
-      <Folder
-        id="about"
-        label="About You"
-        items={ABOUT_YOU}
-        open={isOpen("about")}
-        onToggle={() => toggle("about")}
-      />
-      <Folder
-        id="income"
-        label="Income"
-        items={income}
-        open={isOpen("income")}
-        onToggle={() => toggle("income")}
-        emptyHint="No income details yet"
-        onEditItem={handleEditItem}
-        onMoneyChange={handleMoneyChange}
-      />
-      <Folder
-        id="spending"
-        label="Spending"
-        items={spending}
-        open={isOpen("spending")}
-        onToggle={() => toggle("spending")}
-        emptyHint="No spending details yet"
-        onEditItem={handleEditItem}
-        onMoneyChange={handleMoneyChange}
-      />
-      <Folder
-        id="goals"
-        label="Goals"
-        items={goals}
-        open={isOpen("goals")}
-        onToggle={() => toggle("goals")}
-        emptyHint="No goals ranked yet"
-      />
+      {/* Folders scroll within the column so the bottom card stays pinned and
+          never gets clipped off the bottom of the screen as rows fill in. */}
+      <div className="scrollbar-slim -mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-1">
+        {orderedIds.map((id) => (
+          <Folder
+            key={id}
+            id={id}
+            open={isOpen(id)}
+            onToggle={() => toggle(id)}
+            {...folderProps[id]}
+          />
+        ))}
+      </div>
 
       {variant === "outlook" ? (
-        <div className="mt-auto rounded-card border border-stroke-subtle bg-white p-4">
+        <div className="mt-auto shrink-0 rounded-card border border-stroke-subtle bg-white p-4">
           <p className="text-base font-semibold text-deep-black">
             Plan Conditions
           </p>
@@ -387,7 +459,7 @@ export function DetailsSidebar({
           </div>
         </div>
       ) : (
-        <div className="mt-auto rounded-card border border-stroke-subtle bg-white p-4">
+        <div className="mt-auto shrink-0 rounded-card border border-stroke-subtle bg-white p-4">
           {answers.planRefreshed ? (
             <>
               <span className="inline-flex items-center rounded-pill bg-success/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-success">
@@ -410,6 +482,48 @@ export function DetailsSidebar({
               </div>
               <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-divider">
                 <div className="h-full w-full rounded-full bg-success" />
+              </div>
+            </>
+          ) : progress ? (
+            <>
+              <p className="text-sm leading-snug text-gray-1">
+                {progress.requiredPct >= 100
+                  ? "All mandatory details captured. Add optional details to sharpen your outlook."
+                  : "Your outlook will update once we have initial mandatory data."}
+              </p>
+              <div className="mt-3 flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-2">
+                <span>Required details</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="text-deep-black">
+                    {progress.requiredPct}%
+                  </span>
+                  {progress.hasOptional ? (
+                    <span className="font-medium normal-case tracking-normal text-violet">
+                      +{progress.optionalPct}% optional
+                    </span>
+                  ) : null}
+                </span>
+              </div>
+              {/* Single continuous track: green required zone, then a violet
+                  optional zone split by a thin divider (no gap = less busy). */}
+              <div className="mt-1.5 flex h-1.5 w-full overflow-hidden rounded-full bg-divider">
+                <div
+                  className="h-full"
+                  style={{ width: progress.hasOptional ? "68%" : "100%" }}
+                >
+                  <div
+                    className="h-full bg-success transition-[width] duration-300 ease-out"
+                    style={{ width: `${progress.requiredPct}%` }}
+                  />
+                </div>
+                {progress.hasOptional ? (
+                  <div className="h-full flex-1 border-l-2 border-white">
+                    <div
+                      className="h-full bg-violet transition-[width] duration-300 ease-out"
+                      style={{ width: `${progress.optionalPct}%` }}
+                    />
+                  </div>
+                ) : null}
               </div>
             </>
           ) : (

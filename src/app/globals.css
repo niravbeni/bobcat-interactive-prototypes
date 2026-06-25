@@ -90,6 +90,29 @@ button:disabled,
   }
 }
 
+/* Mad-libs line: fade + rise in as each sentence is revealed */
+@keyframes madlibLineIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    /* End at `none` (not translateY(0)) so the line doesn't keep a transform,
+       which would make any position:fixed descendant (e.g. a select popover)
+       anchor to the line instead of the viewport. */
+    transform: none;
+  }
+}
+.madlib-line-in {
+  animation: madlibLineIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .madlib-line-in {
+    animation: none;
+  }
+}
+
 /* Slim, unobtrusive scrollbar for chat / scrollable panels */
 .scrollbar-slim {
   scrollbar-width: thin;

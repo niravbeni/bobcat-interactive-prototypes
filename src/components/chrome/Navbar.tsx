@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Info, SquareUser, FastForward, X } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
+import { FullscreenPlaceholder } from "@/components/v2/FullscreenPlaceholder";
 import { VARIANTS, SKIP_INTERACTION_EVENT } from "@/lib/variants";
+import { sampleNarrativeAnswers } from "@/lib/narrative";
 import { cn } from "@/lib/cn";
 import type { StepId } from "@/lib/types";
 
@@ -19,8 +21,12 @@ export function Navbar() {
   const { variant, step, steps, stepIndex, goTo, answers, setAnswers } =
     useFlow();
   const [open, setOpen] = useState(false);
+  const [advisorOpen, setAdvisorOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const isV2 = variant === "linear-chat-v2";
+  // The narrative flow reuses the v2 chrome: the Details/Outlook/Market toggle
+  // and the "Talk to an advisor" affordance.
+  const showTopNav = isV2 || variant === "narrative";
 
   // Which top-nav tab is highlighted, derived from the current step.
   const activeTab: V2TabId =
@@ -52,6 +58,13 @@ export function Navbar() {
 
   const handleSkip = () => {
     if (canSkip && skipTo) {
+      // Narrative: auto-fill the earlier pages so Goals lands with a populated
+      // side panel + outlook, then jump there.
+      if (variant === "narrative") {
+        setAnswers({
+          about: { ...answers.about, ...sampleNarrativeAnswers() },
+        });
+      }
       goTo(skipTo.step);
     } else if (canFlowSkip) {
       window.dispatchEvent(new CustomEvent(SKIP_INTERACTION_EVENT));
@@ -61,33 +74,36 @@ export function Navbar() {
 
   return (
     <header className="relative flex h-18 w-full items-center gap-3 bg-ghost-white px-4 sm:px-6 xl:px-9 3xl:h-20 3xl:gap-4 3xl:px-14">
-      <Link
-        href="/"
-        aria-label="Back to dashboard"
-        className="inline-flex shrink-0 items-center text-deep-black transition-opacity hover:opacity-60"
-      >
-        <svg
-          width="90"
-          height="29"
-          viewBox="0 0 90 29"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
+      {/* Left: logo. flex-1 so it mirrors the right cluster and keeps the
+          centered toggle truly window-centered without overlapping. */}
+      <div className="flex min-w-0 flex-1 items-center">
+        <Link
+          href="/"
+          aria-label="Back to dashboard"
+          className="inline-flex shrink-0 items-center text-deep-black transition-opacity hover:opacity-60"
         >
-          <path
-            d="M90 5.70254L81.1742 28.4837H73.7419L70.0258 15.7617L66.2806 28.4837H58.8542L52.3277 11.4921H48.2632V19.1438C48.2632 22.7347 49.7148 23.3265 51.7006 23.3265C52.2268 23.316 52.7504 23.2499 53.2626 23.1292L55.2948 28.4199C53.7119 28.8074 52.0878 29.0022 50.4581 29C43.6529 29 40.7497 26.2212 40.7497 19.7181V11.4921H37.649L31.0703 28.4837H23.6381L19.9277 15.7617L16.171 28.4837H8.74452L0 5.70254H8.42516L12.8206 19.4687L17.0129 5.70254H22.8194L27.0523 19.4687L31.4245 5.70254H40.7497V1.60692L48.2632 0V5.70254H58.5348L62.9245 19.4687L67.1168 5.70254H72.9232L77.1561 19.4687L81.511 5.70254H90Z"
-            fill="currentColor"
-          />
-        </svg>
-      </Link>
-
-      {isV2 ? (
-        <div className="pointer-events-none absolute left-1/2 top-1/2 flex max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 justify-center">
-          <div
-            role="tablist"
-            className="pointer-events-auto inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-stroke-subtle bg-white p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          <svg
+            width="90"
+            height="29"
+            viewBox="0 0 90 29"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
           >
-            {V2_TABS.map((tab) => {
+            <path
+              d="M90 5.70254L81.1742 28.4837H73.7419L70.0258 15.7617L66.2806 28.4837H58.8542L52.3277 11.4921H48.2632V19.1438C48.2632 22.7347 49.7148 23.3265 51.7006 23.3265C52.2268 23.316 52.7504 23.2499 53.2626 23.1292L55.2948 28.4199C53.7119 28.8074 52.0878 29.0022 50.4581 29C43.6529 29 40.7497 26.2212 40.7497 19.7181V11.4921H37.649L31.0703 28.4837H23.6381L19.9277 15.7617L16.171 28.4837H8.74452L0 5.70254H8.42516L12.8206 19.4687L17.0129 5.70254H22.8194L27.0523 19.4687L31.4245 5.70254H40.7497V1.60692L48.2632 0V5.70254H58.5348L62.9245 19.4687L67.1168 5.70254H72.9232L77.1561 19.4687L81.511 5.70254H90Z"
+              fill="currentColor"
+            />
+          </svg>
+        </Link>
+      </div>
+
+      {showTopNav ? (
+        <div
+          role="tablist"
+          className="inline-flex max-w-full shrink-0 items-center gap-1 overflow-x-auto rounded-full border border-stroke-subtle bg-white p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {V2_TABS.map((tab) => {
               const active = activeTab === tab.id;
               const showDot =
                 tab.id === "plan" &&
@@ -100,10 +116,11 @@ export function Navbar() {
                   role="tab"
                   onClick={() => {
                     if (tab.id === "plan") setAnswers({ planPreviewSeen: true });
-                    // The Details tab covers two sub-pages (form + chat); return
-                    // the user to whichever they last viewed.
+                    // In v2 the Details tab covers two sub-pages (form + chat);
+                    // return the user to whichever they last viewed. The
+                    // narrative flow only has the form, so go straight there.
                     if (tab.id === "details") {
-                      goTo(answers.lastDetailsView);
+                      goTo(isV2 ? answers.lastDetailsView : "details");
                       return;
                     }
                     goTo(tab.step);
@@ -126,7 +143,6 @@ export function Navbar() {
                 </button>
               );
             })}
-          </div>
         </div>
       ) : (
         <div className="pointer-events-none hidden min-w-0 flex-1 items-center justify-center gap-[7px] px-3 py-1 xl:flex">
@@ -138,7 +154,7 @@ export function Navbar() {
         </div>
       )}
 
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
         <button className="flex h-9 shrink-0 items-center gap-1 rounded-full bg-white pl-2.5 pr-2 sm:pl-3">
           <SquareUser className="size-6 shrink-0 text-black" strokeWidth={2} />
           <span className="hidden text-base font-semibold tracking-[0.16px] text-black sm:inline">
@@ -146,6 +162,17 @@ export function Navbar() {
           </span>
           <ChevronDown className="size-6 shrink-0 text-black" strokeWidth={2} />
         </button>
+
+        {showTopNav ? (
+          <button
+            type="button"
+            onClick={() => setAdvisorOpen(true)}
+            className="hidden h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-gray-1 px-3 text-base font-semibold tracking-[0.16px] text-white transition-colors hover:brightness-110 sm:flex sm:px-4"
+          >
+            <span className="hidden lg:inline">Talk to an Advisor</span>
+            <span className="lg:hidden">Advisor</span>
+          </button>
+        ) : null}
 
         <div className="relative shrink-0" ref={ref}>
           <button
@@ -205,6 +232,14 @@ export function Navbar() {
         </div>
       </div>
 
+      {advisorOpen ? (
+        <FullscreenPlaceholder
+          eyebrow="Talk to an advisor"
+          title="Talk to a WTW advisor"
+          copy="We're still designing this. You'll be able to find a time with a WTW retirement advisor right here."
+          onClose={() => setAdvisorOpen(false)}
+        />
+      ) : null}
     </header>
   );
 }

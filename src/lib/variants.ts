@@ -5,6 +5,7 @@ export const SKIP_INTERACTION_EVENT = "bobcat:skip-interaction";
 
 export type VariantId =
   | "linear-chat-v2"
+  | "narrative"
   | "base"
   | "cardsort"
   | "swipe"
@@ -70,6 +71,26 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     skipInFlow: { label: "the goals chat" },
     featured: true,
   },
+  narrative: {
+    id: "narrative",
+    title: "Narrative Flow",
+    description:
+      "A mad-libs style onboarding: fill in the blanks of plain-language sentences across About you, Income, Spending and Goals, with the side panel updating as you go.",
+    status: "ready",
+    // The madlib Continue path is details → income → spending → goals →
+    // complete (order drives goNext/goBack). outlook + marketplace are appended
+    // so the top-nav toggle can jump to them without affecting that path.
+    steps: [
+      "details",
+      "income",
+      "spending",
+      "goals",
+      "complete",
+      "outlook",
+      "marketplace",
+    ],
+    skipTo: { step: "goals", label: "the goals" },
+  },
   base: {
     id: "base",
     title: "Base Flow (Linear)",
@@ -127,6 +148,7 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
 
 export const VARIANT_ORDER: VariantId[] = [
   "linear-chat-v2",
+  "narrative",
   "base",
   "cardsort",
   "swipe",
