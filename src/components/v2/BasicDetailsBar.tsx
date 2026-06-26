@@ -10,7 +10,16 @@ import { MANDATORY_QIDS } from "@/lib/questions";
  * tracks how many mandatory questions have an answer.
  */
 export function BasicDetailsBar() {
-  const { answers, goTo } = useFlow();
+  const { answers, variant, goTo } = useFlow();
+
+  // In the narrative-style flows there is no "chat" step; the basics live on the
+  // first details/section screen, so route there instead.
+  const detailsTarget =
+    variant === "narrative" ||
+    variant === "hybrid-quick" ||
+    variant === "hybrid-guided"
+      ? "details"
+      : "chat";
 
   // Baseline credit for steps completed before this prototype begins; the
   // remaining headroom fills in as the user answers mandatory questions here.
@@ -36,7 +45,7 @@ export function BasicDetailsBar() {
           variant="blue"
           size="md"
           className="shrink-0"
-          onClick={() => goTo("chat")}
+          onClick={() => goTo(detailsTarget)}
         >
           {complete ? "Add more details" : "Add basic details"}
         </Button>

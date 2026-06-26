@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useFlow } from "@/components/flow/FlowProvider";
+import { useEnterToContinue } from "@/components/flow/useEnterToContinue";
 import { AppShell } from "@/components/chrome/AppShell";
 import { DetailsSidebar } from "@/components/chrome/DetailsSidebar";
 import { BackButton } from "@/components/ui/BackButton";
@@ -12,11 +14,13 @@ import {
   narrativeProgress,
   narrativeSidebarItems,
 } from "@/components/narrative/sidebarItems";
+import { isFilled, isValid } from "@/lib/narrativeValidation";
 import {
   NARRATIVE_PAGES,
   NARRATIVE_PAGE_STEPS,
   isLineVisible,
   madlibFieldById,
+  sampleValueFor,
   type MadlibField,
   type MadlibLine,
   type MadlibPage,
@@ -24,9 +28,23 @@ import {
 import { cn } from "@/lib/cn";
 import type { StepId } from "@/lib/types";
 
-export function NarrativeScreen({ step }: { step: StepId }) {
-  const { answers, setAbout, goNext, goBack } = useFlow();
+export function NarrativeScreen({
+  step,
+  hideSidebar = false,
+}: {
+  step: StepId;
+  hideSidebar?: boolean;
+}) {
+  const { answers, setAbout, goNext, goBack, variant } = useFlow();
+  const router = useRouter();
   const page: MadlibPage = NARRATIVE_PAGES[step] ?? NARRATIVE_PAGES.details;
+
+  // In the hybrid persona flows, Back follows real navigation history so it
+  // returns to wherever you actually came from (the picker, an outlook, etc.)
+  // rather than a fixed step.
+  const isHybridPersona =
+    variant === "hybrid-quick" || variant === "hybrid-guided";
+  const handleBack = isHybridPersona ? () => router.back() : goBack;
 
   // Track which fields the user has interacted with (blurred) so we only show
   // errors after they've left an empty field. Reset on page change using the
@@ -62,36 +80,12 @@ export function NarrativeScreen({ step }: { step: StepId }) {
       (t): t is MadlibField => typeof t !== "string" && t.kind === "field",
     );
 
-  const isFilled = (f: MadlibField): boolean =>
-    (about[f.id]?.value ?? "").trim().length > 0;
-
-  // Per-field format/type validity. Empty values are handled by `isFilled`;
-  // these rules judge a NON-EMPTY value. Rules live here (not in the schema)
-  // so this stays decoupled from `lib/narrative.ts`.
-  const ZIP_RE = /^\d{5}(-\d{4})?$/;
-  const isValid = (f: MadlibField): boolean => {
-    const raw = (about[f.id]?.value ?? "").trim();
-    if (!raw) return true; // emptiness is the required check's job
-    if (f.type === "number") {
-      const n = Number(raw);
-      return Number.isInteger(n) && n >= 18 && n <= 100;
-    }
-    if (f.type === "money") {
-      const n = Number(raw.replace(/[^0-9.]/g, ""));
-      return Number.isFinite(n) && n >= 0;
-    }
-    if (f.type === "text" && (f.id === "zip" || f.id === "partnerZip")) {
-      return ZIP_RE.test(raw);
-    }
-    return true; // selects and generic text just need to be non-empty
-  };
-
   // Transitive conditional visibility: a gated line hides when its trigger's own
   // line is hidden (e.g. turning "plan for partner" off also hides the partner
   // postcode, even though the stored postcode value lingers).
   const valueGetter = (id: string) => about[id]?.value;
   const lineComplete = (line: MadlibLine): boolean =>
-    fieldsOfLine(line).every((f) => isFilled(f) && isValid(f));
+    fieldsOfLine(line).every((f) => isFilled(f, about) && isValid(f, about));
 
   // Lines whose conditional trigger currently passes, in order.
   const condLines = page.lines.filter((line) =>
@@ -120,16 +114,34 @@ export function NarrativeScreen({ step }: { step: StepId }) {
   // when all condition-visible lines have been revealed and satisfied.
   const allRevealed = condLines.every((line) => revealedNow.has(line.id));
   const isComplete =
-    allRevealed && visibleFields.every((f) => isFilled(f) && isValid(f));
+    allRevealed &&
+    visibleFields.every((f) => isFilled(f, about) && isValid(f, about));
 
   // A field shows an error once touched (blurred) and either empty or invalid.
   const fieldError = (f: MadlibField): boolean =>
-    !!touched[f.id] && (!isFilled(f) || !isValid(f));
+    !!touched[f.id] && (!isFilled(f, about) || !isValid(f, about));
 
   const hasVisibleError = visibleFields.some(fieldError);
 
   const markTouched = (id: string) =>
     setTouched((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
+
+  // Prototype shortcut: Shift+Enter auto-fills every visible field on the page
+  // with sample data so you can skip through the flow while testing.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || !e.shiftKey) return;
+      e.preventDefault();
+      for (const line of condLines) {
+        for (const f of fieldsOfLine(line)) {
+          setAbout(f.id, sampleValueFor(f));
+          markTouched(f.id);
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   const handleContinue = () => {
     if (!isComplete) {
@@ -142,6 +154,10 @@ export function NarrativeScreen({ step }: { step: StepId }) {
     goNext();
   };
 
+  // Enter advances only when the madlib page is complete — the same condition
+  // gating the Continue button (`disabled={!isComplete}`).
+  useEnterToContinue(isComplete, handleContinue);
+
   // Live side-panel rows, shared with the Outlook dashboard so both match.
   const {
     aboutItems: liveAboutItems,
@@ -153,31 +169,47 @@ export function NarrativeScreen({ step }: { step: StepId }) {
   const pageIndex = NARRATIVE_PAGE_STEPS.indexOf(
     step as (typeof NARRATIVE_PAGE_STEPS)[number],
   );
+  // The step dots map the four core narrative pages; hide them for the
+  // standalone Profile page (hybrid quick draft), which isn't on that path.
+  const showStepDots = !hideSidebar && pageIndex >= 0;
 
   return (
     <AppShell
       fill
+      hideSidebar={hideSidebar}
       customSidebar={
-        <DetailsSidebar
-          variant="chat"
-          aboutItems={liveAboutItems}
-          incomeItems={liveIncomeItems}
-          spendingItems={liveSpendingItems}
-          goalsItems={liveGoalsItems}
-          onEditAbout={(id) => setEditingFieldId(id)}
-          onEditMadlib={(id) => setEditingFieldId(id)}
-          openSection={page.section}
-          progress={narrativeProgress(about)}
-        />
+        hideSidebar ? undefined : (
+          <DetailsSidebar
+            variant="chat"
+            aboutItems={liveAboutItems}
+            incomeItems={liveIncomeItems}
+            spendingItems={liveSpendingItems}
+            goalsItems={liveGoalsItems}
+            onEditAbout={(id) => setEditingFieldId(id)}
+            onEditMadlib={(id) => setEditingFieldId(id)}
+            openSection={page.section}
+            progress={narrativeProgress(about)}
+          />
+        )
       }
     >
       <div className="flex min-h-0 w-full flex-1 flex-col">
-        <BackButton onClick={goBack} label="Back" size={36} />
+        <BackButton onClick={handleBack} label="Back" size={36} />
 
         {/* -mx-2 px-2 gives the inputs' focus/error rings room so the
             overflow-y container doesn't clip them on the left/right edges. */}
-        <div className="scrollbar-slim -mx-2 mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto px-2">
-          <h1 className="max-w-[560px] text-3xl font-semibold leading-[1.15] tracking-[-0.01em] text-deep-black">
+        <div
+          className={cn(
+            "scrollbar-slim mt-6 flex min-h-0 flex-1 flex-col overflow-y-auto px-2",
+            hideSidebar ? "mx-auto w-full max-w-[820px]" : "-mx-2",
+          )}
+        >
+          <h1
+            className={cn(
+              "font-semibold leading-[1.15] tracking-[-0.01em] text-deep-black",
+              hideSidebar ? "max-w-[760px] text-2xl" : "max-w-[560px] text-3xl",
+            )}
+          >
             {page.heading}
           </h1>
 
@@ -192,11 +224,19 @@ export function NarrativeScreen({ step }: { step: StepId }) {
               </p>
             </div>
           ) : (
-            <div className="mt-10 flex flex-col gap-6">
+            <div
+              className={cn(
+                "flex flex-col",
+                hideSidebar ? "mt-6 gap-4" : "mt-10 gap-6",
+              )}
+            >
               {renderedLines.map((line) => (
                 <div
                   key={line.id}
-                  className="madlib-line-in flex flex-wrap items-center gap-x-3 gap-y-3 text-2xl leading-snug tracking-[-0.01em] text-deep-black"
+                  className={cn(
+                    "madlib-line-in flex flex-wrap items-center gap-x-3 leading-snug tracking-[-0.01em] text-deep-black",
+                    hideSidebar ? "gap-y-2 text-xl" : "gap-y-3 text-2xl",
+                  )}
                 >
                   {line.tokens.map((token, i) =>
                     typeof token === "string" ? (
@@ -227,22 +267,24 @@ export function NarrativeScreen({ step }: { step: StepId }) {
           ) : null}
 
           <div className="flex items-center justify-between gap-4">
-            <Button variant="outline" size="md" onClick={goBack}>
-              Back
-            </Button>
+            <div />
 
-            <div className="flex items-center gap-2">
-              {NARRATIVE_PAGE_STEPS.map((s, i) => (
-                <span
-                  key={s}
-                  aria-hidden
-                  className={cn(
-                    "size-2 rounded-full transition-colors",
-                    i === pageIndex ? "bg-deep-black" : "bg-divider",
-                  )}
-                />
-              ))}
-            </div>
+            {showStepDots ? (
+              <div className="flex items-center gap-2">
+                {NARRATIVE_PAGE_STEPS.map((s, i) => (
+                  <span
+                    key={s}
+                    aria-hidden
+                    className={cn(
+                      "size-2 rounded-full transition-colors",
+                      i === pageIndex ? "bg-deep-black" : "bg-divider",
+                    )}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div />
+            )}
 
             <Button
               variant="primary"

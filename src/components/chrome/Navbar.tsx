@@ -24,9 +24,14 @@ export function Navbar() {
   const [advisorOpen, setAdvisorOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const isV2 = variant === "linear-chat-v2";
-  // The narrative flow reuses the v2 chrome: the Details/Outlook/Market toggle
-  // and the "Talk to an advisor" affordance.
-  const showTopNav = isV2 || variant === "narrative";
+  // The narrative + hybrid persona flows reuse the v2 chrome: the Details/
+  // Outlook/Market toggle and the "Talk to an advisor" affordance. The hybrid
+  // picker ("hybrid") is intentionally excluded so it stays toggle-free.
+  const isNarrativeLike =
+    variant === "narrative" ||
+    variant === "hybrid-quick" ||
+    variant === "hybrid-guided";
+  const showTopNav = isV2 || isNarrativeLike;
 
   // Which top-nav tab is highlighted, derived from the current step.
   const activeTab: V2TabId =
@@ -58,9 +63,9 @@ export function Navbar() {
 
   const handleSkip = () => {
     if (canSkip && skipTo) {
-      // Narrative: auto-fill the earlier pages so Goals lands with a populated
-      // side panel + outlook, then jump there.
-      if (variant === "narrative") {
+      // Narrative-like flows: auto-fill the earlier pages so Goals lands with a
+      // populated side panel + outlook, then jump there.
+      if (isNarrativeLike) {
         setAnswers({
           about: { ...answers.about, ...sampleNarrativeAnswers() },
         });

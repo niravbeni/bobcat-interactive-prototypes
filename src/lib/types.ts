@@ -163,4 +163,8 @@ export type StepId =
   | "chat"
   | "outlook"
   | "details"
-  | "marketplace";
+  | "marketplace"
+  | "persona"
+  | "profile"
+  | "loading"
+  | "education";

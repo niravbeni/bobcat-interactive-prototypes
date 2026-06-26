@@ -75,7 +75,7 @@ function OutlookCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col rounded-field bg-ghost-white p-5 sm:p-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-field bg-ghost-white p-5 sm:p-6">
       <p className="text-center text-3xl font-semibold tracking-[-0.01em] text-deep-black 3xl:text-4xl">
         {value}
       </p>
@@ -123,7 +123,7 @@ function IncomeVisual({ conditionT }: { conditionT: number }) {
   const bars = barsAt(t).map((h) => Math.min(1, h * factor));
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="relative min-h-[72px] flex-1">
+      <div className="relative min-h-0 flex-1">
         <div className="absolute inset-x-0 top-1/2 h-px bg-deep-black" />
         <div className="flex h-full items-center justify-center gap-4 sm:gap-5">
           {bars.map((h, i) => (
@@ -135,7 +135,7 @@ function IncomeVisual({ conditionT }: { conditionT: number }) {
           ))}
         </div>
       </div>
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex shrink-0 flex-col items-center gap-2">
         <SnapSlider
           className="w-3/4"
           aria-label="Retirement age range"
@@ -156,7 +156,7 @@ function ConeVisual({ opening }: { opening: number }) {
   const outer = Math.max(6, Math.round(opening * 46));
   const inner = Math.max(3, Math.round(outer * 0.5));
   return (
-    <div className="relative h-full min-h-[80px]">
+    <div className="relative h-full min-h-0">
       <div className="absolute inset-x-0 top-1/2 h-px bg-deep-black" />
       <svg
         viewBox="0 0 100 100"
@@ -222,7 +222,7 @@ function FeeVisual({
   altBar: number;
 }) {
   return (
-    <div className="flex h-full min-h-[80px] items-stretch justify-center gap-8 sm:gap-10">
+    <div className="flex h-full min-h-0 items-stretch justify-center gap-8 sm:gap-10">
       <FeeBar label="Current plan" value={currentFee} frac={1} solid />
       <FeeBar label="Alternative plan" value={altFee} frac={altBar} />
     </div>
@@ -234,10 +234,15 @@ export function OutlookDashboardScreen() {
   const [advisorOpen, setAdvisorOpen] = useState(false);
   const preset = planAt(answers.planConditionT);
 
-  // In the narrative flow the live data lives in `answers.about`, so feed those
-  // same rows to the Outlook panel; the v2 flow keeps its question-derived rows.
+  // In the narrative-style flows the live data lives in `answers.about`, so feed
+  // those same rows to the Outlook panel; the v2 flow keeps its question-derived
+  // rows.
   const narrativeItems =
-    variant === "narrative" ? narrativeSidebarItems(answers.about) : null;
+    variant === "narrative" ||
+    variant === "hybrid-quick" ||
+    variant === "hybrid-guided"
+      ? narrativeSidebarItems(answers.about)
+      : null;
 
   return (
     <AppShell

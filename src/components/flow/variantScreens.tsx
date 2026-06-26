@@ -19,6 +19,13 @@ import { OutlookDashboardScreen } from "@/components/screens/variants/OutlookDas
 import { DetailsMenuScreen } from "@/components/screens/variants/DetailsMenuScreen";
 import { MarketplaceScreen } from "@/components/screens/variants/MarketplaceScreen";
 import { NarrativeScreen } from "@/components/screens/variants/NarrativeScreen";
+import { PersonaPickerScreen } from "@/components/screens/variants/PersonaPickerScreen";
+import { SectionScrollScreen } from "@/components/screens/variants/SectionScrollScreen";
+import { GuidedSectionWizard } from "@/components/screens/variants/GuidedSectionWizard";
+import { GuidedSummaryScreen } from "@/components/screens/variants/GuidedSummaryScreen";
+import { GuidedGoalsScreen } from "@/components/screens/variants/GuidedGoalsScreen";
+import { EducationScreen } from "@/components/screens/variants/EducationScreen";
+import { LoadingSimScreen } from "@/components/screens/variants/LoadingSimScreen";
 
 /** The income/summary/spending/complete steps are identical across variants. */
 function sharedStep(step: StepId) {
@@ -77,6 +84,35 @@ export function VariantScreen({
       if (step === "marketplace") return <MarketplaceScreen />;
       if (step === "complete") return <CompleteScreen />;
       return <NarrativeScreen step={step} />;
+    case "hybrid":
+      return <PersonaPickerScreen />;
+    case "hybrid-quick":
+      if (step === "profile")
+        return <NarrativeScreen step="profile" hideSidebar />;
+      if (step === "loading") return <LoadingSimScreen />;
+      if (step === "outlook") return <OutlookDashboardScreen />;
+      if (step === "details")
+        return <SectionScrollScreen key="details" section="aboutMore" />;
+      if (step === "income")
+        return <SectionScrollScreen key="income" section="income" />;
+      if (step === "spending")
+        return <SectionScrollScreen key="spending" section="spending" />;
+      if (step === "goals")
+        return <SectionScrollScreen key="goals" section="goals" />;
+      if (step === "marketplace") return <MarketplaceScreen />;
+      return <CompleteScreen />;
+    case "hybrid-guided":
+      if (step === "education") return <EducationScreen />;
+      if (step === "details") return <NarrativeScreen step="details" />;
+      if (step === "income")
+        return <GuidedSectionWizard section="income" nextStep="summary" />;
+      if (step === "summary") return <GuidedSummaryScreen />;
+      if (step === "spending")
+        return <GuidedSectionWizard section="spending" nextStep="summary" />;
+      if (step === "goals") return <GuidedGoalsScreen />;
+      if (step === "outlook") return <OutlookDashboardScreen />;
+      if (step === "marketplace") return <MarketplaceScreen />;
+      return <CompleteScreen />;
     default:
       return null;
   }

@@ -131,11 +131,7 @@ export function DetailsMenuScreen() {
             fits the screen without scrolling; other tabs scroll as needed. */}
         {tab === "goals" && goalsUpdating ? (
           <div className="mx-auto mt-6 flex min-h-0 w-full max-w-[560px] flex-1 flex-col rounded-field bg-ghost-white p-5 sm:p-6">
-            <PriorityRankFlow
-              fit
-              onDone={handleGoalsDone}
-              onExit={() => setGoalsUpdating(false)}
-            />
+            <PriorityRankFlow fit onDone={handleGoalsDone} />
           </div>
         ) : (
         <div className="scrollbar-slim mx-auto mt-6 flex min-h-0 w-full max-w-[560px] flex-1 flex-col overflow-y-auto">

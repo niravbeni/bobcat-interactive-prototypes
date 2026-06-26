@@ -5,6 +5,7 @@ import { motion, useMotionValue, useTransform, animate } from "motion/react";
 import { Check, CheckCheck, X, RotateCcw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { Button } from "@/components/ui/Button";
 import type { Priority } from "@/lib/priorities";
 
 export type SwipeVerdict = "essential" | "nice" | "skip";
@@ -143,7 +144,7 @@ export function CardSwipe({
     <div
       className={cn(
         "flex w-full flex-col items-center",
-        fit && "h-full min-h-0",
+        fit && "h-full min-h-0 justify-center",
       )}
     >
       <ProgressBar current={index} total={items.length} />
@@ -152,7 +153,7 @@ export function CardSwipe({
         className={cn(
           "relative mt-2 w-full",
           fit
-            ? "mb-7 max-w-[260px] min-h-[180px] max-h-[380px] flex-1"
+            ? "h-[220px] max-w-[240px]"
             : "h-[320px] w-full max-w-[360px] sm:h-[350px]",
         )}
       >
@@ -187,14 +188,23 @@ export function CardSwipe({
       <div
         className={cn(
           "flex shrink-0 items-center gap-3 sm:gap-4",
-          fit ? "mt-4" : "mt-7",
+          fit ? "mt-9" : "mt-11",
         )}
       >
-        <ActionButton verdict="skip" onClick={() => setTrigger("skip")} />
-        <ActionButton verdict="essential" onClick={() => setTrigger("essential")} />
-        <ActionButton verdict="nice" onClick={() => setTrigger("nice")} />
+        <ActionButton verdict="skip" compact={fit} onClick={() => setTrigger("skip")} />
+        <ActionButton
+          verdict="essential"
+          compact={fit}
+          onClick={() => setTrigger("essential")}
+        />
+        <ActionButton verdict="nice" compact={fit} onClick={() => setTrigger("nice")} />
       </div>
-      <p className="mt-4 shrink-0 text-center text-[12.5px] text-gray-2">
+      <p
+        className={cn(
+          "shrink-0 text-center text-gray-2",
+          fit ? "mt-2 text-[11px]" : "mt-4 text-[12.5px]",
+        )}
+      >
         Swipe the card or use the buttons · ↑ essential · → nice to have · ← not
         for me
       </p>
@@ -294,34 +304,34 @@ function CardFace({
     <div
       className={cn(
         "flex h-full flex-col",
-        compact ? "p-6" : "p-7",
+        compact ? "p-5" : "p-7",
       )}
     >
       <div className="flex items-center">
         <span
           className={cn(
             "grid place-items-center",
-            compact ? "size-11 rounded-xl" : "size-12 rounded-2xl",
+            compact ? "size-10 rounded-xl" : "size-12 rounded-2xl",
           )}
           style={{
             background: isNeed ? "#f3e9fb" : "#fbe9f5",
             color: isNeed ? "#7f35b2" : "#c900ac",
           }}
         >
-          <Icon size={compact ? 22 : 24} strokeWidth={2.1} />
+          <Icon size={compact ? 20 : 24} strokeWidth={2.1} />
         </span>
       </div>
 
       <div
         className={cn(
           "flex flex-col",
-          compact ? "mt-6 gap-3" : "flex-1 justify-center",
+          compact ? "mt-4 gap-2" : "flex-1 justify-center",
         )}
       >
         <h2
           className={cn(
             "m-0 font-bold leading-[1.12] text-deep-black",
-            compact ? "text-[21px]" : "text-[26px] sm:text-[28px]",
+            compact ? "text-[19px]" : "text-[26px] sm:text-[28px]",
           )}
           style={{ letterSpacing: "-0.02em" }}
         >
@@ -329,8 +339,8 @@ function CardFace({
         </h2>
         <p
           className={cn(
-            "leading-[1.5] text-gray-1",
-            compact ? "text-[13.5px]" : "mt-3 text-[15px]",
+            "leading-[1.45] text-gray-1",
+            compact ? "text-[13px]" : "mt-3 text-[15px]",
           )}
         >
           {priority.question}
@@ -369,9 +379,11 @@ function Stamp({
 function ActionButton({
   verdict,
   onClick,
+  compact = false,
 }: {
   verdict: SwipeVerdict;
   onClick: () => void;
+  compact?: boolean;
 }) {
   const v = VERDICTS[verdict];
   const Icon = v.icon;
@@ -381,10 +393,13 @@ function ActionButton({
       onClick={onClick}
       aria-label={v.label}
       title={v.label}
-      className="grid size-14 place-items-center rounded-full border bg-white shadow-[0_4px_12px_rgba(16,24,32,0.08)] transition-transform hover:-translate-y-0.5 active:scale-95"
+      className={cn(
+        "grid place-items-center rounded-full border bg-white shadow-[0_4px_12px_rgba(16,24,32,0.08)] transition-transform hover:-translate-y-0.5 active:scale-95",
+        compact ? "size-12" : "size-14",
+      )}
       style={{ borderColor: v.color }}
     >
-      <Icon size={24} strokeWidth={2.4} style={{ color: v.color }} />
+      <Icon size={compact ? 21 : 24} strokeWidth={2.4} style={{ color: v.color }} />
     </button>
   );
 }
@@ -474,21 +489,13 @@ function Results({
       </div>
 
       <div className="mt-8 flex items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={onReset}
-          className="inline-flex items-center gap-2 rounded-full border border-ink bg-white px-5 py-2.5 text-[14px] font-semibold text-deep-black transition-colors hover:bg-ghost-white"
-        >
+        <Button variant="outline" size="md" onClick={onReset} className="gap-2">
           <RotateCcw size={16} strokeWidth={2.4} />
           Start over
-        </button>
-        <button
-          type="button"
-          onClick={onContinue}
-          className="inline-flex items-center gap-2 rounded-full bg-stratosphere px-6 py-2.5 text-[14px] font-semibold text-white transition-[filter] hover:brightness-110"
-        >
+        </Button>
+        <Button variant="blue" size="md" onClick={onContinue}>
           Continue
-        </button>
+        </Button>
       </div>
     </motion.div>
   );

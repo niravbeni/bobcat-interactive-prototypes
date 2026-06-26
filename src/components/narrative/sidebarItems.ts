@@ -1,5 +1,8 @@
 import type { SectionItem } from "@/components/chrome/DetailsSidebar";
 import {
+  ABOUT_MORE_PAGE,
+  CORE_NARRATIVE_PAGES,
+  GOALS_EXTRA_PAGE,
   NARRATIVE_PAGES,
   isLineVisible,
   optionLabel,
@@ -13,6 +16,29 @@ function formatMoneyDisplay(raw: string): string {
   const digits = raw.replace(/[^0-9]/g, "");
   return digits ? `$${Number(digits).toLocaleString("en-US")}` : raw;
 }
+
+/**
+ * Which sidebar folder each rich Profile-page field belongs to, so the
+ * hybrid quick-draft persona's single page folds into the same About/Income/
+ * Spending folders as the guided flow.
+ */
+const PROFILE_ABOUT_IDS = new Set([
+  "name",
+  "retiredStatus",
+  "dob",
+  "gender",
+  "location",
+  "zip",
+  "partnerAge",
+  "partnerGender",
+]);
+const PROFILE_INCOME_IDS = new Set([
+  "savings",
+  "pctEquities",
+  "pctBonds",
+  "monthlyIncome",
+]);
+const PROFILE_SPENDING_IDS = new Set(["monthlyNeed"]);
 
 /** Live side-panel rows for one page: only filled, currently-visible fields. */
 function liveItemsFor(page: MadlibPage, about: AnswerMap): SectionItem[] {
@@ -56,11 +82,38 @@ export interface NarrativeSidebarItems {
  * always show the same live data.
  */
 export function narrativeSidebarItems(about: AnswerMap): NarrativeSidebarItems {
+  // Profile-page values (hybrid quick draft) fold into the same folders as the
+  // guided flow. Base rows come first so a shared id (e.g. gender/zip) is never
+  // double-counted.
+  const profilePage = NARRATIVE_PAGES.profile;
+  const profileItems = profilePage ? liveItemsFor(profilePage, about) : [];
+  const pickProfile = (ids: Set<string>) =>
+    profileItems.filter((it) => ids.has(it.key));
+  const merge = (base: SectionItem[], extra: SectionItem[]) => {
+    const seen = new Set(base.map((it) => it.key));
+    return [...base, ...extra.filter((it) => !seen.has(it.key))];
+  };
+
   return {
-    aboutItems: liveItemsFor(NARRATIVE_PAGES.details, about),
-    incomeItems: liveItemsFor(NARRATIVE_PAGES.income, about),
-    spendingItems: liveItemsFor(NARRATIVE_PAGES.spending, about),
-    goalsItems: liveItemsFor(NARRATIVE_PAGES.goals, about),
+    aboutItems: merge(
+      merge(
+        liveItemsFor(NARRATIVE_PAGES.details, about),
+        pickProfile(PROFILE_ABOUT_IDS),
+      ),
+      liveItemsFor(ABOUT_MORE_PAGE, about),
+    ),
+    incomeItems: merge(
+      liveItemsFor(NARRATIVE_PAGES.income, about),
+      pickProfile(PROFILE_INCOME_IDS),
+    ),
+    spendingItems: merge(
+      liveItemsFor(NARRATIVE_PAGES.spending, about),
+      pickProfile(PROFILE_SPENDING_IDS),
+    ),
+    goalsItems: merge(
+      liveItemsFor(NARRATIVE_PAGES.goals, about),
+      liveItemsFor(GOALS_EXTRA_PAGE, about),
+    ),
   };
 }
 
@@ -91,7 +144,7 @@ export function narrativeProgress(about: AnswerMap): NarrativeProgress {
   let optionalTotal = 0;
   let optionalFilled = 0;
 
-  for (const page of Object.values(NARRATIVE_PAGES)) {
+  for (const page of CORE_NARRATIVE_PAGES) {
     for (const line of page.lines) {
       const fields = line.tokens.filter(
         (t): t is MadlibField => typeof t !== "string" && t.kind === "field",

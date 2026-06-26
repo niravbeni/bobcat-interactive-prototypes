@@ -22,7 +22,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowLeft, ArrowRight, Check, GripVertical } from "lucide-react";
+import { ArrowRight, Check, GripVertical } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import {
@@ -80,14 +80,12 @@ function keepersFrom(
 
 export function PriorityRankFlow({
   onDone,
-  onExit,
   onEnterSort,
   onEnterRank,
   fit = false,
+  roomy = false,
 }: {
   onDone: (result: PriorityRankResult) => void;
-  /** Back from the first (swipe) phase — e.g. cancel and return to a summary. */
-  onExit?: () => void;
   /** Fired once when the sort phase is first reached. */
   onEnterSort?: () => void;
   /** Fired once when the rank phase is first reached. */
@@ -97,6 +95,11 @@ export function PriorityRankFlow({
    * Used where the flow must fit a screen without adding scroll (details menu).
    */
   fit?: boolean;
+  /**
+   * Larger, more spaced sort chips / rank cards for full-page layouts (the
+   * hybrid Goals step) vs. the compact sidebar/details-menu placement.
+   */
+  roomy?: boolean;
 }) {
   const [phase, setPhase] = useState<Phase>("swipe");
   const [decisions, setDecisions] = useState<Record<string, SwipeVerdict>>({});
@@ -142,13 +145,6 @@ export function PriorityRankFlow({
     onDone({ ranking: [...ranking, ...skipped], decisions });
   };
 
-  const canBack = phase !== "swipe" || Boolean(onExit);
-  const goBack = () => {
-    if (phase === "rank") setPhase("sort");
-    else if (phase === "sort") setPhase("swipe");
-    else onExit?.();
-  };
-
   const canForward =
     phase === "swipe"
       ? swipeComplete
@@ -174,88 +170,71 @@ export function PriorityRankFlow({
           : "flex h-[600px] flex-col rounded-card border border-stroke-subtle bg-white p-4 shadow-[0_1px_2px_rgba(16,24,32,0.06)]",
       )}
     >
-      <div className="mb-3 flex shrink-0 items-center gap-1.5">
-        <NavButton kind="back" disabled={!canBack} onClick={goBack} />
-        <span className="ml-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-2">
+      <div className="mb-3 flex shrink-0 items-center">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-2">
           Step {stepIndex + 1} of 3 · {PHASE_LABEL[phase]}
         </span>
       </div>
 
-      <div
-        className={cn(
-          "flex min-h-0 flex-1 flex-col",
-          !fit && "justify-center",
-        )}
-      >
+      <div className="flex min-h-0 flex-1 flex-col">
         {phase === "swipe" ? (
-          <CardSwipe
-            items={RETIREMENT_PRIORITIES}
-            showResults={false}
-            onComplete={handleSwipeComplete}
-            fit={fit}
-          />
-        ) : phase === "sort" ? (
-          <SortPhase value={decisions} byId={byId} onChange={setDecisions} />
+          <div className="flex min-h-0 flex-1 flex-col justify-center">
+            <CardSwipe
+              items={RETIREMENT_PRIORITIES}
+              showResults={false}
+              onComplete={handleSwipeComplete}
+              fit={fit}
+            />
+          </div>
         ) : (
-          <RankPhase byId={byId} ranking={ranking} onReorder={setRanking} />
+          <>
+            <div className="scrollbar-slim flex min-h-0 flex-1 flex-col overflow-y-auto pt-1">
+              {/* Auto margins vertically center the cards when there's spare
+                  room, but collapse so the content scrolls from the top if it
+                  ever overflows the available height. */}
+              <div className="my-auto w-full">
+                {phase === "sort" ? (
+                  <SortPhase
+                    value={decisions}
+                    byId={byId}
+                    onChange={setDecisions}
+                    roomy={roomy}
+                  />
+                ) : (
+                  <RankPhase
+                    byId={byId}
+                    ranking={ranking}
+                    onReorder={setRanking}
+                    roomy={roomy}
+                  />
+                )}
+              </div>
+            </div>
+            <div className="mt-8 flex shrink-0 justify-end">
+              <Button
+                variant={roomy ? "primary" : "blue"}
+                size="md"
+                onClick={goForward}
+                disabled={!canForward}
+                className="gap-1.5 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {phase === "rank" ? (
+                  <>
+                    Confirm ranking
+                    <Check className="size-4" strokeWidth={2.4} />
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRight className="size-4" strokeWidth={2.4} />
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
         )}
       </div>
-
-      {phase !== "swipe" ? (
-        <div className="mt-4 flex shrink-0 justify-end">
-          <Button
-            variant="blue"
-            size="md"
-            onClick={goForward}
-            disabled={!canForward}
-            className="gap-1.5 disabled:opacity-40"
-          >
-            {phase === "rank" ? (
-              <>
-                Confirm ranking
-                <Check className="size-4" strokeWidth={2.4} />
-              </>
-            ) : (
-              <>
-                Continue
-                <ArrowRight className="size-4" strokeWidth={2.4} />
-              </>
-            )}
-          </Button>
-        </div>
-      ) : null}
     </div>
-  );
-}
-
-function NavButton({
-  kind,
-  disabled,
-  onClick,
-}: {
-  kind: "back" | "forward" | "commit";
-  disabled?: boolean;
-  onClick: () => void;
-}) {
-  const Icon = kind === "back" ? ArrowLeft : kind === "commit" ? Check : ArrowRight;
-  const label = kind === "back" ? "Back" : kind === "commit" ? "Save" : "Next";
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "grid size-8 place-items-center rounded-full border transition-colors",
-        kind === "commit" && !disabled
-          ? "border-stratosphere bg-stratosphere text-white hover:brightness-110"
-          : "border-stroke-subtle bg-white text-deep-black hover:bg-ghost-white",
-        disabled && "cursor-not-allowed opacity-40 hover:bg-white",
-      )}
-    >
-      <Icon className="size-4" strokeWidth={2.4} />
-    </button>
   );
 }
 
@@ -263,10 +242,12 @@ function SortPhase({
   value,
   byId,
   onChange,
+  roomy = false,
 }: {
   value: Record<string, SwipeVerdict>;
   byId: Map<string, Priority>;
   onChange: (next: Record<string, SwipeVerdict>) => void;
+  roomy?: boolean;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -307,7 +288,7 @@ function SortPhase({
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveId(null)}
     >
-      <div className="relative grid grid-cols-3 gap-2">
+      <div className={cn("relative grid grid-cols-3", roomy ? "gap-4" : "gap-2")}>
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-[16.66%] top-[5px] h-px bg-stroke-subtle"
@@ -318,6 +299,7 @@ function SortPhase({
             verdict={verdict}
             cards={buckets[verdict]}
             activeId={activeId}
+            roomy={roomy}
           />
         ))}
       </div>
@@ -326,6 +308,7 @@ function SortPhase({
           <SortChipContent
             priority={activeCard}
             verdict={value[activeCard.id] ?? "skip"}
+            roomy={roomy}
             dragging
           />
         ) : null}
@@ -338,10 +321,12 @@ function BucketColumn({
   verdict,
   cards,
   activeId,
+  roomy = false,
 }: {
   verdict: SwipeVerdict;
   cards: Priority[];
   activeId: string | null;
+  roomy?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: verdict });
   const v = VERDICTS[verdict];
@@ -355,7 +340,10 @@ function BucketColumn({
           aria-hidden
         />
         <span
-          className="text-center text-[11px] font-semibold leading-tight"
+          className={cn(
+            "text-center font-semibold leading-tight",
+            roomy ? "text-xs" : "text-[11px]",
+          )}
           style={{ color: v.color }}
         >
           {v.label}
@@ -364,7 +352,8 @@ function BucketColumn({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-[120px] w-full flex-col gap-1.5 rounded-card p-1.5 transition-colors",
+          "flex w-full flex-col rounded-card transition-colors",
+          roomy ? "min-h-[110px] gap-1.5 p-1.5" : "min-h-[120px] gap-1.5 p-1.5",
           isOver ? "bg-violet/5" : "bg-transparent",
         )}
       >
@@ -374,6 +363,7 @@ function BucketColumn({
             priority={p}
             verdict={verdict}
             dimmed={p.id === activeId}
+            roomy={roomy}
           />
         ))}
       </div>
@@ -385,10 +375,12 @@ function SortChip({
   priority,
   verdict,
   dimmed,
+  roomy = false,
 }: {
   priority: Priority;
   verdict: SwipeVerdict;
   dimmed?: boolean;
+  roomy?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: priority.id,
@@ -401,7 +393,7 @@ function SortChip({
       {...attributes}
       {...listeners}
     >
-      <SortChipContent priority={priority} verdict={verdict} />
+      <SortChipContent priority={priority} verdict={verdict} roomy={roomy} />
     </div>
   );
 }
@@ -410,29 +402,37 @@ function SortChipContent({
   priority,
   verdict,
   dragging,
+  roomy = false,
 }: {
   priority: Priority;
   verdict: SwipeVerdict;
   dragging?: boolean;
+  roomy?: boolean;
 }) {
   const Icon = priority.icon;
   const color = VERDICTS[verdict].color;
   return (
     <div
       className={cn(
-        "flex cursor-grab touch-none select-none items-center gap-1.5 rounded-xl border bg-white px-2 py-1.5 active:cursor-grabbing",
+        "flex cursor-grab touch-none select-none items-center rounded-xl border bg-white active:cursor-grabbing",
+        roomy ? "gap-2 px-2.5 py-1.5" : "gap-1.5 px-2 py-1.5",
         dragging
           ? "border-violet shadow-[0_8px_30px_rgba(16,24,32,0.12)]"
           : "border-stroke-subtle",
       )}
     >
-      <span
-        className="grid size-6 shrink-0 place-items-center rounded-lg"
-        style={{ background: `${color}1a`, color }}
-      >
-        <Icon size={14} strokeWidth={2.2} />
+        <span
+          className="grid size-6 shrink-0 place-items-center rounded-lg"
+          style={{ background: `${color}1a`, color }}
+        >
+          <Icon size={14} strokeWidth={2.2} />
       </span>
-      <span className="text-[11.5px] font-medium leading-tight text-deep-black">
+      <span
+        className={cn(
+          "line-clamp-2 font-medium leading-tight text-deep-black",
+          roomy ? "text-[12px]" : "text-[11.5px]",
+        )}
+      >
         {priority.title}
       </span>
     </div>
@@ -443,10 +443,12 @@ function RankPhase({
   byId,
   ranking,
   onReorder,
+  roomy = false,
 }: {
   byId: Map<string, Priority>;
   ranking: string[];
   onReorder: (ids: string[]) => void;
+  roomy?: boolean;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
@@ -494,7 +496,10 @@ function RankPhase({
         <div className="relative">
           <div
             aria-hidden
-            className="pointer-events-none absolute left-1 right-2 top-[74px] flex -translate-y-1/2 items-center"
+            className={cn(
+              "pointer-events-none absolute left-1 right-2 flex -translate-y-1/2 items-center",
+              roomy ? "top-[65px]" : "top-[74px]",
+            )}
           >
             <span className="size-0 shrink-0 border-y-[5px] border-r-[7px] border-y-transparent border-r-stroke-subtle" />
             <span className="h-px flex-1 bg-stroke-subtle" />
@@ -504,18 +509,25 @@ function RankPhase({
             items={display}
             strategy={horizontalListSortingStrategy}
           >
-            <div className="scrollbar-slim relative flex justify-between gap-3 overflow-x-auto px-8 pb-2">
+            <div
+              className={cn(
+                "relative flex pb-2",
+                roomy
+                  ? "w-full justify-center gap-2 px-1"
+                  : "scrollbar-slim justify-between overflow-x-auto gap-3 px-8",
+              )}
+            >
               {display.map((id) => {
                 const p = byId.get(id);
                 if (!p) return null;
-                return <RankCard key={id} priority={p} />;
+                return <RankCard key={id} priority={p} roomy={roomy} />;
               })}
             </div>
           </SortableContext>
         </div>
         <DragOverlay>
           {activeCard ? (
-            <RankCardContent priority={activeCard} dragging />
+            <RankCardContent priority={activeCard} roomy={roomy} dragging />
           ) : null}
         </DragOverlay>
       </DndContext>
@@ -523,7 +535,13 @@ function RankPhase({
   );
 }
 
-function RankCard({ priority }: { priority: Priority }) {
+function RankCard({
+  priority,
+  roomy = false,
+}: {
+  priority: Priority;
+  roomy?: boolean;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: priority.id });
   const style = {
@@ -531,9 +549,18 @@ function RankCard({ priority }: { priority: Priority }) {
     transition,
   };
   return (
-    <div ref={setNodeRef} style={style} className={cn(isDragging && "opacity-0")}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        roomy && "min-w-0 flex-1 basis-0 max-w-[156px]",
+        isDragging && "opacity-0",
+      )}
+    >
       <RankCardContent
         priority={priority}
+        roomy={roomy}
+        fullWidth={roomy}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
@@ -544,10 +571,15 @@ function RankCardContent({
   priority,
   dragging,
   dragHandleProps,
+  roomy = false,
+  fullWidth = false,
 }: {
   priority: Priority;
   dragging?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  roomy?: boolean;
+  /** Fill the (flex) parent's width instead of a fixed card width. */
+  fullWidth?: boolean;
 }) {
   const Icon = priority.icon;
   const isNeed = priority.category === "need";
@@ -555,7 +587,9 @@ function RankCardContent({
   return (
     <div
       className={cn(
-        "flex h-[148px] w-[116px] shrink-0 cursor-grab touch-none select-none flex-col justify-between rounded-card border bg-white p-3 active:cursor-grabbing",
+        "flex shrink-0 cursor-grab touch-none select-none flex-col justify-between rounded-card border bg-white active:cursor-grabbing",
+        roomy ? "h-[130px] p-3" : "h-[148px] w-[116px] p-3",
+        roomy && (fullWidth ? "w-full" : "w-[148px]"),
         dragging
           ? "border-violet shadow-[0_8px_30px_rgba(16,24,32,0.12)]"
           : "border-stroke-subtle",
@@ -564,14 +598,25 @@ function RankCardContent({
     >
       <div className="flex items-center justify-between">
         <span
-          className="grid size-8 place-items-center rounded-lg"
+          className={cn(
+            "grid place-items-center rounded-lg",
+            roomy ? "size-9" : "size-8",
+          )}
           style={{ background: `${color}1a`, color }}
         >
-          <Icon size={16} strokeWidth={2.2} />
+          <Icon size={roomy ? 18 : 16} strokeWidth={2.2} />
         </span>
-        <GripVertical className="size-4 text-gray-2" strokeWidth={2} />
+        <GripVertical
+          className="size-4 shrink-0 text-gray-2"
+          strokeWidth={2}
+        />
       </div>
-      <span className="line-clamp-3 text-[12.5px] font-medium leading-tight text-deep-black">
+      <span
+        className={cn(
+          "line-clamp-3 font-medium leading-tight text-deep-black",
+          roomy ? "text-sm" : "text-[12.5px]",
+        )}
+      >
         {priority.title}
       </span>
     </div>

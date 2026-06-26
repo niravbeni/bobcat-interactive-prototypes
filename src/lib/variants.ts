@@ -6,6 +6,9 @@ export const SKIP_INTERACTION_EVENT = "bobcat:skip-interaction";
 export type VariantId =
   | "linear-chat-v2"
   | "narrative"
+  | "hybrid"
+  | "hybrid-quick"
+  | "hybrid-guided"
   | "base"
   | "cardsort"
   | "swipe"
@@ -69,7 +72,6 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     status: "ready",
     steps: ["outlook", "details", "chat", "complete", "marketplace"],
     skipInFlow: { label: "the goals chat" },
-    featured: true,
   },
   narrative: {
     id: "narrative",
@@ -87,6 +89,64 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
       "goals",
       "complete",
       "outlook",
+      "marketplace",
+    ],
+    skipTo: { step: "goals", label: "the goals" },
+  },
+  hybrid: {
+    id: "hybrid",
+    title: "Hybrid Flow",
+    description:
+      "Start by choosing how you'd like to build your retirement plan: a quick draft outlook you refine later, a guided step-by-step build, or talking to an advisor. Each path then runs end to end.",
+    status: "ready",
+    featured: true,
+    // The picker is a single screen that branches into the hybrid-quick /
+    // hybrid-guided flows (each its own variant so answers reset cleanly).
+    steps: ["persona"],
+  },
+  "hybrid-quick": {
+    id: "hybrid-quick",
+    title: "Hybrid · Quick draft",
+    description:
+      "Persona 1: capture a rich profile in one page, see a draft outlook immediately, then optionally add Income & Spending detail and rank goals to firm it up.",
+    status: "ready",
+    // Continue path: profile (rich madlib) → loading (simulation pause) →
+    // outlook (draft) → details/income/spending (scrollable section screens) →
+    // goals (questions + swipe rank) → back to the full outlook. complete +
+    // marketplace are appended so the top-nav toggle can reach them.
+    steps: [
+      "profile",
+      "loading",
+      "outlook",
+      "details",
+      "income",
+      "spending",
+      "goals",
+      "complete",
+      "marketplace",
+    ],
+    skipTo: { step: "goals", label: "the goals" },
+  },
+  "hybrid-guided": {
+    id: "hybrid-guided",
+    title: "Hybrid · Guided build",
+    description:
+      "Persona 2: a blend of three onboarding styles — the mad-libs About you page, a one-question-at-a-time Income & Spending wizard, and a swipe-to-rank Goals deck — all feeding the same live side panel and outlook.",
+    status: "ready",
+    // Continue path: education → details (madlib) → income (wizard) → summary →
+    // spending (wizard) → summary → goals (questions + rank) → outlook →
+    // complete. The single summary step is revisited via goTo after income and
+    // again after spending (conditional Continue). marketplace is appended so
+    // the top-nav toggle can reach it.
+    steps: [
+      "education",
+      "details",
+      "income",
+      "summary",
+      "spending",
+      "goals",
+      "outlook",
+      "complete",
       "marketplace",
     ],
     skipTo: { step: "goals", label: "the goals" },
@@ -147,6 +207,7 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
 };
 
 export const VARIANT_ORDER: VariantId[] = [
+  "hybrid",
   "linear-chat-v2",
   "narrative",
   "base",
