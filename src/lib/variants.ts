@@ -14,7 +14,10 @@ export type VariantId =
   | "swipe"
   | "chat-cardsort"
   | "happiness"
-  | "linear-chat";
+  | "linear-chat"
+  | "smart-sort"
+  | "data-dump"
+  | "card-sort";
 
 export interface VariantMeta {
   id: VariantId;
@@ -204,9 +207,41 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     status: "ready",
     steps: ["chat", "complete"],
   },
+  "smart-sort": {
+    id: "smart-sort",
+    title: "Smart Sort",
+    description:
+      "Type a bank or provider and an AI-style autocomplete recognizes the account, then auto-tags it by tax treatment so your savings sort themselves.",
+    status: "ready",
+    steps: ["smart-sort"],
+  },
+  "data-dump": {
+    id: "data-dump",
+    title: "Data Dump",
+    description:
+      "Throw everything at one canvas — files, screenshots, pasted notes, a voice memo or a phone scan — then let AI structure the mess into an editable account profile you can tweak.",
+    status: "ready",
+    steps: ["data-dump"],
+  },
+  "card-sort": {
+    id: "card-sort",
+    title: "Card Sort",
+    description:
+      "Decide how much each financial goal matters with one clear tap, watch it drop onto a low-to-high timeline, then drag the cards to fine-tune your ranking.",
+    status: "ready",
+    steps: ["card-sort"],
+  },
 };
 
-export const VARIANT_ORDER: VariantId[] = [
+/** Standalone signature-component prototypes, shown first on the dashboard. */
+export const COMPONENT_PROTOTYPE_ORDER: VariantId[] = [
+  "smart-sort",
+  "card-sort",
+  "data-dump",
+];
+
+/** The end-to-end retirement onboarding UX flows. */
+export const FLOW_ORDER: VariantId[] = [
   "hybrid",
   "linear-chat-v2",
   "narrative",
@@ -216,6 +251,11 @@ export const VARIANT_ORDER: VariantId[] = [
   "chat-cardsort",
   "happiness",
   "linear-chat",
+];
+
+export const VARIANT_ORDER: VariantId[] = [
+  ...COMPONENT_PROTOTYPE_ORDER,
+  ...FLOW_ORDER,
 ];
 
 export function isVariantId(value: string): value is VariantId {

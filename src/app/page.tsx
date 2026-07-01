@@ -1,8 +1,14 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { VARIANTS, VARIANT_ORDER, firstStep, pathFor } from "@/lib/variants";
-import type { VariantMeta } from "@/lib/variants";
+import {
+  VARIANTS,
+  COMPONENT_PROTOTYPE_ORDER,
+  FLOW_ORDER,
+  firstStep,
+  pathFor,
+} from "@/lib/variants";
+import type { VariantId, VariantMeta } from "@/lib/variants";
 import { cn } from "@/lib/cn";
 
 function VariationCard({ v }: { v: VariantMeta }) {
@@ -59,6 +65,21 @@ function VariationCard({ v }: { v: VariantMeta }) {
   );
 }
 
+function VariantGroup({ title, ids }: { title: string; ids: VariantId[] }) {
+  return (
+    <div className="mt-12 first:mt-10">
+      <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-gray-2">
+        {title}
+      </h2>
+      <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 3xl:grid-cols-3 3xl:gap-6">
+        {ids.map((id) => (
+          <VariationCard key={id} v={VARIANTS[id]} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   return (
     <main className="min-h-screen bg-ghost-white">
@@ -78,11 +99,8 @@ export default function Dashboard() {
           You can return here any time from the WTW logo in the top-left.
         </p>
 
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 3xl:grid-cols-3 3xl:gap-6">
-          {VARIANT_ORDER.map((id) => (
-            <VariationCard key={id} v={VARIANTS[id]} />
-          ))}
-        </div>
+        <VariantGroup title="Component prototypes" ids={COMPONENT_PROTOTYPE_ORDER} />
+        <VariantGroup title="Retirement UX flows" ids={FLOW_ORDER} />
       </section>
     </main>
   );

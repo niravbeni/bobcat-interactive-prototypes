@@ -167,4 +167,7 @@ export type StepId =
   | "persona"
   | "profile"
   | "loading"
-  | "education";
+  | "education"
+  | "smart-sort"
+  | "data-dump"
+  | "card-sort";

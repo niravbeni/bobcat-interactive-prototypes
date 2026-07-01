@@ -26,6 +26,9 @@ import { GuidedSummaryScreen } from "@/components/screens/variants/GuidedSummary
 import { GuidedGoalsScreen } from "@/components/screens/variants/GuidedGoalsScreen";
 import { EducationScreen } from "@/components/screens/variants/EducationScreen";
 import { LoadingSimScreen } from "@/components/screens/variants/LoadingSimScreen";
+import { SmartSortScreen } from "@/components/screens/variants/SmartSortScreen";
+import { DataDumpScreen } from "@/components/screens/variants/DataDumpScreen";
+import { CardSortScreen } from "@/components/screens/variants/CardSortScreen";
 
 /** The income/summary/spending/complete steps are identical across variants. */
 function sharedStep(step: StepId) {
@@ -86,6 +89,12 @@ export function VariantScreen({
       return <NarrativeScreen step={step} />;
     case "hybrid":
       return <PersonaPickerScreen />;
+    case "smart-sort":
+      return <SmartSortScreen />;
+    case "data-dump":
+      return <DataDumpScreen />;
+    case "card-sort":
+      return <CardSortScreen />;
     case "hybrid-quick":
       if (step === "profile")
         return <NarrativeScreen step="profile" hideSidebar />;
