@@ -170,4 +170,5 @@ export type StepId =
   | "education"
   | "smart-sort"
   | "data-dump"
-  | "card-sort";
+  | "card-sort"
+  | "smart-assets";

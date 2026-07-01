@@ -17,7 +17,8 @@ export type VariantId =
   | "linear-chat"
   | "smart-sort"
   | "data-dump"
-  | "card-sort";
+  | "card-sort"
+  | "smart-assets";
 
 export interface VariantMeta {
   id: VariantId;
@@ -231,10 +232,19 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     status: "ready",
     steps: ["card-sort"],
   },
+  "smart-assets": {
+    id: "smart-assets",
+    title: "Smart Assets",
+    description:
+      "Bring in everything in one place: connect with Plaid, drop your statements, notes and voice memos into an AI canvas, or search and add accounts by hand — all collected into one editable list.",
+    status: "ready",
+    steps: ["smart-assets"],
+  },
 };
 
 /** Standalone signature-component prototypes, shown first on the dashboard. */
 export const COMPONENT_PROTOTYPE_ORDER: VariantId[] = [
+  "smart-assets",
   "smart-sort",
   "card-sort",
   "data-dump",

@@ -1,8 +1,11 @@
 import {
-  CreditCard,
-  GraduationCap,
+  Activity,
+  AlertTriangle,
+  Flame,
   Gift,
-  Home,
+  HeartPulse,
+  LineChart,
+  PiggyBank,
   Plane,
   ShieldCheck,
   TrendingUp,
@@ -52,51 +55,70 @@ export interface PriorityCard {
 }
 
 /**
- * The financial priorities the user places onto the timeline. Reused in spirit
- * from the earlier swipe/rank flow, reframed as plain goals (no em-dashes).
+ * The retirement concerns and priorities the user ranks onto the timeline.
+ * Titles are shortened from the source list for a card-sized read, with a plain
+ * one-line description under each.
  */
 export const CARDS: PriorityCard[] = [
   {
-    id: "debt",
-    title: "Pay off debt",
-    description: "Clear credit cards, loans and lingering balances.",
-    icon: CreditCard,
+    id: "late-expenses",
+    title: "Unexpected costs later in retirement",
+    description: "Cover big surprises towards the end of retirement.",
+    icon: HeartPulse,
   },
   {
-    id: "emergency",
-    title: "Build an emergency fund",
-    description: "Set aside a cushion for the unexpected.",
+    id: "legacy",
+    title: "Leave a meaningful legacy",
+    description: "Pass on an inheritance or give to causes you care about.",
+    icon: Gift,
+  },
+  {
+    id: "secure-spending",
+    title: "Secure my current spending",
+    description: "Keep up my lifestyle throughout retirement.",
     icon: ShieldCheck,
   },
   {
-    id: "retirement",
-    title: "Save for retirement",
-    description: "Grow a nest egg for life after work.",
+    id: "not-run-out",
+    title: "Not running out of money",
+    description: "Make my savings last for the rest of my life.",
+    icon: PiggyBank,
+  },
+  {
+    id: "grow-assets",
+    title: "Grow my assets",
+    description: "Keep building my wealth over time.",
     icon: TrendingUp,
   },
   {
-    id: "home",
-    title: "Buy a home",
-    description: "Save toward a down payment and a place of your own.",
-    icon: Home,
+    id: "inflation",
+    title: "Keeping up with inflation",
+    description: "Protect my money from rising costs.",
+    icon: Flame,
   },
   {
-    id: "travel",
-    title: "Travel more",
-    description: "Budget for trips and time away.",
+    id: "market-savings",
+    title: "Market swings hitting my savings",
+    description: "Shield my nest egg from market ups and downs.",
+    icon: LineChart,
+  },
+  {
+    id: "market-spending",
+    title: "Market swings affecting my spending",
+    description: "Keep my spending steady despite market changes.",
+    icon: Activity,
+  },
+  {
+    id: "early-expenses",
+    title: "Unexpected costs early in retirement",
+    description: "Handle big surprises in the first years of retirement.",
+    icon: AlertTriangle,
+  },
+  {
+    id: "spend-healthy",
+    title: "Spend more while I'm healthy",
+    description: "Enjoy my money during my active, healthy years.",
     icon: Plane,
-  },
-  {
-    id: "education",
-    title: "Fund kids' education",
-    description: "Help cover tuition and school costs.",
-    icon: GraduationCap,
-  },
-  {
-    id: "inheritance",
-    title: "Leave an inheritance",
-    description: "Pass something on to the people you love.",
-    icon: Gift,
   },
 ];
 

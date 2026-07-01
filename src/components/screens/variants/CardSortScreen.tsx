@@ -193,7 +193,7 @@ export function CardSortScreen() {
                   axis="x"
                   values={order}
                   onReorder={setOrder}
-                  className="relative flex flex-wrap items-stretch justify-center gap-2.5"
+                  className="relative flex flex-nowrap items-stretch justify-center gap-2"
                 >
                   {order.map((id, index) => {
                     const card = CARD_BY_ID[id];
@@ -316,7 +316,7 @@ function TimelineCard({
       whileDrag={{ scale: 1.05, zIndex: 10 }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "relative z-[1] flex h-[132px] w-[124px] shrink-0 cursor-grab touch-none select-none flex-col rounded-card border bg-white px-2.5 py-2.5 shadow-[0_2px_8px_rgba(16,24,32,0.06)] active:cursor-grabbing",
+        "relative z-[1] flex h-[132px] min-w-0 flex-1 basis-0 max-w-[124px] cursor-grab touch-none select-none flex-col rounded-card border bg-white px-2 py-2.5 shadow-[0_2px_8px_rgba(16,24,32,0.06)] active:cursor-grabbing",
       )}
       style={{ borderColor: `${meta.color}59` }}
     >

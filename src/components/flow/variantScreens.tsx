@@ -29,6 +29,7 @@ import { LoadingSimScreen } from "@/components/screens/variants/LoadingSimScreen
 import { SmartSortScreen } from "@/components/screens/variants/SmartSortScreen";
 import { DataDumpScreen } from "@/components/screens/variants/DataDumpScreen";
 import { CardSortScreen } from "@/components/screens/variants/CardSortScreen";
+import { SmartAssetsScreen } from "@/components/screens/variants/SmartAssetsScreen";
 
 /** The income/summary/spending/complete steps are identical across variants. */
 function sharedStep(step: StepId) {
@@ -95,6 +96,8 @@ export function VariantScreen({
       return <DataDumpScreen />;
     case "card-sort":
       return <CardSortScreen />;
+    case "smart-assets":
+      return <SmartAssetsScreen />;
     case "hybrid-quick":
       if (step === "profile")
         return <NarrativeScreen step="profile" hideSidebar />;
