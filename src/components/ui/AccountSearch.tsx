@@ -35,13 +35,29 @@ export function AccountSearch({
   onSelect,
   placeholder = "Start typing your bank or provider…",
   showIcon = true,
+  clearOnSelect = true,
+  value,
+  onQueryChange,
 }: {
   onSelect: (acc: InstitutionAccount) => void;
   placeholder?: string;
   /** Show the leading AI-spiral icon inside the input. */
   showIcon?: boolean;
+  /** Clear the input after a selection (default). When false, keep the
+   * selected provider's name in the field (used by the integrated add form). */
+  clearOnSelect?: boolean;
+  /** Controlled text value. When provided, the parent owns the query. */
+  value?: string;
+  /** Fires whenever the typed text changes (typing, ghost-accept, select). */
+  onQueryChange?: (query: string) => void;
 }) {
-  const [query, setQuery] = useState("");
+  const [internalQuery, setInternalQuery] = useState("");
+  const query = value !== undefined ? value : internalQuery;
+  const setQuery = (next: string | ((q: string) => string)) => {
+    const resolved = typeof next === "function" ? next(query) : next;
+    if (value === undefined) setInternalQuery(resolved);
+    onQueryChange?.(resolved);
+  };
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const [thinking, setThinking] = useState(false);
@@ -147,7 +163,7 @@ export function AccountSearch({
 
   const select = (acc: InstitutionAccount) => {
     onSelect(acc);
-    setQuery("");
+    setQuery(clearOnSelect ? "" : acc.provider);
     setOpen(false);
     setHighlight(0);
     inputRef.current?.focus();

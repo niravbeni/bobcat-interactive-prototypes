@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Plus, X } from "lucide-react";
+import { Check, Layers, Plus, X } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { AppShell } from "@/components/chrome/AppShell";
 import { BackButton } from "@/components/ui/BackButton";
@@ -12,6 +11,7 @@ import { AskSendIcon } from "@/components/ui/AskSendIcon";
 import { ProviderLogo } from "@/components/ui/ProviderLogo";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DumpCanvas } from "@/components/prototypes/DumpCanvas";
+import { cn } from "@/lib/cn";
 import {
   TAX_STATUS_LABEL,
   type InstitutionAccount,
@@ -117,22 +117,9 @@ export function SmartAssetsScreen() {
 
   const [assets, setAssets] = useState<AssetRow[]>([]);
   const [aiSummary, setAiSummary] = useState<StructuredResult | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [manualOpen, setManualOpen] = useState(false);
-
-  const addFromSearch = (acc: InstitutionAccount) =>
-    setAssets((prev) => [
-      ...prev,
-      {
-        id: `${acc.id}-${Date.now()}`,
-        provider: acc.provider,
-        accountType: acc.accountType,
-        taxStatus: acc.taxStatus,
-        balance: null,
-        source: "search",
-        accentColor: acc.accentColor,
-      },
-    ]);
+  // The active input mode. "Connect with Plaid" is a placeholder and never
+  // becomes active, so only manual / smart are tracked here.
+  const [mode, setMode] = useState<"manual" | "smart">("manual");
 
   const addManual = (row: {
     provider: string;
@@ -186,8 +173,15 @@ export function SmartAssetsScreen() {
         source: "ai" as const,
       })),
     ]);
-    setModalOpen(false);
+    // Return to the manual entry form so the newly added accounts are visible.
+    setMode("manual");
   };
+
+  // Group assets by tax treatment for the headed list (order = TAX_OPTIONS).
+  const groupedAssets = TAX_OPTIONS.map((tax) => ({
+    tax,
+    rows: assets.filter((a) => a.taxStatus === tax),
+  })).filter((g) => g.rows.length > 0);
 
   const total = assets.reduce((sum, a) => sum + (a.balance ?? 0), 0);
   const hasAmounts = assets.some((a) => a.balance !== null);
@@ -248,157 +242,123 @@ export function SmartAssetsScreen() {
             </p>
           </motion.div>
 
-          {/* Two ways to bring in everything at once. Once the list has any
-              accounts, these collapse into a slim bar to save vertical space
-              so the whole page fits without scrolling. */}
-          {assets.length === 0 ? (
-            <motion.div
-              className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <OptionCard
-                visual={
-                  <span className="flex size-10 items-center justify-center overflow-hidden rounded-full border border-stroke-subtle bg-white">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/logos/plaid.png"
-                      alt=""
-                      className="size-full object-contain p-1.5"
-                    />
-                  </span>
-                }
-                title="Connect with Plaid"
-                description="Securely link your banks and brokerages."
-                onClick={() => {}}
-              />
-              <OptionCard
-                visual={
-                  <span className="flex size-10 items-center justify-center">
-                    <AskSendIcon className="size-7" />
-                  </span>
-                }
-                title="Add what you have"
-                description="Drop in statements, notes or a voice memo — AI does the rest."
-                accent
-                onClick={() => setModalOpen(true)}
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              className="mt-5 grid grid-cols-2 gap-3"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <button
-                type="button"
-                onClick={() => {}}
-                className="group flex items-center gap-2.5 rounded-card border border-stroke-subtle bg-white px-3.5 py-3.5 text-left transition-colors hover:border-violet/50 hover:bg-violet/5 xl:py-5 3xl:py-6"
-              >
-                <span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full border border-stroke-subtle bg-white">
+          {/* Three ways to add accounts (see layout reference). Manual + Smart
+              add are selectable modes; Connect with Plaid is a placeholder. */}
+          <motion.div
+            className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <OptionCard
+              visual={
+                <span className="flex size-10 items-center justify-center rounded-full border border-stroke-subtle bg-white text-deep-black">
+                  <Layers className="size-5" strokeWidth={1.9} />
+                </span>
+              }
+              title="Add account manually"
+              description="Create your account information from scratch."
+              selected={mode === "manual"}
+              onClick={() => setMode("manual")}
+            />
+            <OptionCard
+              visual={
+                <span className="flex size-10 items-center justify-center overflow-hidden rounded-full border border-stroke-subtle bg-white">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/logos/plaid.png"
                     alt=""
-                    className="size-full object-contain p-1"
+                    className="size-full object-contain p-1.5"
                   />
                 </span>
-                <span className="truncate text-sm font-medium text-deep-black">
-                  Connect with Plaid
+              }
+              title="Connect with Plaid"
+              description="Securely link your banks and brokerages."
+              onClick={() => {}}
+            />
+            <OptionCard
+              visual={
+                <span className="flex size-10 items-center justify-center">
+                  <AskSendIcon className="size-7" />
                 </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setModalOpen(true)}
-                className="ai-glow group flex items-center gap-2.5 rounded-card border border-violet/40 bg-white px-3.5 py-3.5 text-left transition-colors hover:border-violet xl:py-5 3xl:py-6"
-              >
-                <AskSendIcon className="size-5 shrink-0" />
-                <span className="truncate text-sm font-medium text-deep-black">
-                  Add what you have
-                </span>
-              </button>
-            </motion.div>
-          )}
+              }
+              title="Smart add"
+              description="Drop in statements, notes or a voice memo. Violet will then digest your data and let you add & edit."
+              accent
+              selected={mode === "smart"}
+              onClick={() => setMode("smart")}
+            />
+          </motion.div>
 
-          {/* Manual add */}
+          {/* Input area — swaps with the selected mode */}
           <div className="mt-6 flex w-full flex-1 flex-col">
-            <div className="flex items-center gap-3">
-              <span className="h-px flex-1 bg-stroke-subtle" />
-              <span className="text-xs font-medium uppercase tracking-[0.12em] text-gray-2">
-                or add manually
-              </span>
-              <span className="h-px flex-1 bg-stroke-subtle" />
-            </div>
+            <AnimatePresence mode="wait" initial={false}>
+              {mode === "smart" ? (
+                <motion.div
+                  key="smart"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  className="flex flex-1 flex-col"
+                >
+                  <DumpCanvas
+                    title={null}
+                    continueLabel="Add to my accounts"
+                    autotype
+                    seedNotes={MODAL_SEED_NOTES}
+                    seedItems={MODAL_SEED_ITEMS}
+                    voiceTranscript={MODAL_VOICE_TRANSCRIPT}
+                    makeScan={makeModalScan}
+                    onComplete={handleDumpComplete}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="manual"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <AccountEntryForm onAdd={addManual} />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <div className="mt-4">
-              <AccountSearch
-                onSelect={addFromSearch}
-                placeholder="Search for a bank or provider…"
-                showIcon={false}
-              />
-            </div>
-
-            {/* Custom account (not one of the popular providers) */}
-            <div className="mt-3">
-              <AnimatePresence initial={false} mode="wait">
-                {manualOpen ? (
-                  <motion.div
-                    key="form"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                    className="overflow-hidden"
-                  >
-                    <ManualAddForm
-                      onAdd={addManual}
-                      onClose={() => setManualOpen(false)}
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.button
-                    key="toggle"
-                    type="button"
-                    onClick={() => setManualOpen(true)}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="inline-flex items-center gap-2 text-sm font-medium text-gray-1 transition-colors hover:text-violet"
-                  >
-                    <Plus className="size-4" strokeWidth={2} />
-                    Can&rsquo;t find it? Add a custom account
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Flat account list */}
-            <div className="mt-4 flex flex-col gap-2">
+            {/* Account list grouped by tax treatment */}
+            <div className="mt-5 flex flex-col gap-4">
               {assets.length === 0 ? (
                 <div className="rounded-card border border-dashed border-stroke-subtle bg-white/60 px-5 py-8 text-center text-sm text-gray-2">
-                  No accounts yet. Connect, add what you have, or search above.
+                  No accounts yet. Add one manually, connect a bank, or use
+                  Smart add.
                 </div>
               ) : (
-                <AnimatePresence initial={false}>
-                  {sortedAssets.map((asset) => (
-                    <motion.div
-                      key={asset.id}
-                      layout
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.96 }}
-                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <AssetLine
-                        asset={asset}
-                        onBalanceChange={(v) => setBalance(asset.id, v)}
-                        onRemove={() => removeAsset(asset.id)}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                groupedAssets.map((group) => (
+                  <div key={group.tax} className="flex flex-col gap-2">
+                    <span className="px-1 text-xs font-semibold uppercase tracking-[0.08em] text-gray-1">
+                      {TAX_STATUS_LABEL[group.tax]}
+                    </span>
+                    <AnimatePresence initial={false}>
+                      {group.rows.map((asset) => (
+                        <motion.div
+                          key={asset.id}
+                          layout
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.96 }}
+                          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                        >
+                          <AssetLine
+                            asset={asset}
+                            onBalanceChange={(v) => setBalance(asset.id, v)}
+                            onRemove={() => removeAsset(asset.id)}
+                          />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                ))
               )}
             </div>
 
@@ -419,15 +379,6 @@ export function SmartAssetsScreen() {
           </div>
         </div>
       </div>
-
-      <AnimatePresence>
-        {modalOpen ? (
-          <AddModal
-            onClose={() => setModalOpen(false)}
-            onComplete={handleDumpComplete}
-          />
-        ) : null}
-      </AnimatePresence>
     </AppShell>
   );
 }
@@ -439,24 +390,35 @@ function OptionCard({
   title,
   description,
   accent,
+  selected,
   onClick,
 }: {
   visual: React.ReactNode;
   title: string;
   description: string;
   accent?: boolean;
+  selected?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={
-        accent
-          ? "ai-glow group flex h-full flex-col items-start gap-2.5 rounded-card border border-violet/40 bg-white px-4 py-4 text-left transition-colors hover:border-violet"
-          : "group flex h-full flex-col items-start gap-2.5 rounded-card border border-stroke-subtle bg-white px-4 py-4 text-left transition-colors hover:border-violet/50 hover:bg-violet/5"
-      }
+      aria-pressed={selected}
+      className={cn(
+        "group relative flex h-full flex-col items-start gap-2.5 rounded-card border bg-white px-4 py-4 text-left transition-colors",
+        selected
+          ? "border-violet ring-1 ring-violet/40"
+          : accent
+            ? "ai-glow border-violet/40 hover:border-violet"
+            : "border-stroke-subtle hover:border-violet/50 hover:bg-violet/5",
+      )}
     >
+      {selected ? (
+        <span className="absolute right-3 top-3 flex size-5 items-center justify-center rounded-full bg-stratosphere text-white">
+          <Check className="size-3.5" strokeWidth={3} />
+        </span>
+      ) : null}
       {visual}
       <span className="text-base font-semibold text-deep-black">{title}</span>
       <span className="text-sm leading-snug text-gray-1">{description}</span>
@@ -464,12 +426,15 @@ function OptionCard({
   );
 }
 
-/* =========================================================== manual form == */
+/* ========================================================= entry form == */
 
-/** Inline form to add an account that isn't in the popular-providers catalog. */
-function ManualAddForm({
+/**
+ * Unified add-account form: the "Account name" field is the AI search combobox.
+ * Picking a matched provider pre-fills the type + tax treatment; fully custom
+ * names type straight through. The user sets the amount and clicks Add.
+ */
+function AccountEntryForm({
   onAdd,
-  onClose,
 }: {
   onAdd: (row: {
     provider: string;
@@ -477,14 +442,13 @@ function ManualAddForm({
     taxStatus: TaxStatus;
     balance: number | null;
   }) => void;
-  onClose: () => void;
 }) {
-  const [provider, setProvider] = useState("");
+  const [name, setName] = useState("");
   const [accountType, setAccountType] = useState("");
   const [taxStatus, setTaxStatus] = useState<TaxStatus>("taxable");
   const [amount, setAmount] = useState("");
 
-  // On open, type in some example content so the form fills itself in live.
+  // On mount, type in some example content so the form fills itself in live.
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
     const at = (fn: () => void, delay: number) =>
@@ -497,7 +461,7 @@ function ManualAddForm({
 
     if (reduce) {
       at(() => {
-        setProvider(MANUAL_DEFAULTS.provider);
+        setName(MANUAL_DEFAULTS.provider);
         setAccountType(MANUAL_DEFAULTS.accountType);
         setTaxStatus(MANUAL_DEFAULTS.taxStatus);
         setAmount(MANUAL_DEFAULTS.amount);
@@ -516,7 +480,7 @@ function ManualAddForm({
       t += 250;
     };
 
-    typeInto(MANUAL_DEFAULTS.provider, setProvider);
+    typeInto(MANUAL_DEFAULTS.provider, setName);
     typeInto(MANUAL_DEFAULTS.accountType, setAccountType);
     at(() => setTaxStatus(MANUAL_DEFAULTS.taxStatus), t);
     t += 300;
@@ -525,47 +489,44 @@ function ManualAddForm({
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  const canAdd = provider.trim().length > 0;
+  const canAdd = name.trim().length > 0;
+
+  // A matched provider pre-fills the account type + tax treatment; the name
+  // itself is synced via onQueryChange (AccountSearch keeps the text).
+  const handlePick = (acc: InstitutionAccount) => {
+    setAccountType(acc.accountType);
+    setTaxStatus(acc.taxStatus);
+  };
 
   const submit = () => {
     if (!canAdd) return;
     const digits = amount.replace(/[^0-9]/g, "");
     onAdd({
-      provider: provider.trim(),
+      provider: name.trim(),
       accountType: accountType.trim(),
       taxStatus,
       balance: digits === "" ? null : Number(digits),
     });
-    setProvider("");
+    setName("");
     setAccountType("");
     setTaxStatus("taxable");
     setAmount("");
-    onClose();
   };
 
   return (
     <div className="rounded-card border border-stroke-subtle bg-ghost-white p-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-1">
-          Add a custom account
-        </span>
-        <button
-          type="button"
-          aria-label="Close"
-          onClick={onClose}
-          className="shrink-0 rounded-full p-1 text-gray-2 transition-colors hover:bg-white hover:text-deep-black"
-        >
-          <X className="size-4" strokeWidth={2} />
-        </button>
-      </div>
+      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-1">
+        Add an account
+      </span>
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Account name">
-          <input
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            placeholder="e.g. Betterment"
-            className="w-full rounded-field border border-stroke-subtle bg-white px-3.5 py-2.5 text-sm text-deep-black outline-none transition-colors placeholder:text-gray-2 focus:border-violet/50"
+          <AccountSearch
+            onSelect={handlePick}
+            onQueryChange={setName}
+            value={name}
+            clearOnSelect={false}
+            placeholder="Search or type an account name…"
           />
         </Field>
         <Field label="Account type">
@@ -761,76 +722,3 @@ function AiSummaryCard({ result }: { result: StructuredResult }) {
   );
 }
 
-/* ================================================================== modal == */
-
-/**
- * Large overlay that hosts the shared Data Dump canvas. On completion it hands
- * the structured result back to the screen (which fills the AI summary + appends
- * detected accounts) and closes.
- */
-function AddModal({
-  onClose,
-  onComplete,
-}: {
-  onClose: () => void;
-  onComplete: (result: StructuredResult) => void;
-}) {
-  if (typeof document === "undefined") return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-      <motion.div
-        className="absolute inset-0 bg-deep-black/50"
-        onClick={onClose}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        aria-hidden="true"
-      />
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Add what you have"
-        initial={{ opacity: 0, y: 24, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 12, scale: 0.98 }}
-        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 flex h-[86vh] w-full max-w-[920px] flex-col overflow-hidden rounded-field bg-card shadow-[0_24px_64px_rgba(16,24,32,0.28)]"
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-stroke-subtle px-6 py-4">
-          <div>
-            <h2 className="text-lg font-semibold tracking-[-0.01em] text-deep-black">
-              Add what you have
-            </h2>
-            <p className="mt-0.5 text-sm text-gray-2">
-              Drop in files, screenshots, notes, a voice memo or a phone scan —
-              AI will pull out your accounts.
-            </p>
-          </div>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={onClose}
-            className="shrink-0 rounded-full p-1.5 text-gray-2 transition-colors hover:bg-ghost-white hover:text-deep-black"
-          >
-            <X className="size-5" strokeWidth={2} />
-          </button>
-        </div>
-
-        <div className="flex min-h-0 flex-1 flex-col px-6 pb-6">
-          <DumpCanvas
-            title={null}
-            continueLabel="Add to my accounts"
-            autotype
-            seedNotes={MODAL_SEED_NOTES}
-            seedItems={MODAL_SEED_ITEMS}
-            voiceTranscript={MODAL_VOICE_TRANSCRIPT}
-            makeScan={makeModalScan}
-            onComplete={onComplete}
-          />
-        </div>
-      </motion.div>
-    </div>,
-    document.body,
-  );
-}
