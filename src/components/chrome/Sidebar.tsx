@@ -15,6 +15,8 @@ export interface SidebarSubSection {
   active?: boolean;
   /** Optional value shown right-aligned in the row (e.g. a saved summary). */
   value?: string;
+  /** Optional rows nested directly beneath this section (e.g. saved accounts). */
+  items?: SidebarFolderItem[];
 }
 
 export interface SidebarFolderItem {
@@ -79,7 +81,9 @@ export function Sidebar({
   folders,
 }: SidebarProps) {
   const hideQuestions =
-    (goals && goals.length > 0) || (folders && folders.length > 0);
+    (goals && goals.length > 0) ||
+    (folders && folders.length > 0) ||
+    (subSections && subSections.some((s) => s.items && s.items.length > 0));
   return (
     <aside className="flex w-[335px] shrink-0 flex-col rounded-field bg-ghost-white px-4 pb-6 pt-4 3xl:w-[400px] 3xl:px-6 4xl:w-[460px]">
       <div className="flex flex-col gap-3">
@@ -89,25 +93,45 @@ export function Sidebar({
         {subSections && subSections.length > 0 ? (
           <div className="flex flex-col gap-2 pl-3">
             {subSections.map((s) => (
-              <div
-                key={s.label}
-                className={cn(
-                  "flex h-10 items-center justify-between gap-2 rounded-field px-3 text-base",
-                  s.active
-                    ? "bg-stratosphere text-white"
-                    : "bg-divider/60 text-gray-1",
-                )}
-              >
-                <span>{s.label}</span>
-                {s.value ? (
-                  <span
-                    className={cn(
-                      "truncate text-sm font-medium",
-                      s.active ? "text-white/90" : "text-gray-2",
-                    )}
-                  >
-                    {s.value}
-                  </span>
+              <div key={s.label} className="flex flex-col gap-1.5">
+                <div
+                  className={cn(
+                    "flex h-10 items-center justify-between gap-2 rounded-field px-3 text-base",
+                    s.active
+                      ? "bg-stratosphere text-white"
+                      : "bg-divider/60 text-gray-1",
+                  )}
+                >
+                  <span>{s.label}</span>
+                  {s.value ? (
+                    <span
+                      className={cn(
+                        "truncate text-sm font-medium",
+                        s.active ? "text-white/90" : "text-gray-2",
+                      )}
+                    >
+                      {s.value}
+                    </span>
+                  ) : null}
+                </div>
+                {s.items && s.items.length > 0 ? (
+                  <div className="flex flex-col gap-1.5 pl-3">
+                    {s.items.map((it, i) => (
+                      <div
+                        key={`${i}-${it.label}`}
+                        className="flex items-center justify-between gap-2 rounded-field bg-white px-3 py-1.5"
+                      >
+                        <span className="truncate text-sm text-gray-1">
+                          {it.label}
+                        </span>
+                        {it.value ? (
+                          <span className="shrink-0 text-sm font-medium text-deep-black">
+                            {it.value}
+                          </span>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
                 ) : null}
               </div>
             ))}

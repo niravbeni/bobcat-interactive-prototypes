@@ -67,6 +67,7 @@ export const PROVIDER_DOMAINS: Record<string, string> = {
 export const PROVIDER_LOGO_SRC: Record<string, string> = {
   TIAA: "/logos/tiaa.png",
   Vanguard: "/logos/vanguard.png",
+  Betterment: "/logos/betterment.png",
 };
 
 /**
@@ -76,6 +77,8 @@ export const PROVIDER_LOGO_SRC: Record<string, string> = {
  */
 export const PROVIDER_LOGO_SCALE: Record<string, number> = {
   TIAA: 2.5,
+  // Full-bleed navy square: scale up so it clips to the round tile edges.
+  Betterment: 1.15,
 };
 
 /**
@@ -94,6 +97,7 @@ export const PROVIDER_LOGO_OFFSET_Y: Record<string, number> = {
 export const PROVIDER_LOGO_BG: Record<string, string> = {
   "Charles Schwab": "#00a0df",
   Vanguard: "#c3002a",
+  Betterment: "#002060",
 };
 
 export const CATALOG: InstitutionAccount[] = [

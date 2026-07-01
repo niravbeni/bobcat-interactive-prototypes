@@ -198,39 +198,34 @@ export function SmartAssetsScreen() {
       TAX_OPTIONS.indexOf(a.taxStatus) - TAX_OPTIONS.indexOf(b.taxStatus),
   );
 
-  // Left panel mirrors the list: the "Accounts" step shows a live count and,
-  // once anything is added, an expanded folder lists each account with its
-  // balance so the sidebar stays in sync with what's on the right.
+  // Left panel mirrors the list: the added accounts are nested directly under
+  // the "Accounts" step (with a running total on the row) so the sidebar stays
+  // in sync with what's on the right — no separate section at the bottom.
   const sidebarConfig = {
     subSections: [
       { label: "About You" },
       {
         label: "Accounts",
         active: true,
-        value:
-          assets.length > 0
+        value: hasAmounts
+          ? fmtMoney(total)
+          : assets.length > 0
             ? `${assets.length} ${assets.length === 1 ? "account" : "accounts"}`
+            : undefined,
+        items:
+          assets.length > 0
+            ? sortedAssets.map((a) => ({
+                label: a.accountType
+                  ? `${a.provider} ${a.accountType}`
+                  : a.provider,
+                value: a.balance !== null ? fmtMoney(a.balance) : undefined,
+              }))
             : undefined,
       },
       { label: "Income" },
       { label: "Spending" },
       { label: "Goals" },
     ],
-    folders:
-      assets.length > 0
-        ? [
-            {
-              title: "Your accounts",
-              value: hasAmounts ? fmtMoney(total) : undefined,
-              items: sortedAssets.map((a) => ({
-                label: a.accountType
-                  ? `${a.provider} ${a.accountType}`
-                  : a.provider,
-                value: a.balance !== null ? fmtMoney(a.balance) : undefined,
-              })),
-            },
-          ]
-        : undefined,
   };
 
   return (
