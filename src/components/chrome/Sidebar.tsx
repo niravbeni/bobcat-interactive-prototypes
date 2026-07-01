@@ -42,6 +42,8 @@ export interface SidebarProps {
   goals?: string[];
   /** Expanded "folders" (header + nested items), e.g. saved Accounts/Goals. */
   folders?: SidebarFolder[];
+  /** Stick the panel to the top of the viewport as the page scrolls. */
+  sticky?: boolean;
 }
 
 const QUESTIONS = [
@@ -79,13 +81,20 @@ export function Sidebar({
   subSections,
   goals,
   folders,
+  sticky = false,
 }: SidebarProps) {
   const hideQuestions =
     (goals && goals.length > 0) ||
     (folders && folders.length > 0) ||
     (subSections && subSections.some((s) => s.items && s.items.length > 0));
   return (
-    <aside className="flex w-[335px] shrink-0 flex-col rounded-field bg-ghost-white px-4 pb-6 pt-4 3xl:w-[400px] 3xl:px-6 4xl:w-[460px]">
+    <aside
+      className={cn(
+        "scrollbar-slim flex w-[335px] shrink-0 flex-col rounded-field bg-ghost-white px-4 pb-6 pt-4 3xl:w-[400px] 3xl:px-6 4xl:w-[460px]",
+        sticky &&
+          "sticky top-5 h-[calc(100vh-2.5rem)] self-start overflow-y-auto",
+      )}
+    >
       <div className="flex flex-col gap-3">
         <PlanPill label="Your Outlook" badges={planBadge ? [planBadge] : undefined} />
         <PlanPill label="Details" badges={detailsBadges} />

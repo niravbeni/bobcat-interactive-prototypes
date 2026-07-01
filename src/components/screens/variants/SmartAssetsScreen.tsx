@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Layers, Plus, X } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
@@ -12,11 +12,7 @@ import { ProviderLogo } from "@/components/ui/ProviderLogo";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DumpCanvas } from "@/components/prototypes/DumpCanvas";
 import { cn } from "@/lib/cn";
-import {
-  TAX_STATUS_LABEL,
-  type InstitutionAccount,
-  type TaxStatus,
-} from "@/lib/institutions";
+import { TAX_STATUS_LABEL, type TaxStatus } from "@/lib/institutions";
 import { makeId, type DumpItem, type StructuredResult } from "@/lib/dataDump";
 
 const fmtMoney = (n: number): string => `$${Math.round(n).toLocaleString("en-US")}`;
@@ -104,22 +100,33 @@ const TAX_OPTIONS: TaxStatus[] = [
   "tax-advantaged",
 ];
 
-/** Example content typed into the custom-account form when it opens. */
-const MANUAL_DEFAULTS = {
-  provider: "Betterment",
-  accountType: "Roth IRA",
-  taxStatus: "tax-free" as TaxStatus,
-  amount: "18500",
-};
+/** Account types offered in the add-account form dropdown. */
+const ACCOUNT_TYPE_OPTIONS: string[] = [
+  "401(k)",
+  "Roth 401(k)",
+  "403(b)",
+  "Traditional IRA",
+  "Roth IRA",
+  "SEP IRA",
+  "Health Savings Account",
+  "Taxable brokerage",
+  "Checking",
+  "Savings",
+  "CD",
+  "Pension",
+  "Other",
+];
 
 export function SmartAssetsScreen() {
   const { goBack } = useFlow();
 
   const [assets, setAssets] = useState<AssetRow[]>([]);
-  const [aiSummary, setAiSummary] = useState<StructuredResult | null>(null);
   // The active input mode. "Connect with Plaid" is a placeholder and never
   // becomes active, so only manual / smart are tracked here.
   const [mode, setMode] = useState<"manual" | "smart">("manual");
+  // Bumped after each Smart add so the canvas remounts to a fresh, editable
+  // state (it only autotypes the demo on its first mount).
+  const [smartRun, setSmartRun] = useState(0);
 
   const addManual = (row: {
     provider: string;
@@ -161,7 +168,6 @@ export function SmartAssetsScreen() {
         (a) => a.provider === m.provider && a.accountType === m.accountType,
       ),
     ).filter((a): a is (typeof result.accounts)[number] => Boolean(a));
-    setAiSummary({ ...result, accounts: detected });
     setAssets((prev) => [
       ...prev,
       ...detected.map((acc, i) => ({
@@ -173,8 +179,9 @@ export function SmartAssetsScreen() {
         source: "ai" as const,
       })),
     ]);
-    // Return to the manual entry form so the newly added accounts are visible.
-    setMode("manual");
+    // Stay in Smart add; just remount the canvas to a fresh editable state so
+    // the newly added accounts show in the list below without leaving the mode.
+    setSmartRun((n) => n + 1);
   };
 
   // Group assets by tax treatment for the headed list (order = TAX_OPTIONS).
@@ -196,6 +203,7 @@ export function SmartAssetsScreen() {
   // the "Accounts" step (with a running total on the row) so the sidebar stays
   // in sync with what's on the right — no separate section at the bottom.
   const sidebarConfig = {
+    sticky: true,
     subSections: [
       { label: "About You" },
       {
@@ -303,9 +311,10 @@ export function SmartAssetsScreen() {
                   className="flex flex-1 flex-col"
                 >
                   <DumpCanvas
+                    key={smartRun}
                     title={null}
                     continueLabel="Add to my accounts"
-                    autotype
+                    autotype={smartRun === 0}
                     seedNotes={MODAL_SEED_NOTES}
                     seedItems={MODAL_SEED_ITEMS}
                     voiceTranscript={MODAL_VOICE_TRANSCRIPT}
@@ -374,8 +383,6 @@ export function SmartAssetsScreen() {
               </div>
             ) : null}
 
-            {/* AI-determined profile summary (deprioritized) */}
-            {aiSummary ? <AiSummaryCard result={aiSummary} /> : null}
           </div>
         </div>
       </div>
@@ -448,55 +455,7 @@ function AccountEntryForm({
   const [taxStatus, setTaxStatus] = useState<TaxStatus>("taxable");
   const [amount, setAmount] = useState("");
 
-  // On mount, type in some example content so the form fills itself in live.
-  useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const at = (fn: () => void, delay: number) =>
-      timers.push(setTimeout(fn, delay));
-
-    const reduce =
-      typeof window !== "undefined" &&
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (reduce) {
-      at(() => {
-        setName(MANUAL_DEFAULTS.provider);
-        setAccountType(MANUAL_DEFAULTS.accountType);
-        setTaxStatus(MANUAL_DEFAULTS.taxStatus);
-        setAmount(MANUAL_DEFAULTS.amount);
-      }, 0);
-      return () => timers.forEach(clearTimeout);
-    }
-
-    const step = 45;
-    let t = 250;
-    const typeInto = (text: string, setter: (v: string) => void) => {
-      for (let i = 1; i <= text.length; i += 1) {
-        const slice = text.slice(0, i);
-        at(() => setter(slice), t);
-        t += step;
-      }
-      t += 250;
-    };
-
-    typeInto(MANUAL_DEFAULTS.provider, setName);
-    typeInto(MANUAL_DEFAULTS.accountType, setAccountType);
-    at(() => setTaxStatus(MANUAL_DEFAULTS.taxStatus), t);
-    t += 300;
-    typeInto(MANUAL_DEFAULTS.amount, setAmount);
-
-    return () => timers.forEach(clearTimeout);
-  }, []);
-
   const canAdd = name.trim().length > 0;
-
-  // A matched provider pre-fills the account type + tax treatment; the name
-  // itself is synced via onQueryChange (AccountSearch keeps the text).
-  const handlePick = (acc: InstitutionAccount) => {
-    setAccountType(acc.accountType);
-    setTaxStatus(acc.taxStatus);
-  };
 
   const submit = () => {
     if (!canAdd) return;
@@ -522,20 +481,27 @@ function AccountEntryForm({
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Account name">
           <AccountSearch
-            onSelect={handlePick}
+            onSelect={() => {}}
             onQueryChange={setName}
             value={name}
             clearOnSelect={false}
+            nameOnly
             placeholder="Search or type an account name…"
           />
         </Field>
         <Field label="Account type">
-          <input
+          <select
             value={accountType}
             onChange={(e) => setAccountType(e.target.value)}
-            placeholder="e.g. Roth IRA"
-            className="w-full rounded-field border border-stroke-subtle bg-white px-3.5 py-2.5 text-sm text-deep-black outline-none transition-colors placeholder:text-gray-2 focus:border-violet/50"
-          />
+            className="w-full rounded-field border border-stroke-subtle bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-violet/50"
+          >
+            <option value="">Select account type</option>
+            {ACCOUNT_TYPE_OPTIONS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Tax treatment">
           <select
@@ -676,49 +642,3 @@ function AmountField({
     </div>
   );
 }
-
-/* ============================================================ ai summary == */
-
-/** Compose a short, plain-language paragraph summarising the AI's read. */
-function buildSummaryParagraph(result: StructuredResult): string {
-  const count = result.accounts.length;
-  const total = result.accounts.reduce((sum, a) => sum + a.balance, 0);
-  const goals = result.goals
-    .filter((g) => g.text.trim().length > 0)
-    .slice(0, 2)
-    .map((g) => g.text.charAt(0).toLowerCase() + g.text.slice(1));
-
-  const parts: string[] = [];
-  parts.push(
-    count > 0
-      ? `From what you shared, I found ${count} account${count === 1 ? "" : "s"}${total > 0 ? ` worth about ${fmtMoney(total)}` : ""}, take-home pay of ~${fmtMoney(result.incomeMonthly)}/mo and spending of ~${fmtMoney(result.spendingMonthly)}/mo${result.person.retireAge ? `, aiming to retire around ${result.person.retireAge}` : ""}.`
-      : `You take home ~${fmtMoney(result.incomeMonthly)}/mo and spend ~${fmtMoney(result.spendingMonthly)}/mo.`,
-  );
-  if (goals.length > 0) {
-    parts.push(`Priorities: ${goals.join(" and ")}.`);
-  }
-  return parts.join(" ");
-}
-
-function AiSummaryCard({ result }: { result: StructuredResult }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="mt-4 rounded-card border border-stroke-subtle bg-ghost-white px-4 py-3"
-    >
-      <div className="flex items-center gap-2">
-        <AskSendIcon className="size-5 shrink-0" />
-        <span className="text-xs font-semibold uppercase tracking-[0.08em] text-gray-1">
-          AI Summary
-        </span>
-      </div>
-
-      <p className="mt-1.5 text-sm leading-snug text-gray-1">
-        {buildSummaryParagraph(result)}
-      </p>
-    </motion.div>
-  );
-}
-

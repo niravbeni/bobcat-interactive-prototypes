@@ -38,6 +38,7 @@ export function AccountSearch({
   clearOnSelect = true,
   value,
   onQueryChange,
+  nameOnly = false,
 }: {
   onSelect: (acc: InstitutionAccount) => void;
   placeholder?: string;
@@ -50,6 +51,8 @@ export function AccountSearch({
   value?: string;
   /** Fires whenever the typed text changes (typing, ghost-accept, select). */
   onQueryChange?: (query: string) => void;
+  /** Suggest unique provider names only (no account type / tax badge). */
+  nameOnly?: boolean;
 }) {
   const [internalQuery, setInternalQuery] = useState("");
   const query = value !== undefined ? value : internalQuery;
@@ -74,7 +77,17 @@ export function AccountSearch({
   const thinkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listboxId = useId();
 
-  const results = useMemo(() => matchInstitutions(query), [query]);
+  const results = useMemo(() => {
+    const base = matchInstitutions(query);
+    if (!nameOnly) return base;
+    // Collapse to unique providers so the same bank isn't listed per account.
+    const seen = new Set<string>();
+    return base.filter((acc) => {
+      if (seen.has(acc.provider)) return false;
+      seen.add(acc.provider);
+      return true;
+    });
+  }, [query, nameOnly]);
   const ghost = useMemo(() => ghostCompletion(query), [query]);
   const hasQuery = query.trim().length > 0;
   // Clamp the keyboard highlight to the current result set without writing back
@@ -281,17 +294,25 @@ export function AccountSearch({
                         className="size-8"
                         textClassName="text-xs"
                       />
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate text-sm font-medium text-deep-black">
-                          {acc.provider} &mdash; {acc.accountType}
+                      {nameOnly ? (
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-deep-black">
+                          {acc.provider}
                         </span>
-                        <span className="truncate text-xs text-gray-2">
-                          {acc.fullName}
-                        </span>
-                      </span>
-                      <StatusBadge tone={TAX_BADGE_TONE[acc.taxStatus]}>
-                        {TAX_STATUS_LABEL[acc.taxStatus]}
-                      </StatusBadge>
+                      ) : (
+                        <>
+                          <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="truncate text-sm font-medium text-deep-black">
+                              {acc.provider} &mdash; {acc.accountType}
+                            </span>
+                            <span className="truncate text-xs text-gray-2">
+                              {acc.fullName}
+                            </span>
+                          </span>
+                          <StatusBadge tone={TAX_BADGE_TONE[acc.taxStatus]}>
+                            {TAX_STATUS_LABEL[acc.taxStatus]}
+                          </StatusBadge>
+                        </>
+                      )}
                     </button>
                   );
                 })
