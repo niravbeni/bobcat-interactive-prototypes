@@ -379,6 +379,24 @@ export function taxStatusFor(
 }
 
 /**
+ * Best-effort tax status inferred from the account type alone, for custom
+ * providers that aren't in the catalog. Unrecognized types default to
+ * "taxable"; only an empty type returns null (nothing to infer from).
+ */
+export function taxStatusForType(type: string): TaxStatus | null {
+  const t = type.trim().toLowerCase();
+  if (!t) return null;
+  if (t === "roth ira" || t === "roth 401(k)") return "tax-free";
+  if (
+    ["401(k)", "403(b)", "traditional ira", "sep ira", "pension"].includes(t)
+  ) {
+    return "tax-deferred";
+  }
+  if (t === "health savings account") return "tax-advantaged";
+  return "taxable";
+}
+
+/**
  * Inline ghost-text completion for the current top match. Returns the remaining
  * characters to append to what the user has typed (so the input shows their
  * text + a faded suffix), or "" when there's nothing to complete.

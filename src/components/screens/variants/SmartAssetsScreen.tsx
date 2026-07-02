@@ -16,6 +16,8 @@ import {
   TAX_STATUS_LABEL,
   accountTypesForProvider,
   taxStatusFor,
+  taxStatusForType,
+  type InstitutionAccount,
   type TaxStatus,
 } from "@/lib/institutions";
 import type { DumpCompletion } from "@/components/prototypes/DumpCanvas";
@@ -100,7 +102,7 @@ type AssetRow = {
   accentColor?: string;
 };
 
-/** Ordered tax options offered in the custom-account form. */
+/** Tax-treatment display order for the grouped account list. */
 const TAX_OPTIONS: TaxStatus[] = [
   "tax-free",
   "tax-deferred",
@@ -466,8 +468,10 @@ function OptionCard({
 
 /**
  * Unified add-account form: the "Account name" field is the AI search combobox.
- * Picking a matched provider pre-fills the type + tax treatment; fully custom
- * names type straight through. The user sets the amount and clicks Add.
+ * Picking a suggested account ("Vanguard — 401(k)") fills the name + type in
+ * one action; fully custom names type straight through. The tax treatment
+ * auto-derives from the provider/type but stays an editable select the user
+ * can override. The user sets the amount and clicks Add.
  */
 function AccountEntryForm({
   onAdd,
@@ -481,7 +485,10 @@ function AccountEntryForm({
 }) {
   const [name, setName] = useState("");
   const [accountType, setAccountType] = useState("");
-  const [taxStatus, setTaxStatus] = useState<TaxStatus>("taxable");
+  // Manual override for the tax select. Null = follow the derived value; set to
+  // a concrete status when the user edits the select. Reset to null whenever the
+  // account type changes so the field re-derives from the new type.
+  const [taxOverride, setTaxOverride] = useState<TaxStatus | null>(null);
   const [amount, setAmount] = useState("");
 
   // When the name matches a known provider (brand), only offer that provider's
@@ -490,29 +497,43 @@ function AccountEntryForm({
   const typeOptions =
     providerTypes.length > 0 ? providerTypes : ACCOUNT_TYPE_OPTIONS;
 
-  const handleNameChange = (next: string) => {
-    setName(next);
-    const nextTypes = accountTypesForProvider(next);
-    if (
-      nextTypes.length > 0 &&
-      accountType &&
-      !nextTypes.includes(accountType)
-    ) {
-      // The previously picked type isn't offered by this provider.
-      setAccountType("");
-    } else if (accountType) {
-      // Name arrived after the type: backfill the tax treatment if the
-      // provider + type combination is known.
-      const known = taxStatusFor(next, accountType);
-      if (known) setTaxStatus(known);
-    }
-  };
+  // Tax treatment auto-derives: a known provider + type combo wins, otherwise
+  // the type alone decides. The select shows this by default but stays editable.
+  const derivedTax: TaxStatus | null =
+    taxStatusFor(name, accountType) ?? taxStatusForType(accountType);
+  const effectiveTax: TaxStatus = taxOverride ?? derivedTax ?? "taxable";
 
   const handleTypeChange = (next: string) => {
     setAccountType(next);
-    // Known provider + type combination → the tax treatment is unambiguous.
-    const known = taxStatusFor(name, next);
-    if (known) setTaxStatus(known);
+    // New type → drop any manual tax override so it re-derives.
+    setTaxOverride(null);
+  };
+
+  const handleNameChange = (next: string) => {
+    setName(next);
+    const nextTypes = accountTypesForProvider(next);
+    if (nextTypes.length > 0) {
+      // Drop a previously picked type this provider doesn't offer. Functional
+      // update so a type queued by a just-made search selection isn't clobbered
+      // by the selection's own name sync.
+      setAccountType((prev) => {
+        if (prev && !nextTypes.includes(prev)) {
+          // Type got cleared → let the tax field re-derive.
+          setTaxOverride(null);
+          return "";
+        }
+        return prev;
+      });
+    }
+  };
+
+  // Picking a suggestion fills name + type in one action; the tax select
+  // follows via derivedTax (override reset). AccountSearch then syncs the input
+  // text to acc.provider through onQueryChange → handleNameChange.
+  const handleSelect = (acc: InstitutionAccount) => {
+    setName(acc.provider);
+    setAccountType(acc.accountType);
+    setTaxOverride(null);
   };
 
   const canAdd = name.trim().length > 0;
@@ -523,12 +544,12 @@ function AccountEntryForm({
     onAdd({
       provider: name.trim(),
       accountType: accountType.trim(),
-      taxStatus,
+      taxStatus: effectiveTax,
       balance: digits === "" ? null : Number(digits),
     });
     setName("");
     setAccountType("");
-    setTaxStatus("taxable");
+    setTaxOverride(null);
     setAmount("");
   };
 
@@ -541,11 +562,11 @@ function AccountEntryForm({
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label="Account name">
           <AccountSearch
-            onSelect={() => {}}
+            onSelect={handleSelect}
             onQueryChange={handleNameChange}
             value={name}
             clearOnSelect={false}
-            nameOnly
+            providerGhost
             compact
             placeholder="Search or type an account name…"
           />
@@ -567,10 +588,12 @@ function AccountEntryForm({
           </SelectWrap>
         </Field>
         <Field label="Tax treatment">
+          {/* Auto-derives from the account type but stays editable: picking a
+              type (or a search suggestion) sets the value, the user can override. */}
           <SelectWrap>
             <select
-              value={taxStatus}
-              onChange={(e) => setTaxStatus(e.target.value as TaxStatus)}
+              value={effectiveTax}
+              onChange={(e) => setTaxOverride(e.target.value as TaxStatus)}
               className="h-11 w-full appearance-none rounded-field border border-stroke-subtle bg-white px-3 pr-9 text-sm text-deep-black outline-none transition-colors focus:border-violet/50"
             >
               {TAX_OPTIONS.map((t) => (

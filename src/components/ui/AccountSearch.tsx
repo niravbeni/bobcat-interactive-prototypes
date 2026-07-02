@@ -39,6 +39,7 @@ export function AccountSearch({
   value,
   onQueryChange,
   nameOnly = false,
+  providerGhost = false,
   compact = false,
 }: {
   onSelect: (acc: InstitutionAccount) => void;
@@ -54,6 +55,9 @@ export function AccountSearch({
   onQueryChange?: (query: string) => void;
   /** Suggest unique provider names only (no account type / tax badge). */
   nameOnly?: boolean;
+  /** Complete the inline ghost text to the provider name only, while the
+   * suggestion list still shows full "Provider — AccountType" entries. */
+  providerGhost?: boolean;
   /** Slimmer sizing so the field matches sibling form inputs. */
   compact?: boolean;
 }) {
@@ -92,8 +96,8 @@ export function AccountSearch({
     });
   }, [query, nameOnly]);
   const ghost = useMemo(
-    () => ghostCompletion(query, nameOnly),
-    [query, nameOnly],
+    () => ghostCompletion(query, nameOnly || providerGhost),
+    [query, nameOnly, providerGhost],
   );
   const hasQuery = query.trim().length > 0;
   // Clamp the keyboard highlight to the current result set without writing back
