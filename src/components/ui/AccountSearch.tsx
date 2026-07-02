@@ -82,6 +82,9 @@ export function AccountSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const thinkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Suppresses the focus-to-reopen behavior for the programmatic refocus that
+  // follows a selection, so picking a suggestion actually closes the list.
+  const skipFocusOpen = useRef(false);
   const listboxId = useId();
 
   const results = useMemo(() => {
@@ -189,6 +192,7 @@ export function AccountSearch({
     setQuery(clearOnSelect ? "" : acc.provider);
     setOpen(false);
     setHighlight(0);
+    skipFocusOpen.current = true;
     inputRef.current?.focus();
   };
 
@@ -249,7 +253,13 @@ export function AccountSearch({
             value={query}
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            onFocus={() => hasQuery && setOpen(true)}
+            onFocus={() => {
+              if (skipFocusOpen.current) {
+                skipFocusOpen.current = false;
+                return;
+              }
+              if (hasQuery) setOpen(true);
+            }}
             placeholder={placeholder}
             role="combobox"
             aria-expanded={open}
