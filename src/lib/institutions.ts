@@ -344,6 +344,41 @@ export function matchInstitutions(query: string): InstitutionAccount[] {
 }
 
 /**
+ * Unique account types offered by a provider (case-insensitive exact match on
+ * the provider name), in catalog order. Returns [] when the name doesn't match
+ * a known provider — callers should fall back to their generic type list.
+ */
+export function accountTypesForProvider(name: string): string[] {
+  const q = name.trim().toLowerCase();
+  if (!q) return [];
+  const types: string[] = [];
+  for (const acc of CATALOG) {
+    if (acc.provider.toLowerCase() === q && !types.includes(acc.accountType)) {
+      types.push(acc.accountType);
+    }
+  }
+  return types;
+}
+
+/**
+ * Tax status for an exact provider + account type combination in the catalog
+ * (case-insensitive), or null when the pair isn't a known catalog entry.
+ */
+export function taxStatusFor(
+  provider: string,
+  accountType: string,
+): TaxStatus | null {
+  const p = provider.trim().toLowerCase();
+  const t = accountType.trim().toLowerCase();
+  if (!p || !t) return null;
+  const hit = CATALOG.find(
+    (acc) =>
+      acc.provider.toLowerCase() === p && acc.accountType.toLowerCase() === t,
+  );
+  return hit ? hit.taxStatus : null;
+}
+
+/**
  * Inline ghost-text completion for the current top match. Returns the remaining
  * characters to append to what the user has typed (so the input shows their
  * text + a faded suffix), or "" when there's nothing to complete.
@@ -351,14 +386,14 @@ export function matchInstitutions(query: string): InstitutionAccount[] {
  * Only completes when the top match's provider or full name *starts with* the
  * typed text — a substring/fuzzy hit wouldn't line up visually as a suffix.
  */
-export function ghostCompletion(query: string): string {
+export function ghostCompletion(query: string, providerOnly = false): string {
   const q = query.trim().toLowerCase();
   if (!q) return "";
 
   const [top] = matchInstitutions(q);
   if (!top) return "";
 
-  const candidates = [top.provider, top.fullName];
+  const candidates = providerOnly ? [top.provider] : [top.provider, top.fullName];
   for (const cand of candidates) {
     if (cand.toLowerCase().startsWith(q) && cand.length > q.length) {
       // Return the catalog's remaining characters so the input shows the user's

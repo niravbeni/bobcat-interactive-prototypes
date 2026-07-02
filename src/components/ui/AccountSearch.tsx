@@ -39,6 +39,7 @@ export function AccountSearch({
   value,
   onQueryChange,
   nameOnly = false,
+  compact = false,
 }: {
   onSelect: (acc: InstitutionAccount) => void;
   placeholder?: string;
@@ -53,6 +54,8 @@ export function AccountSearch({
   onQueryChange?: (query: string) => void;
   /** Suggest unique provider names only (no account type / tax badge). */
   nameOnly?: boolean;
+  /** Slimmer sizing so the field matches sibling form inputs. */
+  compact?: boolean;
 }) {
   const [internalQuery, setInternalQuery] = useState("");
   const query = value !== undefined ? value : internalQuery;
@@ -88,7 +91,10 @@ export function AccountSearch({
       return true;
     });
   }, [query, nameOnly]);
-  const ghost = useMemo(() => ghostCompletion(query), [query]);
+  const ghost = useMemo(
+    () => ghostCompletion(query, nameOnly),
+    [query, nameOnly],
+  );
   const hasQuery = query.trim().length > 0;
   // Clamp the keyboard highlight to the current result set without writing back
   // to state from an effect (keeps cascading renders out of the picture).
@@ -208,14 +214,28 @@ export function AccountSearch({
 
   return (
     <div ref={wrapRef} className="relative w-full">
-      <div className="ai-glow flex items-center gap-2.5 rounded-card border border-violet/40 bg-white px-3.5 py-3">
-        {showIcon ? <AskSendIcon className="size-7 shrink-0" /> : null}
+      <div
+        className={cn(
+          "ai-glow flex items-center border border-violet/40 bg-white",
+          compact
+            ? "h-11 gap-2 rounded-field px-3.5"
+            : "gap-2.5 rounded-card px-3.5 py-3",
+        )}
+      >
+        {showIcon ? (
+          <AskSendIcon
+            className={cn("shrink-0", compact ? "size-4" : "size-7")}
+          />
+        ) : null}
 
         <div className="relative min-w-0 flex-1">
           {/* Ghost-text overlay aligned behind the real input text. */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-pre text-base"
+            className={cn(
+              "pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-pre",
+              compact ? "text-sm" : "text-base",
+            )}
           >
             <span className="invisible">{query}</span>
             <span className="text-gray-2">{ghost}</span>
@@ -232,7 +252,10 @@ export function AccountSearch({
             aria-controls={listboxId}
             aria-autocomplete="list"
             autoComplete="off"
-            className="relative w-full bg-transparent text-base text-deep-black outline-none placeholder:text-gray-text"
+            className={cn(
+              "relative w-full bg-transparent text-deep-black outline-none placeholder:text-gray-text",
+              compact ? "text-sm" : "text-base",
+            )}
           />
         </div>
 

@@ -91,6 +91,18 @@ function itemFromFile(file: File, via: DumpItem["addedVia"]): DumpItem {
 const DEFAULT_SUBTITLE =
   "Drop in files, screenshots, pasted notes, a voice memo or a scan from your phone. When you're done, let AI structure it into your account profile.";
 
+/**
+ * Which optional input sources actually contributed to the dump by the time
+ * the user hit Continue. Passed alongside the structured result so parents can
+ * tailor what they import (e.g. only surface accounts a used source mentions).
+ */
+export interface DumpCompletion {
+  /** The mic was used: the voice transcript was streamed into the notes. */
+  voiceUsed: boolean;
+  /** At least one phone-scanned item was still attached at completion. */
+  scanUsed: boolean;
+}
+
 /** The seeded free-text notes (text + voice notes folded into the notepad). */
 const SEED_NOTES = SEED_ITEMS.filter(
   (i) => i.kind === "text" || i.kind === "voice",
@@ -130,7 +142,12 @@ export function DumpCanvas({
   voiceTranscript = VOICE_TRANSCRIPT,
   makeScan = makeScanItems,
 }: {
-  onComplete: (result: StructuredResult) => void;
+  /**
+   * Fired with the structured result once "processing" finishes. `completion`
+   * reports which optional sources (voice memo, phone scan) were actually used
+   * in this session; callers that don't care can ignore it.
+   */
+  onComplete: (result: StructuredResult, completion: DumpCompletion) => void;
   /** Heading shown above the canvas. Pass `null` to omit (e.g. inside a modal). */
   title?: string | null;
   subtitle?: React.ReactNode;
@@ -172,6 +189,8 @@ export function DumpCanvas({
   // Timers (kept in refs so transitions are driven by handlers, not effects).
   const voiceTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const voiceBaseRef = useRef("");
+  // Whether the mic was used this session (the transcript entered the notes).
+  const voiceUsedRef = useRef(false);
   const qrTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const processTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -270,6 +289,7 @@ export function DumpCanvas({
       typeTimer.current = null;
     }
     setVoiceOpen(true);
+    voiceUsedRef.current = true;
     // Transcribe straight into the notepad, after whatever's already there.
     voiceBaseRef.current = notes.trim() ? notes.replace(/\s+$/, "") + "\n\n" : "";
 
@@ -335,7 +355,15 @@ export function DumpCanvas({
         clearInterval(statusTimer.current);
         statusTimer.current = null;
       }
-      onComplete(structureDump(items, notes));
+      onComplete(structureDump(items, notes), {
+        voiceUsed: voiceUsedRef.current,
+        scanUsed: items.some((it) => it.addedVia === "phone"),
+      });
+      // Return to the editable canvas with the notes/attachments intact, so
+      // parents that keep the canvas mounted after completion (Smart add)
+      // don't lose the session's inputs. Parents that navigate away on
+      // complete (Data Dump) unmount before this matters.
+      setStage("canvas");
     }, 2300);
   };
 

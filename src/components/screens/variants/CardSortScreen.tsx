@@ -69,6 +69,7 @@ export function CardSortScreen() {
 
   return (
     <AppShell
+      fill
       card={false}
       sidebar={{
         subSections: [
@@ -81,12 +82,12 @@ export function CardSortScreen() {
         goals: confirmed ? goalTitles : undefined,
       }}
     >
-      <div className="flex w-full flex-1 flex-col rounded-field bg-card px-5 py-5 xl:px-10 xl:py-6 3xl:px-14 3xl:py-8">
+      <div className="scrollbar-slim flex min-h-0 w-full flex-1 flex-col overflow-y-auto rounded-field bg-card px-5 py-4 xl:px-10 xl:py-5 3xl:px-14 3xl:py-6">
         <div className="mx-auto flex w-full max-w-[820px] flex-1 flex-col xl:max-w-[1040px] 3xl:max-w-[1220px]">
           <BackButton onClick={goBack} />
 
           <motion.div
-            className="mt-4 max-w-[680px]"
+            className="mt-3 max-w-[680px]"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
@@ -102,7 +103,7 @@ export function CardSortScreen() {
           </motion.div>
 
           {/* Chooser */}
-          <div className="mt-5 flex min-h-[236px] flex-col items-center justify-center">
+          <div className="mt-4 flex min-h-[200px] flex-col items-center justify-center">
             <AnimatePresence mode="popLayout">
               {current ? (
                 <motion.div
@@ -114,7 +115,7 @@ export function CardSortScreen() {
                   transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <ChooserCard card={current} />
-                  <div className="mt-6 grid grid-cols-3 gap-2.5">
+                  <div className="mt-4 grid grid-cols-3 gap-2.5">
                     {BUCKETS.map((b) => (
                       <BucketButton
                         key={b.id}
@@ -124,7 +125,7 @@ export function CardSortScreen() {
                       />
                     ))}
                   </div>
-                  <p className="mt-3 text-center text-[12px] text-gray-2">
+                  <p className="mt-2 text-center text-[12px] text-gray-2">
                     {placedCount + 1} of {CARDS.length}
                   </p>
                 </motion.div>
@@ -160,13 +161,13 @@ export function CardSortScreen() {
           </div>
 
           {/* Timeline */}
-          <div className="mt-5 flex w-full flex-1 flex-col">
+          <div className="mt-4 flex w-full flex-1 flex-col">
             <div className="flex items-center justify-between px-1 text-[11px] font-semibold uppercase tracking-[0.1em]">
               <span className="text-violet/50">Low priority</span>
               <span className="text-violet">High priority</span>
             </div>
 
-            <div className="relative mt-3 min-h-[150px] rounded-card border border-stroke-subtle bg-white px-4 py-5">
+            <div className="relative mt-2 min-h-[140px] rounded-card border border-stroke-subtle bg-white px-4 py-4">
               {/* Axis line */}
               <div
                 aria-hidden
@@ -209,7 +210,7 @@ export function CardSortScreen() {
           </div>
 
           {/* Footer actions */}
-          <div className="mt-5 flex items-center justify-end gap-3">
+          <div className="mt-4 flex items-center justify-end gap-3">
             <AnimatePresence>
               {confirmed ? (
                 <motion.span
@@ -242,7 +243,7 @@ export function CardSortScreen() {
 function ChooserCard({ card }: { card: PriorityCard }) {
   const Icon = card.icon;
   return (
-    <div className="flex h-[236px] w-full flex-col overflow-hidden rounded-card border border-violet/25 bg-gradient-to-br from-violet/[0.12] via-white to-white px-6 py-5 shadow-[0_8px_22px_-16px_rgba(127,53,178,0.5)]">
+    <div className="flex h-[204px] w-full flex-col overflow-hidden rounded-card border border-violet/25 bg-gradient-to-br from-violet/[0.12] via-white to-white px-6 py-5 shadow-[0_8px_22px_-16px_rgba(127,53,178,0.5)]">
       <span
         className="grid size-14 shrink-0 place-items-center rounded-2xl bg-violet text-white shadow-[0_10px_22px_-8px_rgba(127,53,178,0.75)]"
         aria-hidden
@@ -316,7 +317,7 @@ function TimelineCard({
       whileDrag={{ scale: 1.05, zIndex: 10 }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "relative z-[1] flex h-[132px] min-w-0 flex-1 basis-0 max-w-[124px] cursor-grab touch-none select-none flex-col rounded-card border bg-white px-2 py-2.5 shadow-[0_2px_8px_rgba(16,24,32,0.06)] active:cursor-grabbing",
+        "relative z-[1] flex h-[124px] min-w-0 flex-1 basis-0 max-w-[124px] cursor-grab touch-none select-none flex-col rounded-card border bg-white px-2 py-2.5 shadow-[0_2px_8px_rgba(16,24,32,0.06)] active:cursor-grabbing",
       )}
       style={{ borderColor: `${meta.color}59` }}
     >

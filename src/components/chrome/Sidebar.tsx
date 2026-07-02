@@ -90,9 +90,11 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "scrollbar-slim flex w-[335px] shrink-0 flex-col rounded-field bg-ghost-white px-4 pb-6 pt-4 3xl:w-[400px] 3xl:px-6 4xl:w-[460px]",
+        // overflow-y-auto only kicks in when the shell constrains the panel's
+        // height (e.g. AppShell `fill`) and the content outgrows it.
+        "scrollbar-slim flex w-[335px] shrink-0 flex-col overflow-y-auto rounded-field bg-ghost-white px-4 pb-6 pt-4 3xl:w-[400px] 3xl:px-6 4xl:w-[460px]",
         sticky &&
-          "sticky top-5 h-[calc(100vh-2.5rem)] self-start overflow-y-auto",
+          "sticky top-5 h-[calc(100vh-7rem)] self-start overflow-y-auto 3xl:h-[calc(100vh-8rem)]",
       )}
     >
       <div className="flex flex-col gap-3">

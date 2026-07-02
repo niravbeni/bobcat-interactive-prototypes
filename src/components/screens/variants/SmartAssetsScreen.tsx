@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, Layers, Plus, X } from "lucide-react";
+import { Check, ChevronDown, Layers, Plus, X } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { AppShell } from "@/components/chrome/AppShell";
 import { BackButton } from "@/components/ui/BackButton";
@@ -12,7 +12,13 @@ import { ProviderLogo } from "@/components/ui/ProviderLogo";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DumpCanvas } from "@/components/prototypes/DumpCanvas";
 import { cn } from "@/lib/cn";
-import { TAX_STATUS_LABEL, type TaxStatus } from "@/lib/institutions";
+import {
+  TAX_STATUS_LABEL,
+  accountTypesForProvider,
+  taxStatusFor,
+  type TaxStatus,
+} from "@/lib/institutions";
+import type { DumpCompletion } from "@/components/prototypes/DumpCanvas";
 import { makeId, type DumpItem, type StructuredResult } from "@/lib/dataDump";
 
 const fmtMoney = (n: number): string => `$${Math.round(n).toLocaleString("en-US")}`;
@@ -32,10 +38,12 @@ const MODAL_SEED_NOTES = [
 ].join("\n");
 
 /**
- * Everything the modal seeds must line up with each other AND with what we
- * import into the list (Fidelity 401k + Vanguard Roth). The docked attachment,
- * voice memo and phone-scanned docs all reference only those two accounts plus
- * income/spending/retire age — no stray HSA, Chase or pension that never appear.
+ * Each Smart-add input source maps to its own accounts, and what lands in the
+ * list depends on which sources were actually used (see `handleDumpComplete`):
+ * - typed notes + docked statement → Fidelity 401(k) + Vanguard Roth IRA
+ * - voice memo → Fidelity HSA (the transcript below mentions it)
+ * - phone scan → Chase Savings (the scanned screenshot below shows it)
+ * The transcript/scan content and the imported accounts must stay in sync.
  */
 const MODAL_SEED_ITEMS: DumpItem[] = [
   {
@@ -49,16 +57,16 @@ const MODAL_SEED_ITEMS: DumpItem[] = [
 ];
 
 const MODAL_VOICE_TRANSCRIPT =
-  "A couple more details on those two. The Fidelity 401k has the full company match, and I've been maxing the Vanguard Roth for years. Take-home is about seventy two hundred a month, we spend around fifty four hundred, and the main goals are retiring around sixty two and paying off the house first.";
+  "One more thing I almost forgot — there's also a Fidelity HSA with about nine thousand two hundred in it from my old health plan. The 401k has the full company match, and I've been maxing the Vanguard Roth for years. Main goals are still retiring around sixty two and paying off the house first.";
 
 const makeModalScan = (): DumpItem[] => {
   const at = Date.now();
   return [
     {
       id: makeId("scan"),
-      kind: "pdf",
-      title: "Vanguard Roth IRA statement",
-      fileMeta: { name: "vanguard_roth_2025.pdf", size: "196 KB" },
+      kind: "image",
+      title: "Chase savings screenshot",
+      fileMeta: { name: "chase_savings.png", size: "508 KB" },
       addedVia: "phone",
       at,
     },
@@ -124,9 +132,10 @@ export function SmartAssetsScreen() {
   // The active input mode. "Connect with Plaid" is a placeholder and never
   // becomes active, so only manual / smart are tracked here.
   const [mode, setMode] = useState<"manual" | "smart">("manual");
-  // Bumped after each Smart add so the canvas remounts to a fresh, editable
-  // state (it only autotypes the demo on its first mount).
-  const [smartRun, setSmartRun] = useState(0);
+  // Mount the Smart-add canvas on first entry, then keep it mounted (hidden
+  // while in other modes) so the user's notes, voice memo and scanned docs
+  // survive both completing a Smart add and switching modes back and forth.
+  const [smartMounted, setSmartMounted] = useState(false);
 
   const addManual = (row: {
     provider: string;
@@ -154,34 +163,56 @@ export function SmartAssetsScreen() {
   const removeAsset = (id: string) =>
     setAssets((prev) => prev.filter((a) => a.id !== id));
 
-  const handleDumpComplete = (result: StructuredResult) => {
-    // Only surface the accounts the notes actually mention (401k at Fidelity,
-    // Roth IRA at Vanguard) so the list matches what was typed — and keep it
-    // small so the whole page fits without scrolling, even after the user also
-    // adds a custom account and a searched one.
-    const MENTIONED: Array<{ provider: string; accountType: string }> = [
+  const handleDumpComplete = (
+    result: StructuredResult,
+    completion: DumpCompletion,
+  ) => {
+    // Only surface the accounts the session's inputs actually mention, so the
+    // list matches what the user saw go in. The typed notes + docked statement
+    // always cover the Fidelity 401(k) and Vanguard Roth; the voice memo and
+    // phone scan each contribute their own account, but only if they were used.
+    const mentioned: Array<{ provider: string; accountType: string }> = [
       { provider: "Fidelity", accountType: "401(k)" },
       { provider: "Vanguard", accountType: "Roth IRA" },
     ];
-    const detected = MENTIONED.map((m) =>
-      result.accounts.find(
-        (a) => a.provider === m.provider && a.accountType === m.accountType,
-      ),
-    ).filter((a): a is (typeof result.accounts)[number] => Boolean(a));
-    setAssets((prev) => [
-      ...prev,
-      ...detected.map((acc, i) => ({
-        id: `ai-${Date.now()}-${i}`,
-        provider: acc.provider,
-        accountType: acc.accountType,
-        taxStatus: acc.taxStatus,
-        balance: acc.balance,
-        source: "ai" as const,
-      })),
-    ]);
-    // Stay in Smart add; just remount the canvas to a fresh editable state so
-    // the newly added accounts show in the list below without leaving the mode.
-    setSmartRun((n) => n + 1);
+    if (completion.voiceUsed) {
+      // MODAL_VOICE_TRANSCRIPT mentions the forgotten Fidelity HSA.
+      mentioned.push({ provider: "Fidelity", accountType: "HSA" });
+    }
+    if (completion.scanUsed) {
+      // makeModalScan sends over a Chase savings screenshot.
+      mentioned.push({ provider: "Chase", accountType: "Savings" });
+    }
+    const detected = mentioned
+      .map((m) =>
+        result.accounts.find(
+          (a) => a.provider === m.provider && a.accountType === m.accountType,
+        ),
+      )
+      .filter((a): a is (typeof result.accounts)[number] => Boolean(a));
+    setAssets((prev) => {
+      // Skip anything already in the list (e.g. a re-run of Smart add, or a
+      // voice/scan account the user had already added another way).
+      const has = (provider: string, accountType?: string) =>
+        prev.some(
+          (a) => a.provider === provider && a.accountType === accountType,
+        );
+      return [
+        ...prev,
+        ...detected
+          .filter((acc) => !has(acc.provider, acc.accountType))
+          .map((acc, i) => ({
+            id: `ai-${Date.now()}-${i}`,
+            provider: acc.provider,
+            accountType: acc.accountType,
+            taxStatus: acc.taxStatus,
+            balance: acc.balance,
+            source: "ai" as const,
+          })),
+      ];
+    });
+    // Stay in Smart add. The canvas returns to its editable state on its own,
+    // keeping the session's notes/voice/scan content for further edits.
   };
 
   // Group assets by tax treatment for the headed list (order = TAX_OPTIONS).
@@ -202,8 +233,9 @@ export function SmartAssetsScreen() {
   // Left panel mirrors the list: the added accounts are nested directly under
   // the "Accounts" step (with a running total on the row) so the sidebar stays
   // in sync with what's on the right — no separate section at the bottom.
+  // No `sticky` needed: the shell's `fill` mode pins the navbar + sidebar and
+  // the main column scrolls internally instead.
   const sidebarConfig = {
-    sticky: true,
     subSections: [
       { label: "About You" },
       {
@@ -231,8 +263,8 @@ export function SmartAssetsScreen() {
   };
 
   return (
-    <AppShell card={false} sidebar={sidebarConfig}>
-      <div className="flex w-full flex-1 flex-col rounded-field bg-card px-5 py-5 xl:px-10 xl:py-6 3xl:px-14 3xl:py-8">
+    <AppShell fill card={false} sidebar={sidebarConfig}>
+      <div className="scrollbar-slim flex min-h-0 w-full flex-1 flex-col overflow-y-auto rounded-field bg-card px-5 py-5 xl:px-10 xl:py-6 3xl:px-14 3xl:py-8">
         <div className="mx-auto flex w-full max-w-[820px] flex-1 flex-col xl:max-w-[1040px] 3xl:max-w-[1220px]">
           <BackButton onClick={goBack} />
 
@@ -253,7 +285,7 @@ export function SmartAssetsScreen() {
           {/* Three ways to add accounts (see layout reference). Manual + Smart
               add are selectable modes; Connect with Plaid is a placeholder. */}
           <motion.div
-            className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3"
+            className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
@@ -294,51 +326,48 @@ export function SmartAssetsScreen() {
               description="Drop in statements, notes or a voice memo. Violet will then digest your data and let you add & edit."
               accent
               selected={mode === "smart"}
-              onClick={() => setMode("smart")}
+              onClick={() => {
+                setMode("smart");
+                setSmartMounted(true);
+              }}
             />
           </motion.div>
 
-          {/* Input area — swaps with the selected mode */}
-          <div className="mt-6 flex w-full flex-1 flex-col">
-            <AnimatePresence mode="wait" initial={false}>
-              {mode === "smart" ? (
-                <motion.div
-                  key="smart"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex flex-1 flex-col"
-                >
-                  <DumpCanvas
-                    key={smartRun}
-                    title={null}
-                    continueLabel="Add to my accounts"
-                    autotype={smartRun === 0}
-                    seedNotes={MODAL_SEED_NOTES}
-                    seedItems={MODAL_SEED_ITEMS}
-                    voiceTranscript={MODAL_VOICE_TRANSCRIPT}
-                    makeScan={makeModalScan}
-                    onComplete={handleDumpComplete}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="manual"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <AccountEntryForm onAdd={addManual} />
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Input area — swaps with the selected mode. Both panes stay
+              mounted once opened (just hidden while inactive) so the Smart-add
+              canvas keeps its notes/voice/scan content — and the manual form
+              its half-typed fields — across mode switches and completions. */}
+          <div className="mt-4 flex w-full flex-1 flex-col">
+            {smartMounted ? (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                className={cn(
+                  "flex-1 flex-col",
+                  mode === "smart" ? "flex" : "hidden",
+                )}
+              >
+                <DumpCanvas
+                  title={null}
+                  continueLabel="Add to my accounts"
+                  autotype
+                  seedNotes={MODAL_SEED_NOTES}
+                  seedItems={MODAL_SEED_ITEMS}
+                  voiceTranscript={MODAL_VOICE_TRANSCRIPT}
+                  makeScan={makeModalScan}
+                  onComplete={handleDumpComplete}
+                />
+              </motion.div>
+            ) : null}
+            <div className={mode === "manual" ? undefined : "hidden"}>
+              <AccountEntryForm onAdd={addManual} />
+            </div>
 
             {/* Account list grouped by tax treatment */}
-            <div className="mt-5 flex flex-col gap-4">
+            <div className="mt-4 flex flex-col gap-4">
               {assets.length === 0 ? (
-                <div className="rounded-card border border-dashed border-stroke-subtle bg-white/60 px-5 py-8 text-center text-sm text-gray-2">
+                <div className="rounded-card border border-dashed border-stroke-subtle bg-white/60 px-5 py-6 text-center text-sm text-gray-2">
                   No accounts yet. Add one manually, connect a bank, or use
                   Smart add.
                 </div>
@@ -455,6 +484,37 @@ function AccountEntryForm({
   const [taxStatus, setTaxStatus] = useState<TaxStatus>("taxable");
   const [amount, setAmount] = useState("");
 
+  // When the name matches a known provider (brand), only offer that provider's
+  // account types; otherwise fall back to the full generic list.
+  const providerTypes = accountTypesForProvider(name);
+  const typeOptions =
+    providerTypes.length > 0 ? providerTypes : ACCOUNT_TYPE_OPTIONS;
+
+  const handleNameChange = (next: string) => {
+    setName(next);
+    const nextTypes = accountTypesForProvider(next);
+    if (
+      nextTypes.length > 0 &&
+      accountType &&
+      !nextTypes.includes(accountType)
+    ) {
+      // The previously picked type isn't offered by this provider.
+      setAccountType("");
+    } else if (accountType) {
+      // Name arrived after the type: backfill the tax treatment if the
+      // provider + type combination is known.
+      const known = taxStatusFor(next, accountType);
+      if (known) setTaxStatus(known);
+    }
+  };
+
+  const handleTypeChange = (next: string) => {
+    setAccountType(next);
+    // Known provider + type combination → the tax treatment is unambiguous.
+    const known = taxStatusFor(name, next);
+    if (known) setTaxStatus(known);
+  };
+
   const canAdd = name.trim().length > 0;
 
   const submit = () => {
@@ -482,42 +542,47 @@ function AccountEntryForm({
         <Field label="Account name">
           <AccountSearch
             onSelect={() => {}}
-            onQueryChange={setName}
+            onQueryChange={handleNameChange}
             value={name}
             clearOnSelect={false}
             nameOnly
+            compact
             placeholder="Search or type an account name…"
           />
         </Field>
         <Field label="Account type">
-          <select
-            value={accountType}
-            onChange={(e) => setAccountType(e.target.value)}
-            className="w-full rounded-field border border-stroke-subtle bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-violet/50"
-          >
-            <option value="">Select account type</option>
-            {ACCOUNT_TYPE_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+          <SelectWrap>
+            <select
+              value={accountType}
+              onChange={(e) => handleTypeChange(e.target.value)}
+              className="h-11 w-full appearance-none rounded-field border border-stroke-subtle bg-white px-3 pr-9 text-sm outline-none transition-colors focus:border-violet/50"
+            >
+              <option value="">Select account type</option>
+              {typeOptions.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </SelectWrap>
         </Field>
         <Field label="Tax treatment">
-          <select
-            value={taxStatus}
-            onChange={(e) => setTaxStatus(e.target.value as TaxStatus)}
-            className="w-full rounded-field border border-stroke-subtle bg-white px-3 py-2.5 text-sm text-deep-black outline-none transition-colors focus:border-violet/50"
-          >
-            {TAX_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {TAX_STATUS_LABEL[t]}
-              </option>
-            ))}
-          </select>
+          <SelectWrap>
+            <select
+              value={taxStatus}
+              onChange={(e) => setTaxStatus(e.target.value as TaxStatus)}
+              className="h-11 w-full appearance-none rounded-field border border-stroke-subtle bg-white px-3 pr-9 text-sm text-deep-black outline-none transition-colors focus:border-violet/50"
+            >
+              {TAX_OPTIONS.map((t) => (
+                <option key={t} value={t}>
+                  {TAX_STATUS_LABEL[t]}
+                </option>
+              ))}
+            </select>
+          </SelectWrap>
         </Field>
         <Field label="Amount">
-          <div className="flex items-center rounded-field border border-stroke-subtle bg-white px-3.5 py-2.5 transition-colors focus-within:border-violet/50">
+          <div className="flex h-11 items-center rounded-field border border-stroke-subtle bg-white px-3.5 transition-colors focus-within:border-violet/50">
             <span className="text-sm text-gray-1">$</span>
             <input
               inputMode="numeric"
@@ -550,6 +615,16 @@ function AccountEntryForm({
           Add account
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Relative wrapper that overlays a custom chevron on a native `<select>`. */
+function SelectWrap({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative">
+      {children}
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-gray-2" />
     </div>
   );
 }
