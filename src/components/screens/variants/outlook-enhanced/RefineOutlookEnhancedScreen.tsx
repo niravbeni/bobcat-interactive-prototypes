@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { OutlookShell } from "@/components/prototypes/outlook/OutlookShell";
@@ -36,6 +36,11 @@ export function RefineOutlookEnhancedScreen() {
   const { answers, setOutlook, goBack } = useFlow();
   const { spendingAim, marketT, riskT, comparisonRefine, customEvents } = answers.outlook;
 
+  // Comparison always starts on when you enter the refine plan page.
+  useEffect(() => {
+    setOutlook({ comparisonRefine: true });
+  }, [setOutlook]);
+
   const current = useMemo(
     () =>
       computeOutlook({ plan: "current", spendingAim, marketT, riskT, events: customEvents }),
@@ -63,7 +68,7 @@ export function RefineOutlookEnhancedScreen() {
       onBack={goBack}
       sidebarComplete
     >
-      <div className="flex min-w-0 flex-col gap-3 pb-2 pr-1">
+      <div className="flex min-h-0 min-w-0 flex-col gap-3 pb-2 pr-1 lg:flex-1">
         <motion.section
           {...enter(0)}
           className="rounded-card bg-[radial-gradient(circle_at_12%_18%,rgba(160,110,203,0.30),transparent_55%),radial-gradient(circle_at_90%_88%,rgba(201,0,172,0.14),transparent_50%),rgba(127,53,178,0.10)] p-5"
@@ -172,12 +177,13 @@ export function RefineOutlookEnhancedScreen() {
           />
         </motion.div>
 
-        <motion.div {...enter(0.16)}>
+        <motion.div {...enter(0.16)} className="flex min-h-0 flex-col lg:flex-1">
           <OutlookStatsPanel
             current={current}
             personalized={personalized}
             comparison={comparisonRefine}
             enhanced
+            fill
           />
         </motion.div>
       </div>

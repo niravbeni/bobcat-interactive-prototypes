@@ -20,7 +20,8 @@ export type VariantId =
   | "card-sort"
   | "smart-assets"
   | "outlook-flow"
-  | "outlook-flow-enhanced";
+  | "outlook-flow-enhanced"
+  | "outlook-flow-post-feedback";
 
 export interface VariantMeta {
   id: VariantId;
@@ -255,6 +256,14 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "The Outlook Flow with extra polish: an animated gradient wash under the asset curve, shimmering placeholder copy and soft aurora hero cards — same live, slider-driven charts.",
     status: "ready",
+    steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
+  },
+  "outlook-flow-post-feedback": {
+    id: "outlook-flow-post-feedback",
+    title: "Outlook Flow (Post Feedback)",
+    description:
+      "The enhanced Outlook Flow reworked with post-feedback edits — the latest, highlighted version of the flow.",
+    status: "ready",
     featured: true,
     steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
   },
@@ -270,6 +279,7 @@ export const COMPONENT_PROTOTYPE_ORDER: VariantId[] = [
 
 /** The end-to-end retirement onboarding UX flows. */
 export const FLOW_ORDER: VariantId[] = [
+  "outlook-flow-post-feedback",
   "outlook-flow-enhanced",
   "outlook-flow",
   "hybrid",

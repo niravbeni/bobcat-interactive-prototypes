@@ -151,7 +151,9 @@ function AccordionSection({
 export function OutlookSidebar({ complete = false }: { complete?: boolean }) {
   const { answers, setOutlook, variant } = useFlow();
   const { spendingAim, marketT, customEvents } = answers.outlook;
-  const enhanced = variant === "outlook-flow-enhanced";
+  const enhanced =
+    variant === "outlook-flow-enhanced" ||
+    variant === "outlook-flow-post-feedback";
 
   // "Model custom events" opens a compact popover anchored to the trigger.
   // Only one copy of the button is ever mounted (card OR refine dropdown), so a

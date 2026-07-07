@@ -49,11 +49,11 @@ export function OutlookShell({
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
             {/* Extra bottom padding lets the last content scroll fully into view
                 from behind the floating stepper. */}
-            <main className="scrollbar-slim flex min-h-0 flex-1 flex-col overflow-y-auto pb-28">
+            <main className="scrollbar-slim flex min-h-0 flex-1 flex-col overflow-y-auto pb-20">
               {children}
             </main>
             {/* Fade so content dissolves as it scrolls behind the stepper. */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white via-white/85 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white via-white/85 to-transparent" />
             <div className="absolute inset-x-0 bottom-0">
               <OutlookStepper
                 active={stage}

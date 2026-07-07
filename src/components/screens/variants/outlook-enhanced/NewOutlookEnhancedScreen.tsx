@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { motion } from "motion/react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { OutlookShell } from "@/components/prototypes/outlook/OutlookShell";
@@ -27,6 +27,11 @@ export function NewOutlookEnhancedScreen() {
   const { answers, setOutlook, goNext, goTo } = useFlow();
   const { spendingAim, marketT, riskT, comparisonNew, customEvents } = answers.outlook;
 
+  // Comparison always starts on when you enter the personalised plan page.
+  useEffect(() => {
+    setOutlook({ comparisonNew: true });
+  }, [setOutlook]);
+
   const current = useMemo(
     () =>
       computeOutlook({ plan: "current", spendingAim, marketT, riskT, events: customEvents }),
@@ -52,7 +57,7 @@ export function NewOutlookEnhancedScreen() {
       onCta={goNext}
       onBack={() => goTo("current-outlook")}
     >
-      <div className="flex min-w-0 flex-col gap-3 pb-2 pr-1">
+      <div className="flex min-h-0 min-w-0 flex-col gap-3 pb-2 pr-1 lg:flex-1">
         {/* Header: personalized-plan hero + fee savings */}
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.7fr_1fr]">
           <motion.section
@@ -101,12 +106,13 @@ export function NewOutlookEnhancedScreen() {
           />
         </motion.div>
 
-        <motion.div {...enter(0.2)}>
+        <motion.div {...enter(0.2)} className="flex min-h-0 flex-col lg:flex-1">
           <OutlookStatsPanel
             current={current}
             personalized={personalized}
             comparison={comparisonNew}
             enhanced
+            fill
           />
         </motion.div>
       </div>

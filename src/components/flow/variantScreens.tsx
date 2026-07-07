@@ -37,6 +37,9 @@ import { RefineOutlookScreen } from "@/components/screens/variants/RefineOutlook
 import { CurrentOutlookEnhancedScreen } from "@/components/screens/variants/outlook-enhanced/CurrentOutlookEnhancedScreen";
 import { NewOutlookEnhancedScreen } from "@/components/screens/variants/outlook-enhanced/NewOutlookEnhancedScreen";
 import { RefineOutlookEnhancedScreen } from "@/components/screens/variants/outlook-enhanced/RefineOutlookEnhancedScreen";
+import { CurrentOutlookPostFeedbackScreen } from "@/components/screens/variants/outlook-post-feedback/CurrentOutlookPostFeedbackScreen";
+import { NewOutlookPostFeedbackScreen } from "@/components/screens/variants/outlook-post-feedback/NewOutlookPostFeedbackScreen";
+import { RefineOutlookPostFeedbackScreen } from "@/components/screens/variants/outlook-post-feedback/RefineOutlookPostFeedbackScreen";
 
 /** The income/summary/spending/complete steps are identical across variants. */
 function sharedStep(step: StepId) {
@@ -116,6 +119,12 @@ export function VariantScreen({
       if (step === "loading") return <OutlookLoadingScreen />;
       if (step === "new-outlook") return <NewOutlookEnhancedScreen />;
       if (step === "refine-outlook") return <RefineOutlookEnhancedScreen />;
+      return null;
+    case "outlook-flow-post-feedback":
+      if (step === "current-outlook") return <CurrentOutlookPostFeedbackScreen />;
+      if (step === "loading") return <OutlookLoadingScreen />;
+      if (step === "new-outlook") return <NewOutlookPostFeedbackScreen />;
+      if (step === "refine-outlook") return <RefineOutlookPostFeedbackScreen />;
       return null;
     case "hybrid-quick":
       if (step === "profile")

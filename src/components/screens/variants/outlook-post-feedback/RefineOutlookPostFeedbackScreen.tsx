@@ -4,10 +4,8 @@ import { useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { OutlookShell } from "@/components/prototypes/outlook/OutlookShell";
-import {
-  ComparisonToggle,
-  OutlookStatsPanel,
-} from "@/components/prototypes/outlook/OutlookStatsPanel";
+import { ComparisonToggle } from "@/components/prototypes/outlook/OutlookStatsPanel";
+import { OutlookStatsPanelPF } from "./OutlookStatsPanelPF";
 import { AllocationPie, AnimatedNumber } from "@/components/prototypes/outlook/charts";
 import { SnapSlider } from "@/components/ui/SnapSlider";
 import {
@@ -28,12 +26,11 @@ const RISK_STOPS = [0, 17, 33, 50, 67, 83, 100];
 const PIE_VIOLETS = ["#7f35b2", "#a06ecb", "#c49ae2", "#e0c8f3", "#8f4fc0"];
 
 /**
- * Screen 4 — refine the personalized plan. The risk slider re-sweeps the
- * allocation pie, rewrites the breakdown and "what's changed" copy, and
- * recomputes every stat card below — all from the one shared model.
- * "Implement your Plan" is a placeholder end point.
+ * Post-feedback Screen 4 — a copy of the enhanced Refine screen. This is the
+ * branch where post-feedback edits will land; the enhanced and original flows
+ * stay untouched.
  */
-export function RefineOutlookScreen() {
+export function RefineOutlookPostFeedbackScreen() {
   const { answers, setOutlook, goBack } = useFlow();
   const { spendingAim, marketT, riskT, comparisonRefine, customEvents } = answers.outlook;
 
@@ -72,7 +69,7 @@ export function RefineOutlookScreen() {
       <div className="flex min-h-0 min-w-0 flex-col gap-3 pb-2 pr-1 lg:flex-1">
         <motion.section
           {...enter(0)}
-          className="rounded-card bg-violet/10 p-5"
+          className="rounded-card bg-[radial-gradient(circle_at_12%_18%,rgba(160,110,203,0.30),transparent_55%),radial-gradient(circle_at_90%_88%,rgba(201,0,172,0.14),transparent_50%),rgba(127,53,178,0.10)] p-5"
         >
           <h1 className="text-lg font-semibold leading-snug tracking-[-0.01em] text-deep-black">
             Last step, refine your plan by choosing the{" "}
@@ -179,7 +176,7 @@ export function RefineOutlookScreen() {
         </motion.div>
 
         <motion.div {...enter(0.16)} className="flex min-h-0 flex-col lg:flex-1">
-          <OutlookStatsPanel
+          <OutlookStatsPanelPF
             current={current}
             personalized={personalized}
             comparison={comparisonRefine}
