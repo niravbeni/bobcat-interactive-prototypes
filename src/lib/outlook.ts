@@ -9,7 +9,7 @@
  * At the default inputs (spendingAim 4000, marketT 50, riskT 50) the outputs
  * reproduce the Figma reference numbers:
  *   current       → 73% success, $642,000 assets at 90, $220,000 loss, 17% dd
- *   personalized  → 92% success, $1,447,000 assets at 90, $165,000 loss, 13% dd
+ *   personalized  → 85% success, $880,000 assets at 90, $190,000 loss, 15% dd
  */
 
 export type PlanKind = "current" | "personalized";
@@ -376,7 +376,7 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
   // --- Chance of success -------------------------------------------------
   // Market tilts both plans; spending drags success down as it rises. Risk
   // barely moves success ("all are efficient") — a slight dip at the extremes.
-  const baseSuccess = isPersonal ? 92 : 73;
+  const baseSuccess = isPersonal ? 85 : 73;
   const successPct = Math.round(
     clamp(
       baseSuccess + m * 5 - s * 6 - (isPersonal ? Math.abs(r) * 1.5 : 0) + eventSuccessPts,
@@ -389,7 +389,7 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
   // --- Expected assets remaining at 90 ------------------------------------
   // Market and spending scale the endpoint; risk raises the personalized
   // ceiling (more equities → more expected growth).
-  const baseEnd = isPersonal ? 1_447_000 : 642_000;
+  const baseEnd = isPersonal ? 880_000 : 642_000;
   const baseAssetsAt90 = round1000(
     baseEnd * (1 + 0.16 * m) * (1 - 0.1 * s) * (isPersonal ? 1 + 0.12 * r : 1),
   );
@@ -405,7 +405,7 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
 
   // --- Potential loss in any given year ------------------------------------
   // Worst markets deepen losses; higher risk raises personalized volatility.
-  const baseLoss = isPersonal ? 165_000 : 220_000;
+  const baseLoss = isPersonal ? 190_000 : 220_000;
   const potentialLoss = round1000(
     clamp(
       baseLoss * (1 - 0.2 * m) * (isPersonal ? 1 + 0.24 * r : 1) + eventLoss,
@@ -413,7 +413,7 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
       2_000_000,
     ),
   );
-  const baseDrawdown = isPersonal ? 13 : 17;
+  const baseDrawdown = isPersonal ? 15 : 17;
   const drawdownPct = Math.round(
     clamp(
       baseDrawdown * (1 - 0.15 * m) * (isPersonal ? 1 + 0.28 * r : 1) + eventDrawdownPts,
