@@ -7,6 +7,7 @@ import { useFlow } from "@/components/flow/FlowProvider";
 import { SnapSlider } from "@/components/ui/SnapSlider";
 import { AskSendIcon } from "@/components/ui/AskSendIcon";
 import { CustomEventsModal } from "@/components/prototypes/outlook/CustomEventsModal";
+import { InfoTarget, InfoTipBox } from "@/components/prototypes/outlook/OutlookInfoTip";
 import { SPENDING_RANGE } from "@/lib/outlook";
 import { cn } from "@/lib/cn";
 
@@ -235,12 +236,20 @@ function AccordionSection({
  * `complete` renders the refine-screen variant: sections start collapsed and the
  * conditions card is hidden, but every section can still be opened.
  */
-export function OutlookSidebar({ complete = false }: { complete?: boolean }) {
+export function OutlookSidebar({
+  complete = false,
+  infoTip = false,
+}: {
+  complete?: boolean;
+  /** Show the hover-help box and enable sidebar hover targets (v2 flow). */
+  infoTip?: boolean;
+}) {
   const { answers, setOutlook, variant } = useFlow();
   const { spendingAim, marketT, customEvents } = answers.outlook;
   const enhanced =
     variant === "outlook-flow-enhanced" ||
-    variant === "outlook-flow-post-feedback";
+    variant === "outlook-flow-post-feedback" ||
+    variant === "outlook-flow-post-feedback-v2";
 
   // "Model custom events" opens a compact popover anchored to the trigger.
   // Only one copy of the button is ever mounted (card OR refine dropdown), so a
@@ -318,29 +327,36 @@ export function OutlookSidebar({ complete = false }: { complete?: boolean }) {
       case "Spending":
         return (
           <>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
-                Spending aim
-              </span>
-              <span className="text-sm font-semibold text-deep-black">
-                ${spendingAim.toLocaleString("en-US")}
-                <span className="text-[11px] font-normal text-gray-2">/mo</span>
-              </span>
-            </div>
-            <SnapSlider
-              aria-label="Spending aim"
-              value={spendT}
-              snapPoints={[0, 50, 100]}
-              onChange={(t) => setOutlook({ spendingAim: spendFromT(t) })}
-              className="mt-1.5"
-              accent="violet"
-            />
-            <div className="mt-0.5 flex items-center justify-between text-[11px] text-gray-2">
-              <span>${SPENDING_RANGE.min.toLocaleString("en-US")}</span>
-              <span>${SPENDING_RANGE.max.toLocaleString("en-US")}</span>
-            </div>
+            <InfoTarget tipId="spending-aim" as="div" enabled={infoTip}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
+                  Spending aim
+                </span>
+                <span className="text-sm font-semibold text-deep-black">
+                  ${spendingAim.toLocaleString("en-US")}
+                  <span className="text-[11px] font-normal text-gray-2">/mo</span>
+                </span>
+              </div>
+              <SnapSlider
+                aria-label="Spending aim"
+                value={spendT}
+                snapPoints={[0, 50, 100]}
+                onChange={(t) => setOutlook({ spendingAim: spendFromT(t) })}
+                className="mt-1.5"
+                accent="violet"
+              />
+              <div className="mt-0.5 flex items-center justify-between text-[11px] text-gray-2">
+                <span>${SPENDING_RANGE.min.toLocaleString("en-US")}</span>
+                <span>${SPENDING_RANGE.max.toLocaleString("en-US")}</span>
+              </div>
+            </InfoTarget>
 
-            <div className="mt-3 flex w-full flex-col px-1 py-1">
+            <InfoTarget
+              tipId="safety-buffer"
+              as="div"
+              enabled={infoTip}
+              className="mt-3 flex w-full flex-col px-1 py-1"
+            >
               <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
                 Safety buffer
               </span>
@@ -351,7 +367,7 @@ export function OutlookSidebar({ complete = false }: { complete?: boolean }) {
                   align="left"
                 />
               </div>
-            </div>
+            </InfoTarget>
           </>
         );
       case "Goals":
@@ -386,40 +402,44 @@ export function OutlookSidebar({ complete = false }: { complete?: boolean }) {
       <p className="mt-0.5 text-xs leading-snug text-gray-1">
         Adjust and watch your outlook adapt.
       </p>
-      <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
-        Market scenario
-      </p>
-      <SnapSlider
-        aria-label="Market scenario"
-        value={marketT}
-        snapPoints={[0, 50, 100]}
-        onChange={(t) => setOutlook({ marketT: t })}
-        className="mt-1.5"
-        accent="violet"
-      />
-      <div className="mt-0.5 flex items-center justify-between text-[11px] text-gray-2">
-        <span>Worst case</span>
-        <span>Best case</span>
-      </div>
-      <button
-        ref={eventsAnchorRef}
-        type="button"
-        onClick={() => setEventsOpen((o) => !o)}
-        className={cn(
-          "mt-3 flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors",
-          eventCount > 0
-            ? "bg-violet/10 text-violet hover:bg-violet/15"
-            : "bg-ghost-white text-deep-black hover:bg-divider/40",
-        )}
-      >
-        <Pencil className="size-3.5 shrink-0" strokeWidth={2} />
-        Model custom events
-        {eventCount > 0 ? (
-          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-violet text-[11px] font-semibold text-white">
-            {eventCount}
-          </span>
-        ) : null}
-      </button>
+      <InfoTarget tipId="market-scenario" as="div" enabled={infoTip}>
+        <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
+          Market scenario
+        </p>
+        <SnapSlider
+          aria-label="Market scenario"
+          value={marketT}
+          snapPoints={[0, 50, 100]}
+          onChange={(t) => setOutlook({ marketT: t })}
+          className="mt-1.5"
+          accent="violet"
+        />
+        <div className="mt-0.5 flex items-center justify-between text-[11px] text-gray-2">
+          <span>Worst case</span>
+          <span>Best case</span>
+        </div>
+      </InfoTarget>
+      <InfoTarget tipId="custom-events" as="div" enabled={infoTip}>
+        <button
+          ref={eventsAnchorRef}
+          type="button"
+          onClick={() => setEventsOpen((o) => !o)}
+          className={cn(
+            "mt-3 flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors",
+            eventCount > 0
+              ? "bg-violet/10 text-violet hover:bg-violet/15"
+              : "bg-ghost-white text-deep-black hover:bg-divider/40",
+          )}
+        >
+          <Pencil className="size-3.5 shrink-0" strokeWidth={2} />
+          Model custom events
+          {eventCount > 0 ? (
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-violet text-[11px] font-semibold text-white">
+              {eventCount}
+            </span>
+          ) : null}
+        </button>
+      </InfoTarget>
     </>
   );
 
@@ -496,28 +516,37 @@ export function OutlookSidebar({ complete = false }: { complete?: boolean }) {
         </div>
       )}
 
-      <div className="mt-auto flex flex-col gap-2.5 pt-8">
-        <p className="text-sm font-semibold text-deep-black">Learn more</p>
-        <button
-          type="button"
-          className="flex items-center gap-3 rounded-full border border-stroke-subtle bg-white px-4 py-2.5 text-left transition-colors hover:bg-white/60"
-        >
-          <CircleHelp className="size-4 shrink-0 text-gray-2" strokeWidth={2} />
-          <span
-            className={cn(
-              "h-2.5 w-36 rounded-full",
-              enhanced ? "skeleton-shimmer" : "bg-divider",
-            )}
-            aria-hidden
-          />
-          <span className="sr-only">How your outlook works</span>
-        </button>
-      </div>
+      {/* The v2 flow's hover-help box already covers "learn more", so the
+          separate Learn more link is dropped there. */}
+      {infoTip ? null : (
+        <div className="mt-auto flex flex-col gap-2.5 pt-8">
+          <p className="text-sm font-semibold text-deep-black">Learn more</p>
+          <button
+            type="button"
+            className="flex items-center gap-3 rounded-full border border-stroke-subtle bg-white px-4 py-2.5 text-left transition-colors hover:bg-white/60"
+          >
+            <CircleHelp className="size-4 shrink-0 text-gray-2" strokeWidth={2} />
+            <span
+              className={cn(
+                "h-2.5 w-36 rounded-full",
+                enhanced ? "skeleton-shimmer" : "bg-divider",
+              )}
+              aria-hidden
+            />
+            <span className="sr-only">How your outlook works</span>
+          </button>
+        </div>
+      )}
       </div>
 
-      {/* Pinned footer: only the ask-question pill itself stays visible while the
-          section list above scrolls behind it. */}
+      {/* Pinned footer: the hover-help box (v2 only) plus the ask-question pill
+          stay visible while the section list above scrolls behind them. */}
       <div className="shrink-0 px-3 pb-3">
+        {infoTip ? (
+          <div className="mb-2.5">
+            <InfoTipBox />
+          </div>
+        ) : null}
         {/* Subtle pulsing AI glow to signal the assistant is ready. */}
         <motion.div
           className="flex items-center justify-between rounded-full bg-white py-1.5 pl-4 pr-1.5"

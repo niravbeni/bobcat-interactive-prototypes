@@ -40,6 +40,9 @@ import { RefineOutlookEnhancedScreen } from "@/components/screens/variants/outlo
 import { CurrentOutlookPostFeedbackScreen } from "@/components/screens/variants/outlook-post-feedback/CurrentOutlookPostFeedbackScreen";
 import { NewOutlookPostFeedbackScreen } from "@/components/screens/variants/outlook-post-feedback/NewOutlookPostFeedbackScreen";
 import { RefineOutlookPostFeedbackScreen } from "@/components/screens/variants/outlook-post-feedback/RefineOutlookPostFeedbackScreen";
+import { CurrentOutlookPostFeedbackV2Screen } from "@/components/screens/variants/outlook-post-feedback-v2/CurrentOutlookPostFeedbackV2Screen";
+import { NewOutlookPostFeedbackV2Screen } from "@/components/screens/variants/outlook-post-feedback-v2/NewOutlookPostFeedbackV2Screen";
+import { RefineOutlookPostFeedbackV2Screen } from "@/components/screens/variants/outlook-post-feedback-v2/RefineOutlookPostFeedbackV2Screen";
 import { DetailsHomeScreen } from "@/components/screens/variants/details-flow/DetailsHomeScreen";
 import { AboutYouDetailsScreen } from "@/components/screens/variants/details-flow/AboutYouDetailsScreen";
 import { AssetsDetailsScreen } from "@/components/screens/variants/details-flow/AssetsDetailsScreen";
@@ -130,6 +133,12 @@ export function VariantScreen({
       if (step === "loading") return <OutlookLoadingScreen />;
       if (step === "new-outlook") return <NewOutlookPostFeedbackScreen />;
       if (step === "refine-outlook") return <RefineOutlookPostFeedbackScreen />;
+      return null;
+    case "outlook-flow-post-feedback-v2":
+      if (step === "current-outlook") return <CurrentOutlookPostFeedbackV2Screen />;
+      if (step === "loading") return <OutlookLoadingScreen />;
+      if (step === "new-outlook") return <NewOutlookPostFeedbackV2Screen />;
+      if (step === "refine-outlook") return <RefineOutlookPostFeedbackV2Screen />;
       return null;
     case "details-flow":
       if (step === "details-home") return <DetailsHomeScreen />;

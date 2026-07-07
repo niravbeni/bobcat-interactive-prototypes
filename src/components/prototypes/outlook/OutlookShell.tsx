@@ -5,6 +5,7 @@ import { OutlookTopNav } from "./OutlookTopNav";
 import { OutlookSidebar } from "./OutlookSidebar";
 import { OutlookStepper } from "./OutlookStepper";
 import { OutlookFeedbackProvider, type OutlookModalOpts } from "./OutlookFeedback";
+import { OutlookInfoTipProvider } from "./OutlookInfoTip";
 
 /**
  * Viewport-locked page shell for the Outlook flow: Figma-style top nav, a
@@ -20,6 +21,7 @@ export function OutlookShell({
   onCta,
   onBack,
   sidebarComplete = false,
+  showInfoTip = false,
   ctaModal,
 }: {
   children: React.ReactNode;
@@ -29,6 +31,8 @@ export function OutlookShell({
   onCta: () => void;
   onBack: () => void;
   sidebarComplete?: boolean;
+  /** Show the hover-help box at the bottom of the sidebar (v2 flow). */
+  showInfoTip?: boolean;
   /** When set, the stepper CTA opens this confirmation modal instead of onCta. */
   ctaModal?: OutlookModalOpts;
 }) {
@@ -44,8 +48,9 @@ export function OutlookShell({
         className="flex h-screen flex-col overflow-hidden bg-white"
       >
         <OutlookTopNav />
+        <OutlookInfoTipProvider>
         <div className="flex min-h-0 w-full flex-1 gap-4 px-4 pb-4 pt-4">
-          <OutlookSidebar complete={sidebarComplete} />
+          <OutlookSidebar complete={sidebarComplete} infoTip={showInfoTip} />
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
             {/* Extra bottom padding lets the last content scroll fully into view
                 from behind the floating stepper. */}
@@ -65,6 +70,7 @@ export function OutlookShell({
             </div>
           </div>
         </div>
+        </OutlookInfoTipProvider>
       </motion.div>
     </OutlookFeedbackProvider>
   );

@@ -22,6 +22,7 @@ export type VariantId =
   | "outlook-flow"
   | "outlook-flow-enhanced"
   | "outlook-flow-post-feedback"
+  | "outlook-flow-post-feedback-v2"
   | "details-flow";
 
 export interface VariantMeta {
@@ -268,6 +269,15 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     featured: true,
     steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
   },
+  "outlook-flow-post-feedback-v2": {
+    id: "outlook-flow-post-feedback-v2",
+    title: "Outlook Flow (Post Feedback) v2",
+    description:
+      "The Post Feedback Outlook Flow with a persistent hover-help box: point at any chart, highlighted term or sidebar control and a plain-language explanation appears in the bottom-left of the sidebar.",
+    status: "ready",
+    featured: true,
+    steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
+  },
   "details-flow": {
     id: "details-flow",
     title: "Details Flow",
@@ -295,6 +305,7 @@ export const COMPONENT_PROTOTYPE_ORDER: VariantId[] = [
 
 /** The end-to-end retirement onboarding UX flows. */
 export const FLOW_ORDER: VariantId[] = [
+  "outlook-flow-post-feedback-v2",
   "details-flow",
   "outlook-flow-post-feedback",
   "outlook-flow-enhanced",
