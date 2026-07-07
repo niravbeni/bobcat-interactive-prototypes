@@ -39,10 +39,26 @@ export function CurrentOutlookPostFeedbackScreen() {
       onBack={goBack}
     >
       <div className="flex min-h-0 min-w-0 flex-col gap-3 pb-2 pr-1 lg:flex-1">
-        {/* Header: current-strategy diagnosis + lifetime fees */}
+        {/* Intro line — sets up the baseline outlook above the graphs */}
+        <motion.h1
+          {...enter(0)}
+          className="text-lg font-semibold leading-snug tracking-[-0.01em] text-deep-black"
+        >
+          Modeling{" "}
+          <span className="text-gray-1">5,000 market scenarios</span>, here&apos;s
+          how your <span className="text-gray-1">current plan</span> is projected
+          to perform.
+        </motion.h1>
+
+        {/* Graphs fill the remaining space */}
+        <motion.div {...enter(0.12)} className="flex flex-col lg:min-h-0 lg:flex-1">
+          <OutlookStatsPanelPF current={current} comparison={false} fill />
+        </motion.div>
+
+        {/* Current-strategy diagnosis + lifetime fees, now below the graphs */}
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.7fr_1fr]">
           <motion.section
-            {...enter(0)}
+            {...enter(0.18)}
             className="flex items-center gap-5 rounded-card bg-[radial-gradient(circle_at_15%_20%,#f5f7f9,transparent_58%),radial-gradient(circle_at_85%_88%,#e2e6ea,transparent_52%),#eceef0] p-5"
           >
             <div className="flex size-24 shrink-0 items-center justify-center rounded-full bg-white p-2 shadow-[0_2px_10px_rgba(16,24,32,0.08)]">
@@ -53,11 +69,11 @@ export function CurrentOutlookPostFeedbackScreen() {
               />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg font-semibold leading-snug tracking-[-0.01em] text-deep-black">
+              <h2 className="text-lg font-semibold leading-snug tracking-[-0.01em] text-deep-black">
                 Your current strategy exposes you to{" "}
                 <span className="text-gray-1">High Volatility</span> and{" "}
                 <span className="text-gray-1">Higher Fees</span>
-              </h1>
+              </h2>
               <SkeletonLines rows={2} className="mt-3 max-w-[420px]" shimmer />
               <OutlookLearnMore
                 className="mt-3 inline-block text-xs font-medium text-deep-black underline transition-opacity hover:opacity-70"
@@ -78,7 +94,7 @@ export function CurrentOutlookPostFeedbackScreen() {
           </motion.section>
 
           <motion.section
-            {...enter(0.08)}
+            {...enter(0.24)}
             className="flex flex-col justify-center rounded-card border border-stroke-subtle bg-white p-5"
           >
             <p className="text-xs font-medium text-gray-1">Lifetime fees paid</p>
@@ -90,10 +106,6 @@ export function CurrentOutlookPostFeedbackScreen() {
             <SkeletonLines rows={2} className="mt-3" shimmer />
           </motion.section>
         </div>
-
-        <motion.div {...enter(0.2)} className="flex min-h-0 flex-col lg:flex-1">
-          <OutlookStatsPanelPF current={current} comparison={false} fill />
-        </motion.div>
       </div>
     </OutlookShell>
   );

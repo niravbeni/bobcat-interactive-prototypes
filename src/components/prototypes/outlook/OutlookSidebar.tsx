@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, ChevronDown, Pencil, CircleHelp } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
@@ -22,7 +22,7 @@ const SECTIONS: SectionId[] = [
 
 /** Plausible dummy data so every section shows something real when opened. */
 const ABOUT_ROWS: [string, string][] = [
-  ["Name", "Gloria Present"],
+  ["Name", "Gloria"],
   ["Age", "63"],
   ["Target retirement", "Age 66 · 2029"],
   ["Location", "Austin, TX"],
@@ -58,14 +58,101 @@ function SectionCheck() {
   );
 }
 
-/** Definition-list style rows used inside the data sections. */
-function DataRows({ rows }: { rows: [string, string][] }) {
+/**
+ * A click-to-edit value. Renders as bold text with a pencil affordance; clicking
+ * swaps in a text input that commits on Enter/blur (Escape cancels). Purely
+ * local prototype editing — the parent owns the persisted value.
+ */
+function EditableValue({
+  value,
+  onChange,
+  align = "right",
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  align?: "left" | "right";
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [editing]);
+
+  const startEditing = () => {
+    setDraft(value);
+    setEditing(true);
+  };
+  const commit = () => {
+    onChange(draft.trim() || value);
+    setEditing(false);
+  };
+  const cancel = () => setEditing(false);
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit();
+          if (e.key === "Escape") cancel();
+        }}
+        className={cn(
+          "w-full min-w-0 rounded border border-violet/50 bg-white px-1.5 py-0.5 text-xs font-semibold text-deep-black focus:outline-none focus:ring-1 focus:ring-violet",
+          align === "right" ? "text-right" : "text-left",
+        )}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={startEditing}
+      className={cn(
+        "group/edit flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-violet/5",
+        align === "right" ? "justify-end text-right" : "justify-start text-left",
+      )}
+    >
+      <span className="min-w-0 truncate font-semibold text-deep-black">{value}</span>
+      <Pencil
+        className="size-3 shrink-0 text-gray-2/70 transition-colors group-hover/edit:text-violet"
+        strokeWidth={2}
+      />
+    </button>
+  );
+}
+
+/** Definition-list style rows with click-to-edit values. */
+function EditableRows({
+  rows,
+  onChange,
+}: {
+  rows: [string, string][];
+  onChange: (rows: [string, string][]) => void;
+}) {
   return (
     <ul className="flex flex-col gap-2">
-      {rows.map(([label, value]) => (
+      {rows.map(([label, value], i) => (
         <li key={label} className="flex items-center justify-between gap-3 text-xs">
-          <span className="text-gray-1">{label}</span>
-          <span className="font-semibold text-deep-black">{value}</span>
+          <span className="shrink-0 text-gray-1">{label}</span>
+          <div className="flex min-w-0 flex-1 justify-end">
+            <EditableValue
+              value={value}
+              onChange={(next) => {
+                const copy = rows.map((r) => [...r] as [string, string]);
+                copy[i][1] = next;
+                onChange(copy);
+              }}
+            />
+          </div>
         </li>
       ))}
     </ul>
@@ -191,27 +278,40 @@ export function OutlookSidebar({ complete = false }: { complete?: boolean }) {
     setQuestion("");
   };
 
+  // Editable copies of the dummy data so every value can be clicked and changed.
+  const [aboutRows, setAboutRows] = useState(ABOUT_ROWS);
+  const [assetRows, setAssetRows] = useState(ASSET_ROWS);
+  const [incomeRows, setIncomeRows] = useState(INCOME_ROWS);
+  const [totalSaved, setTotalSaved] = useState("$1,267,000");
+  const [monthlyTotal, setMonthlyTotal] = useState("$4,530/mo");
+  const [safetyBuffer, setSafetyBuffer] = useState("Medium - $30k");
+  const [goals, setGoals] = useState(GOALS);
+
   const sectionContent = (id: SectionId) => {
     switch (id) {
       case "About you":
-        return <DataRows rows={ABOUT_ROWS} />;
+        return <EditableRows rows={aboutRows} onChange={setAboutRows} />;
       case "Assets":
         return (
           <>
-            <DataRows rows={ASSET_ROWS} />
-            <div className="mt-2 flex items-center justify-between border-t border-divider/60 pt-2 text-xs">
-              <span className="font-semibold text-deep-black">Total saved</span>
-              <span className="font-semibold text-deep-black">$1,267,000</span>
+            <EditableRows rows={assetRows} onChange={setAssetRows} />
+            <div className="mt-2 flex items-center justify-between gap-3 border-t border-divider/60 pt-2 text-xs">
+              <span className="shrink-0 font-semibold text-deep-black">Total saved</span>
+              <div className="flex min-w-0 flex-1 justify-end">
+                <EditableValue value={totalSaved} onChange={setTotalSaved} />
+              </div>
             </div>
           </>
         );
       case "Income":
         return (
           <>
-            <DataRows rows={INCOME_ROWS} />
-            <div className="mt-2 flex items-center justify-between border-t border-divider/60 pt-2 text-xs">
-              <span className="font-semibold text-deep-black">Monthly total</span>
-              <span className="font-semibold text-deep-black">$4,530/mo</span>
+            <EditableRows rows={incomeRows} onChange={setIncomeRows} />
+            <div className="mt-2 flex items-center justify-between gap-3 border-t border-divider/60 pt-2 text-xs">
+              <span className="shrink-0 font-semibold text-deep-black">Monthly total</span>
+              <div className="flex min-w-0 flex-1 justify-end">
+                <EditableValue value={monthlyTotal} onChange={setMonthlyTotal} />
+              </div>
             </div>
           </>
         );
@@ -240,28 +340,40 @@ export function OutlookSidebar({ complete = false }: { complete?: boolean }) {
               <span>${SPENDING_RANGE.max.toLocaleString("en-US")}</span>
             </div>
 
-            <div className="mt-3 flex w-full items-center justify-between px-1 py-1">
-              <span className="flex flex-col">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
-                  Safety buffer
-                </span>
-                <span className="mt-0.5 text-sm font-medium text-deep-black">
-                  Medium - $30k
-                </span>
+            <div className="mt-3 flex w-full flex-col px-1 py-1">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
+                Safety buffer
               </span>
+              <div className="mt-0.5 flex">
+                <EditableValue
+                  value={safetyBuffer}
+                  onChange={setSafetyBuffer}
+                  align="left"
+                />
+              </div>
             </div>
           </>
         );
       case "Goals":
         return (
           <ul className="flex flex-col gap-1.5">
-            {GOALS.map((goal) => (
+            {goals.map((goal, i) => (
               <li
-                key={goal}
+                key={i}
                 className="flex items-center gap-2 text-xs text-deep-black"
               >
                 <span className="size-1.5 shrink-0 rounded-full bg-violet" />
-                {goal}
+                <div className="flex min-w-0 flex-1">
+                  <EditableValue
+                    value={goal}
+                    onChange={(next) => {
+                      const copy = [...goals];
+                      copy[i] = next;
+                      setGoals(copy);
+                    }}
+                    align="left"
+                  />
+                </div>
               </li>
             ))}
           </ul>
