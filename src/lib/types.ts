@@ -1,3 +1,5 @@
+import type { TaxStatus } from "./institutions";
+
 export interface QAnswer {
   choice?: string;
   value?: string;
@@ -85,6 +87,60 @@ export interface OutlookState {
   customEvents: string[];
 }
 
+/** One account row in the Details-flow Assets screen (ported from Smart Assets). */
+export interface AssetRow {
+  id: string;
+  provider: string;
+  accountType?: string;
+  taxStatus: TaxStatus;
+  balance: number | null;
+  source: "search" | "ai" | "plaid" | "manual";
+  accentColor?: string;
+}
+
+/** "About you" basic details captured in the Details flow. */
+export interface DetailsAbout {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  dob: string;
+  zip: string;
+  relationship: string;
+}
+
+/** Retirement spending target + per-category monthly breakdown. */
+export interface DetailsSpending {
+  /** How the spending target is being defined. */
+  method: "know" | "estimate" | "workout";
+  /** Monthly spending aim in dollars. */
+  aim: number;
+  /** Safety-buffer select label, e.g. "Medium ($30k)". */
+  safetyBuffer: string;
+  /** Active category tab. */
+  tab: "essentials" | "lifestyle";
+  /** Monthly amounts keyed by category id. */
+  categories: Record<string, number>;
+}
+
+/** Ranked goals for the Details-flow card sort. */
+export interface DetailsGoals {
+  /** Placed timeline order, low → high (card ids). */
+  order: string[];
+  confirmed: boolean;
+}
+
+/**
+ * Details-flow state shared across the hub + four detail pages. It is the
+ * single source of truth so edits (in the sidebar or on a detail page) persist
+ * across hub round-trips.
+ */
+export interface DetailsState {
+  about: DetailsAbout;
+  accounts: AssetRow[];
+  spending: DetailsSpending;
+  goals: DetailsGoals;
+}
+
 export interface FlowAnswers {
   /** Personal "About you" free-text details, keyed by field id. */
   about: AnswerMap;
@@ -131,6 +187,8 @@ export interface FlowAnswers {
   planConditionT: number;
   /** Outlook-flow prototype: sliders + comparison toggles shared across steps. */
   outlook: OutlookState;
+  /** Details-flow prototype: about/accounts/spending/goals shared across pages. */
+  details: DetailsState;
 }
 
 export const initialAnswers: FlowAnswers = {
@@ -177,6 +235,63 @@ export const initialAnswers: FlowAnswers = {
     comparisonRefine: false,
     customEvents: [],
   },
+  details: {
+    about: {
+      firstName: "Gloria",
+      middleName: "Jean",
+      lastName: "Bennett",
+      dob: "21/08/1961",
+      zip: "91102",
+      relationship: "Widowed",
+    },
+    accounts: [
+      {
+        id: "seed-fidelity",
+        provider: "Fidelity",
+        accountType: "401(k)",
+        taxStatus: "tax-deferred",
+        balance: 124000,
+        source: "ai",
+      },
+      {
+        id: "seed-vanguard",
+        provider: "Vanguard",
+        accountType: "Roth IRA",
+        taxStatus: "tax-free",
+        balance: 42000,
+        source: "ai",
+      },
+      {
+        id: "seed-chase",
+        provider: "Chase",
+        accountType: "Savings",
+        taxStatus: "taxable",
+        balance: 18000,
+        source: "manual",
+      },
+    ],
+    spending: {
+      method: "workout",
+      aim: 4000,
+      safetyBuffer: "Medium ($30k)",
+      tab: "essentials",
+      categories: {
+        home: 1200,
+        transport: 400,
+        food: 600,
+        health: 200,
+        personal: 200,
+        travel: 500,
+        hobbies: 250,
+        dining: 300,
+        gifts: 150,
+      },
+    },
+    goals: {
+      order: [],
+      confirmed: false,
+    },
+  },
 };
 
 export type SectionId = "income" | "spending";
@@ -203,4 +318,9 @@ export type StepId =
   | "smart-assets"
   | "current-outlook"
   | "new-outlook"
-  | "refine-outlook";
+  | "refine-outlook"
+  | "details-home"
+  | "details-about"
+  | "details-assets"
+  | "details-spending"
+  | "details-goals";

@@ -43,7 +43,13 @@ function WtwLogo() {
  * The same nav renders on every Outlook screen (including the loader) for a
  * consistent top-of-page across the flow.
  */
-export function OutlookTopNav() {
+export function OutlookTopNav({
+  activeTab = "Outlook",
+}: {
+  /** Which centered tab reads as active. Defaults to "Outlook" so existing
+   *  Outlook-flow usage is unchanged; the Details flow passes "Details". */
+  activeTab?: (typeof TABS)[number];
+} = {}) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -63,7 +69,7 @@ export function OutlookTopNav() {
         className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white p-1 shadow-[0_1px_2px_rgba(16,24,32,0.06)]"
       >
         {TABS.map((tab) => {
-          const active = tab === "Outlook";
+          const active = tab === activeTab;
           return (
             <button
               key={tab}

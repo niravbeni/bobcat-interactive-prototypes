@@ -12,6 +12,7 @@ import {
 import {
   initialAnswers,
   type ChatMessage,
+  type DetailsState,
   type FlowAnswers,
   type OutlookState,
   type QAnswer,
@@ -48,6 +49,8 @@ interface FlowContextValue {
   setV2Chat: (patch: Partial<V2ChatState>) => void;
   /** Patch the Outlook-flow slider/toggle state shared across its steps. */
   setOutlook: (patch: Partial<OutlookState>) => void;
+  /** Patch the Details-flow state shared across the hub + detail pages. */
+  setDetails: (patch: Partial<DetailsState>) => void;
   goNext: () => void;
   goBack: () => void;
   goTo: (step: StepId) => void;
@@ -171,6 +174,13 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const setDetails = useCallback((patch: Partial<DetailsState>) => {
+    setAnswersState((prev) => ({
+      ...prev,
+      details: { ...prev.details, ...patch },
+    }));
+  }, []);
+
   const setSectionIdx = useCallback((section: SectionId, idx: number) => {
     setSectionIdxState((prev) => ({ ...prev, [section]: idx }));
   }, []);
@@ -218,6 +228,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       appendMessage,
       setV2Chat,
       setOutlook,
+      setDetails,
       goNext,
       goBack,
       goTo,
@@ -238,6 +249,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       appendMessage,
       setV2Chat,
       setOutlook,
+      setDetails,
       goNext,
       goBack,
       goTo,

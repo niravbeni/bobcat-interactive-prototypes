@@ -21,7 +21,8 @@ export type VariantId =
   | "smart-assets"
   | "outlook-flow"
   | "outlook-flow-enhanced"
-  | "outlook-flow-post-feedback";
+  | "outlook-flow-post-feedback"
+  | "details-flow";
 
 export interface VariantMeta {
   id: VariantId;
@@ -267,6 +268,21 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     featured: true,
     steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
   },
+  "details-flow": {
+    id: "details-flow",
+    title: "Details Flow",
+    description:
+      "A hub-and-spoke \"Your details\" dashboard: review your progress at a glance, then dive into About you, Assets, Spending or Goals — each an editable detail page that feeds a live left panel and returns you to the summary.",
+    status: "ready",
+    featured: true,
+    steps: [
+      "details-home",
+      "details-about",
+      "details-assets",
+      "details-spending",
+      "details-goals",
+    ],
+  },
 };
 
 /** Standalone signature-component prototypes, shown first on the dashboard. */
@@ -279,6 +295,7 @@ export const COMPONENT_PROTOTYPE_ORDER: VariantId[] = [
 
 /** The end-to-end retirement onboarding UX flows. */
 export const FLOW_ORDER: VariantId[] = [
+  "details-flow",
   "outlook-flow-post-feedback",
   "outlook-flow-enhanced",
   "outlook-flow",
