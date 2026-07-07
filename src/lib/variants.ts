@@ -18,7 +18,9 @@ export type VariantId =
   | "smart-sort"
   | "data-dump"
   | "card-sort"
-  | "smart-assets";
+  | "smart-assets"
+  | "outlook-flow"
+  | "outlook-flow-enhanced";
 
 export interface VariantMeta {
   id: VariantId;
@@ -103,7 +105,6 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Start by choosing how you'd like to build your retirement plan: a quick draft outlook you refine later, a guided step-by-step build, or talking to an advisor. Each path then runs end to end.",
     status: "ready",
-    featured: true,
     // The picker is a single screen that branches into the hybrid-quick /
     // hybrid-guided flows (each its own variant so answers reset cleanly).
     steps: ["persona"],
@@ -240,6 +241,23 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     status: "ready",
     steps: ["smart-assets"],
   },
+  "outlook-flow": {
+    id: "outlook-flow",
+    title: "Outlook Flow",
+    description:
+      "See your current outlook in a typical retail experience, watch a personalized plan get built, compare the two side by side, then refine your risk profile — every chart driven live by the sliders.",
+    status: "ready",
+    steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
+  },
+  "outlook-flow-enhanced": {
+    id: "outlook-flow-enhanced",
+    title: "Outlook Flow (Enhanced)",
+    description:
+      "The Outlook Flow with extra polish: an animated gradient wash under the asset curve, shimmering placeholder copy and soft aurora hero cards — same live, slider-driven charts.",
+    status: "ready",
+    featured: true,
+    steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
+  },
 };
 
 /** Standalone signature-component prototypes, shown first on the dashboard. */
@@ -252,6 +270,8 @@ export const COMPONENT_PROTOTYPE_ORDER: VariantId[] = [
 
 /** The end-to-end retirement onboarding UX flows. */
 export const FLOW_ORDER: VariantId[] = [
+  "outlook-flow-enhanced",
+  "outlook-flow",
   "hybrid",
   "linear-chat-v2",
   "narrative",

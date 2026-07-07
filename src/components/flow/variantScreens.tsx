@@ -30,6 +30,13 @@ import { SmartSortScreen } from "@/components/screens/variants/SmartSortScreen";
 import { DataDumpScreen } from "@/components/screens/variants/DataDumpScreen";
 import { CardSortScreen } from "@/components/screens/variants/CardSortScreen";
 import { SmartAssetsScreen } from "@/components/screens/variants/SmartAssetsScreen";
+import { CurrentOutlookScreen } from "@/components/screens/variants/CurrentOutlookScreen";
+import { OutlookLoadingScreen } from "@/components/screens/variants/OutlookLoadingScreen";
+import { NewOutlookScreen } from "@/components/screens/variants/NewOutlookScreen";
+import { RefineOutlookScreen } from "@/components/screens/variants/RefineOutlookScreen";
+import { CurrentOutlookEnhancedScreen } from "@/components/screens/variants/outlook-enhanced/CurrentOutlookEnhancedScreen";
+import { NewOutlookEnhancedScreen } from "@/components/screens/variants/outlook-enhanced/NewOutlookEnhancedScreen";
+import { RefineOutlookEnhancedScreen } from "@/components/screens/variants/outlook-enhanced/RefineOutlookEnhancedScreen";
 
 /** The income/summary/spending/complete steps are identical across variants. */
 function sharedStep(step: StepId) {
@@ -98,6 +105,18 @@ export function VariantScreen({
       return <CardSortScreen />;
     case "smart-assets":
       return <SmartAssetsScreen />;
+    case "outlook-flow":
+      if (step === "current-outlook") return <CurrentOutlookScreen />;
+      if (step === "loading") return <OutlookLoadingScreen />;
+      if (step === "new-outlook") return <NewOutlookScreen />;
+      if (step === "refine-outlook") return <RefineOutlookScreen />;
+      return null;
+    case "outlook-flow-enhanced":
+      if (step === "current-outlook") return <CurrentOutlookEnhancedScreen />;
+      if (step === "loading") return <OutlookLoadingScreen />;
+      if (step === "new-outlook") return <NewOutlookEnhancedScreen />;
+      if (step === "refine-outlook") return <RefineOutlookEnhancedScreen />;
+      return null;
     case "hybrid-quick":
       if (step === "profile")
         return <NarrativeScreen step="profile" hideSidebar />;

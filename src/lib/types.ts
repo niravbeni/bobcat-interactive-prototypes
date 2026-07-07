@@ -66,6 +66,25 @@ export interface GoalCard {
   source: "preset" | "chat" | "custom";
 }
 
+/**
+ * Outlook-flow state shared across its four steps. Slider positions and the
+ * comparison toggles live here so they survive navigation between steps.
+ */
+export interface OutlookState {
+  /** Monthly spending aim in dollars (sidebar slider). */
+  spendingAim: number;
+  /** Market scenario position, 0 (worst case) → 100 (best case). */
+  marketT: number;
+  /** Risk profile position, 0 (low) → 100 (high). Personalized plan only. */
+  riskT: number;
+  /** "Comparison" toggle on the New outlook screen (defaults on). */
+  comparisonNew: boolean;
+  /** "Comparison" toggle on the Refine outlook screen (defaults off). */
+  comparisonRefine: boolean;
+  /** Active "custom event" ids modelled onto the timeline (defaults empty). */
+  customEvents: string[];
+}
+
 export interface FlowAnswers {
   /** Personal "About you" free-text details, keyed by field id. */
   about: AnswerMap;
@@ -110,6 +129,8 @@ export interface FlowAnswers {
    * `planCondition` mirrors the nearest key point.
    */
   planConditionT: number;
+  /** Outlook-flow prototype: sliders + comparison toggles shared across steps. */
+  outlook: OutlookState;
 }
 
 export const initialAnswers: FlowAnswers = {
@@ -148,6 +169,14 @@ export const initialAnswers: FlowAnswers = {
   lastDetailsView: "details",
   planCondition: "typical",
   planConditionT: 50,
+  outlook: {
+    spendingAim: 4000,
+    marketT: 50,
+    riskT: 50,
+    comparisonNew: true,
+    comparisonRefine: false,
+    customEvents: [],
+  },
 };
 
 export type SectionId = "income" | "spending";
@@ -171,4 +200,7 @@ export type StepId =
   | "smart-sort"
   | "data-dump"
   | "card-sort"
-  | "smart-assets";
+  | "smart-assets"
+  | "current-outlook"
+  | "new-outlook"
+  | "refine-outlook";

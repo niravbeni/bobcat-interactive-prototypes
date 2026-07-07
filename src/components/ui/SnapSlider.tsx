@@ -20,14 +20,21 @@ export function SnapSlider({
   snapPoints,
   onChange,
   className,
+  accent = "blue",
   "aria-label": ariaLabel,
 }: {
   value: number;
   snapPoints: number[];
   onChange: (v: number) => void;
   className?: string;
+  /** Handle + fill colour. Defaults to the app blue; the Outlook flow uses violet. */
+  accent?: "blue" | "violet";
   "aria-label"?: string;
 }) {
+  const glow =
+    accent === "violet"
+      ? "rgba(127,53,178,0.55)"
+      : "rgba(50,127,239,0.55)";
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -97,8 +104,7 @@ export function SnapSlider({
           className="absolute top-1/2 h-1 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full"
           style={{
             left: `${value}%`,
-            background:
-              "linear-gradient(to right, transparent, rgba(50,127,239,0.55), transparent)",
+            background: `linear-gradient(to right, transparent, ${glow}, transparent)`,
           }}
         />
       </div>
@@ -110,7 +116,10 @@ export function SnapSlider({
         />
       ))}
       <span
-        className="pointer-events-none absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-stratosphere shadow-[0_1px_3px_rgba(16,24,32,0.25)]"
+        className={cn(
+          "pointer-events-none absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_1px_3px_rgba(16,24,32,0.25)]",
+          accent === "violet" ? "bg-violet" : "bg-stratosphere",
+        )}
         style={{ left: trackLeft(value) }}
       />
     </div>
