@@ -31,16 +31,16 @@ const ABOUT_ROWS: [string, string][] = [
 ];
 
 const ASSET_ROWS: [string, string][] = [
-  ["401(k) · Fidelity", "$820,000"],
-  ["Roth IRA", "$145,000"],
-  ["Brokerage", "$260,000"],
-  ["Cash & savings", "$42,000"],
+  ["401(k) · Fidelity", "$500,000"],
+  ["Roth IRA", "$320,000"],
+  ["CDs & money market", "$400,000"],
+  ["Cash", "$100,000"],
 ];
 
 const INCOME_ROWS: [string, string][] = [
-  ["Social Security (67)", "$2,480/mo"],
-  ["Pension", "$1,150/mo"],
-  ["Rental income", "$900/mo"],
+  ["Social Security", "$2,400/mo"],
+  ["Pension", "$2,000/mo"],
+  ["Other", "$1,200/mo"],
 ];
 
 const GOALS = [
@@ -291,9 +291,9 @@ export function OutlookSidebar({
   const [aboutRows, setAboutRows] = useState(ABOUT_ROWS);
   const [assetRows, setAssetRows] = useState(ASSET_ROWS);
   const [incomeRows, setIncomeRows] = useState(INCOME_ROWS);
-  const [totalSaved, setTotalSaved] = useState("$1,267,000");
-  const [monthlyTotal, setMonthlyTotal] = useState("$4,530/mo");
-  const [safetyBuffer, setSafetyBuffer] = useState("Medium - $30k");
+  const [totalSaved, setTotalSaved] = useState("$1,320,000");
+  const [monthlyTotal, setMonthlyTotal] = useState("$12,000/mo");
+  const [safetyBuffer, setSafetyBuffer] = useState("Medium - $60k");
   const [goals, setGoals] = useState(GOALS);
 
   const sectionContent = (id: SectionId) => {
@@ -327,7 +327,7 @@ export function OutlookSidebar({
       case "Spending":
         return (
           <>
-            <InfoTarget tipId="spending-aim" as="div" enabled={infoTip}>
+            <InfoTarget tipId="spending-aim" as="div" enabled={infoTip} interactive>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
                   Spending aim
@@ -355,6 +355,7 @@ export function OutlookSidebar({
               tipId="safety-buffer"
               as="div"
               enabled={infoTip}
+              interactive
               className="mt-3 flex w-full flex-col px-1 py-1"
             >
               <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
@@ -402,7 +403,7 @@ export function OutlookSidebar({
       <p className="mt-0.5 text-xs leading-snug text-gray-1">
         Adjust and watch your outlook adapt.
       </p>
-      <InfoTarget tipId="market-scenario" as="div" enabled={infoTip}>
+      <InfoTarget tipId="market-scenario" as="div" enabled={infoTip} interactive>
         <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
           Market scenario
         </p>
@@ -419,7 +420,7 @@ export function OutlookSidebar({
           <span>Best case</span>
         </div>
       </InfoTarget>
-      <InfoTarget tipId="custom-events" as="div" enabled={infoTip}>
+      <InfoTarget tipId="custom-events" as="div" enabled={infoTip} interactive>
         <button
           ref={eventsAnchorRef}
           type="button"

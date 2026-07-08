@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { ChevronDown } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { DetailsShell } from "@/components/prototypes/details/DetailsShell";
+import { InfoTarget } from "@/components/prototypes/details/DetailsInfoTip";
 import type { DetailsAbout } from "@/lib/types";
 
 const RELATIONSHIP_OPTIONS = [
@@ -41,22 +42,37 @@ const enter = (delay: number) => ({
 });
 
 /**
+ * Details v2 gives the page header a lighter, origin-cued settle (a gentle
+ * overshoot spring) so it feels like it arrives when navigating from the hub.
+ * Non-v2 keeps the original tween so the shared screen stays pristine.
+ */
+const headerEnterFor = (isV2: boolean) =>
+  isV2
+    ? {
+        initial: { opacity: 0, y: 10, scale: 0.98 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        transition: { type: "spring" as const, stiffness: 320, damping: 24 },
+      }
+    : enter(0);
+
+/**
  * About-you details page (frame 979-29979). Editable "Basic Details" bound to
  * the shared details.about, followed by a blocked-out "Spouse Details" section
  * matching the frame's placeholder rows.
  */
 export function AboutYouDetailsScreen() {
-  const { answers, setDetails } = useFlow();
+  const { answers, setDetails, variant } = useFlow();
   const about = answers.details.about;
+  const headerEnter = headerEnterFor(variant === "details-flow-v2");
 
   const set = (patch: Partial<DetailsAbout>) =>
     setDetails({ about: { ...about, ...patch } });
 
   return (
     <DetailsShell>
-      <motion.div {...enter(0)} className="mt-3 max-w-[640px]">
+      <motion.div {...headerEnter} className="mt-3 max-w-[640px]">
         <h1 className="text-[30px] font-semibold leading-[1.15] tracking-[-0.02em] text-deep-black">
-          About you details
+          <InfoTarget tipId="about-you">About you details</InfoTarget>
         </h1>
         <p className="mt-2 text-sm leading-snug text-black/70">
           Here&apos;s the data we&apos;ve collected so far about you.

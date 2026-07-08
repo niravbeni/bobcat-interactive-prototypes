@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Check, ChevronDown, Layers, Plus, X } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { DetailsShell } from "@/components/prototypes/details/DetailsShell";
+import { InfoTarget } from "@/components/prototypes/details/DetailsInfoTip";
 import { AccountSearch } from "@/components/ui/AccountSearch";
 import { AskSendIcon } from "@/components/ui/AskSendIcon";
 import { ProviderLogo } from "@/components/ui/ProviderLogo";
@@ -26,15 +27,36 @@ import type { AssetRow } from "@/lib/types";
 const fmtMoney = (n: number): string => `$${Math.round(n).toLocaleString("en-US")}`;
 
 /**
+ * Details v2 gives the page header a lighter, origin-cued settle (a gentle
+ * overshoot spring) so it feels like it arrives when navigating from the hub.
+ * Non-v2 keeps the original tween so the shared screen stays pristine.
+ */
+const headerEnterFor = (isV2: boolean) =>
+  isV2
+    ? {
+        initial: { opacity: 0, y: 10, scale: 0.98 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        transition: { type: "spring" as const, stiffness: 320, damping: 24 },
+      }
+    : {
+        initial: { opacity: 0, y: 24 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const },
+      };
+
+/**
  * Compact seed notes for the Smart-add canvas. Deliberately mentions only the
  * accounts we surface into the list so what's typed matches what appears.
  */
 const MODAL_SEED_NOTES = [
   "ok dumping my retirement stuff here:",
-  "- 401k at Fidelity, work match, roughly $124k",
-  "- Roth IRA at Vanguard, ~$42k, been maxing it",
-  "take home about $7,200/mo, we spend around $5,400/mo",
-  "goals: retire around 62, pay off the house first",
+  "- 401k at Fidelity, roughly $500k",
+  "- Roth IRA at Vanguard, ~$320k (mine plus my late husband's)",
+  "- CDs & money market at Ally, about $400k",
+  "- checking + savings, another ~$100k",
+  "guaranteed income ~$5,600/mo (SS $2,400, pension $2,000, survivor $1,200)",
+  "spending runs around $12k/mo",
+  "goal: leaving behind enough for the family",
 ].join("\n");
 
 const MODAL_SEED_ITEMS: DumpItem[] = [
@@ -49,7 +71,7 @@ const MODAL_SEED_ITEMS: DumpItem[] = [
 ];
 
 const MODAL_VOICE_TRANSCRIPT =
-  "One more thing I almost forgot — there's also a Fidelity HSA with about nine thousand two hundred in it from my old health plan. The 401k has the full company match, and I've been maxing the Vanguard Roth for years. Main goals are still retiring around sixty two and paying off the house first.";
+  "One more thing I almost forgot — there's also a Fidelity HSA with about nine thousand two hundred in it from my old health plan. The 401k's been with Fidelity for years, and the Vanguard Roth includes my late husband's. My main goal now is making sure there's enough to leave behind for the family.";
 
 const makeModalScan = (): DumpItem[] => {
   const at = Date.now();
@@ -113,8 +135,9 @@ const ACCOUNT_TYPE_OPTIONS: string[] = [
  * sidebar Assets accordion stays in sync.
  */
 export function AssetsDetailsScreen() {
-  const { answers, setDetails } = useFlow();
+  const { answers, setDetails, variant } = useFlow();
   const assets = answers.details.accounts;
+  const headerEnter = headerEnterFor(variant === "details-flow-v2");
 
   const setAssets = (updater: (prev: AssetRow[]) => AssetRow[]) =>
     setDetails({ accounts: updater(answers.details.accounts) });
@@ -198,14 +221,9 @@ export function AssetsDetailsScreen() {
 
   return (
     <DetailsShell>
-      <motion.div
-        className="mt-3 max-w-[680px]"
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <motion.div {...headerEnter} className="mt-3 max-w-[680px]">
         <h1 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-deep-black sm:text-[30px]">
-          Add your accounts
+          <InfoTarget tipId="assets">Add your accounts</InfoTarget>
         </h1>
         <p className="mt-1.5 text-sm leading-snug text-black/70">
           Here&apos;s the data we&apos;ve collected so far about you.
@@ -299,9 +317,12 @@ export function AssetsDetailsScreen() {
           ) : (
             groupedAssets.map((group) => (
               <div key={group.tax} className="flex flex-col gap-2">
-                <span className="px-1 text-xs font-semibold uppercase tracking-[0.08em] text-gray-1">
+                <InfoTarget
+                  tipId="tax-treatment"
+                  className="px-1 text-xs font-semibold uppercase tracking-[0.08em] text-gray-1"
+                >
                   {TAX_STATUS_LABEL[group.tax]}
-                </span>
+                </InfoTarget>
                 <AnimatePresence initial={false}>
                   {group.rows.map((asset) => (
                     <motion.div
@@ -485,21 +506,23 @@ function AccountEntryForm({
             </select>
           </SelectWrap>
         </Field>
-        <Field label="Tax treatment">
-          <SelectWrap>
-            <select
-              value={effectiveTax}
-              onChange={(e) => setTaxOverride(e.target.value as TaxStatus)}
-              className="h-11 w-full appearance-none rounded-field border border-stroke-subtle bg-white px-3 pr-9 text-sm text-deep-black outline-none transition-colors focus:border-violet/50"
-            >
-              {TAX_OPTIONS.map((t) => (
-                <option key={t} value={t}>
-                  {TAX_STATUS_LABEL[t]}
-                </option>
-              ))}
-            </select>
-          </SelectWrap>
-        </Field>
+        <InfoTarget tipId="tax-treatment" as="div" interactive>
+          <Field label="Tax treatment">
+            <SelectWrap>
+              <select
+                value={effectiveTax}
+                onChange={(e) => setTaxOverride(e.target.value as TaxStatus)}
+                className="h-11 w-full appearance-none rounded-field border border-stroke-subtle bg-white px-3 pr-9 text-sm text-deep-black outline-none transition-colors focus:border-violet/50"
+              >
+                {TAX_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {TAX_STATUS_LABEL[t]}
+                  </option>
+                ))}
+              </select>
+            </SelectWrap>
+          </Field>
+        </InfoTarget>
         <Field label="Amount">
           <div className="flex h-11 items-center rounded-field border border-stroke-subtle bg-white px-3.5 transition-colors focus-within:border-violet/50">
             <span className="text-sm text-gray-1">$</span>

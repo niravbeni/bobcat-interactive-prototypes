@@ -84,6 +84,7 @@ export function RefineOutlookPostFeedbackV2Screen() {
             <InfoTarget
               tipId="risk-profile"
               as="div"
+              interactive
               className="flex flex-col justify-center rounded-card bg-white/70 px-5 py-4"
             >
               <div className="flex items-center justify-between">
@@ -175,7 +176,7 @@ export function RefineOutlookPostFeedbackV2Screen() {
         </motion.section>
 
         <motion.div {...enter(0.1)} className="flex items-center justify-end">
-          <InfoTarget tipId="comparison" as="div">
+          <InfoTarget tipId="comparison" as="div" interactive>
             <ComparisonToggle
               on={comparisonRefine}
               onChange={(next) => setOutlook({ comparisonRefine: next })}

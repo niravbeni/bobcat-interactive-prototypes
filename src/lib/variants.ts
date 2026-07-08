@@ -23,7 +23,8 @@ export type VariantId =
   | "outlook-flow-enhanced"
   | "outlook-flow-post-feedback"
   | "outlook-flow-post-feedback-v2"
-  | "details-flow";
+  | "details-flow"
+  | "details-flow-v2";
 
 export interface VariantMeta {
   id: VariantId;
@@ -264,9 +265,8 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     id: "outlook-flow-post-feedback",
     title: "Outlook Flow (Post Feedback)",
     description:
-      "The enhanced Outlook Flow reworked with post-feedback edits — the latest, highlighted version of the flow.",
+      "The enhanced Outlook Flow reworked with post-feedback edits.",
     status: "ready",
-    featured: true,
     steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
   },
   "outlook-flow-post-feedback-v2": {
@@ -283,6 +283,20 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     title: "Details Flow",
     description:
       "A hub-and-spoke \"Your details\" dashboard: review your progress at a glance, then dive into About you, Assets, Spending or Goals — each an editable detail page that feeds a live left panel and returns you to the summary.",
+    status: "ready",
+    steps: [
+      "details-home",
+      "details-about",
+      "details-assets",
+      "details-spending",
+      "details-goals",
+    ],
+  },
+  "details-flow-v2": {
+    id: "details-flow-v2",
+    title: "Details Flow v2",
+    description:
+      "The Details Flow with a persistent hover-help box: point at a section, value or highlighted term and a plain-language explanation appears in the bottom-left of the sidebar.",
     status: "ready",
     featured: true,
     steps: [
@@ -306,6 +320,7 @@ export const COMPONENT_PROTOTYPE_ORDER: VariantId[] = [
 /** The end-to-end retirement onboarding UX flows. */
 export const FLOW_ORDER: VariantId[] = [
   "outlook-flow-post-feedback-v2",
+  "details-flow-v2",
   "details-flow",
   "outlook-flow-post-feedback",
   "outlook-flow-enhanced",

@@ -48,6 +48,7 @@ import { AboutYouDetailsScreen } from "@/components/screens/variants/details-flo
 import { AssetsDetailsScreen } from "@/components/screens/variants/details-flow/AssetsDetailsScreen";
 import { SpendingDetailsScreen } from "@/components/screens/variants/details-flow/SpendingDetailsScreen";
 import { GoalsDetailsScreen } from "@/components/screens/variants/details-flow/GoalsDetailsScreen";
+import { GoalsDetailsV2Screen } from "@/components/screens/variants/details-flow/GoalsDetailsV2Screen";
 
 /** The income/summary/spending/complete steps are identical across variants. */
 function sharedStep(step: StepId) {
@@ -141,11 +142,17 @@ export function VariantScreen({
       if (step === "refine-outlook") return <RefineOutlookPostFeedbackV2Screen />;
       return null;
     case "details-flow":
+    case "details-flow-v2":
       if (step === "details-home") return <DetailsHomeScreen />;
       if (step === "details-about") return <AboutYouDetailsScreen />;
       if (step === "details-assets") return <AssetsDetailsScreen />;
       if (step === "details-spending") return <SpendingDetailsScreen />;
-      if (step === "details-goals") return <GoalsDetailsScreen />;
+      if (step === "details-goals")
+        return variant === "details-flow-v2" ? (
+          <GoalsDetailsV2Screen />
+        ) : (
+          <GoalsDetailsScreen />
+        );
       return null;
     case "hybrid-quick":
       if (step === "profile")

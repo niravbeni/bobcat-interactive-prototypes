@@ -6,17 +6,17 @@
  * "Expected assets remaining" headline, and the drawdown line bottoms out at
  * exactly the quoted drawdown percentage.
  *
- * At the default inputs (spendingAim 4000, marketT 50, riskT 50) the outputs
- * reproduce the Figma reference numbers:
- *   current       → 73% success, $642,000 assets at 90, $220,000 loss, 17% dd
- *   personalized  → 85% success, $880,000 assets at 90, $190,000 loss, 15% dd
+ * At the default inputs (spendingAim 12000, marketT 50, riskT 50) the outputs
+ * reproduce Gloria's CSV reference numbers:
+ *   current       → 60% success, $182,000 assets at 90, $220,000 loss, 17% dd
+ *   personalized  → 72% success, $400,000 assets at 90, $190,000 loss, 15% dd
  */
 
 export type PlanKind = "current" | "personalized";
 
 export interface OutlookInputs {
   plan: PlanKind;
-  /** Monthly spending aim in dollars (sidebar slider, 3000..5000). */
+  /** Monthly spending aim in dollars (sidebar slider, 8000..16000). */
   spendingAim: number;
   /** Market scenario, 0 (worst case) → 100 (best case). */
   marketT: number;
@@ -70,12 +70,12 @@ export interface OutlookDeltas {
 }
 
 export const OUTLOOK_DEFAULTS = {
-  spendingAim: 4000,
+  spendingAim: 12000,
   marketT: 50,
   riskT: 50,
 };
 
-export const SPENDING_RANGE = { min: 3000, max: 5000 };
+export const SPENDING_RANGE = { min: 8000, max: 16000 };
 
 /* -------------------------------------------------------- custom events -- */
 
@@ -360,8 +360,8 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
   // Normalized modifiers, all zero at the defaults.
   const m = (clamp(inputs.marketT, 0, 100) - 50) / 50; // −1 worst … +1 best
   const s =
-    (clamp(inputs.spendingAim, SPENDING_RANGE.min, SPENDING_RANGE.max) - 4000) /
-    1000; // −1 … +1 as spending goes 3000 → 5000
+    (clamp(inputs.spendingAim, SPENDING_RANGE.min, SPENDING_RANGE.max) - 12000) /
+    4000; // −1 … +1 as spending goes 8000 → 16000
   const r = (clamp(inputs.riskT, 0, 100) - 50) / 50; // −1 low … +1 high
 
   const isPersonal = plan === "personalized";
@@ -376,7 +376,7 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
   // --- Chance of success -------------------------------------------------
   // Market tilts both plans; spending drags success down as it rises. Risk
   // barely moves success ("all are efficient") — a slight dip at the extremes.
-  const baseSuccess = isPersonal ? 85 : 73;
+  const baseSuccess = isPersonal ? 72 : 60;
   const successPct = Math.round(
     clamp(
       baseSuccess + m * 5 - s * 6 - (isPersonal ? Math.abs(r) * 1.5 : 0) + eventSuccessPts,
@@ -389,12 +389,12 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
   // --- Expected assets remaining at 90 ------------------------------------
   // Market and spending scale the endpoint; risk raises the personalized
   // ceiling (more equities → more expected growth).
-  const baseEnd = isPersonal ? 880_000 : 642_000;
+  const baseEnd = isPersonal ? 400_000 : 182_000;
   const baseAssetsAt90 = round1000(
     baseEnd * (1 + 0.16 * m) * (1 - 0.1 * s) * (isPersonal ? 1 + 0.12 * r : 1),
   );
 
-  const start = 950_000 * (1 + 0.02 * m);
+  const start = 1_320_000 * (1 + 0.02 * m);
   const bump = isPersonal ? 160_000 * (1 + 0.25 * r) : 240_000;
   // Reshape the base curve with the active events, then re-derive the headline
   // endpoint and peak from the reshaped curve so chart and numbers stay in sync.

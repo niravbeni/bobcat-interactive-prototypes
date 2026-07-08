@@ -9,6 +9,8 @@ import { DETAILS_GOAL_BY_ID } from "@/lib/detailsGoals";
 import { computeDetailsCompletion, computeDetailsProgress } from "@/lib/detailsProgress";
 import type { AssetRow, DetailsAbout, StepId } from "@/lib/types";
 import { AccordionSection, EditableRows, EditableValue } from "./editable";
+import { InfoTarget, InfoTipBox } from "./DetailsInfoTip";
+import type { DetailsInfoTipId } from "@/lib/detailsInfoTips";
 
 type DetailsSectionId =
   | "About you"
@@ -16,6 +18,15 @@ type DetailsSectionId =
   | "Income"
   | "Spending"
   | "Goals";
+
+/** Help-box copy key for each sidebar section header (Details v2). */
+const SECTION_TO_TIP: Record<DetailsSectionId, DetailsInfoTipId> = {
+  "About you": "about-you",
+  Assets: "assets",
+  Income: "income",
+  Spending: "spending",
+  Goals: "goals",
+};
 
 const SECTIONS: DetailsSectionId[] = [
   "About you",
@@ -59,7 +70,7 @@ const ABOUT_FIELDS: [keyof DetailsAbout, string][] = [
  * here persist and mirror what each detail page shows. The section matching the
  * active step is auto-expanded. Income is locked (greyed, non-expandable).
  */
-export function DetailsSidebar() {
+export function DetailsSidebar({ infoTip = false }: { infoTip?: boolean }) {
   const { answers, setDetails, step, goTo } = useFlow();
   const details = answers.details;
 
@@ -153,7 +164,13 @@ export function DetailsSidebar() {
       case "Spending":
         return (
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-0.5">
+            <InfoTarget
+              tipId="spending-aim"
+              as="div"
+              enabled={infoTip}
+              interactive
+              className="flex flex-col gap-0.5"
+            >
               <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
                 Spending aim
               </span>
@@ -170,8 +187,14 @@ export function DetailsSidebar() {
                   }}
                 />
               </div>
-            </div>
-            <div className="flex flex-col gap-0.5">
+            </InfoTarget>
+            <InfoTarget
+              tipId="safety-buffer"
+              as="div"
+              enabled={infoTip}
+              interactive
+              className="flex flex-col gap-0.5"
+            >
               <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
                 Safety buffer
               </span>
@@ -186,7 +209,7 @@ export function DetailsSidebar() {
                   }
                 />
               </div>
-            </div>
+            </InfoTarget>
           </div>
         );
       case "Goals":
@@ -228,13 +251,19 @@ export function DetailsSidebar() {
             }
             readOnly={id === "Income"}
             complete={sectionComplete[id]}
+            infoTipId={infoTip ? SECTION_TO_TIP[id] : undefined}
           >
             {sectionContent(id)}
           </AccordionSection>
         ))}
 
         {/* Mandatory-data nudge with the REQUIRED DETAILS progress bar. */}
-        <div className="mt-2 rounded-card bg-white/70 px-4 py-4">
+        <InfoTarget
+          tipId="progress"
+          as="div"
+          enabled={infoTip}
+          className="mt-2 rounded-card bg-white/70 px-4 py-4"
+        >
           <p className="text-sm font-semibold leading-snug text-deep-black">
             Your plan will update once we have initial mandatory data.
           </p>
@@ -254,24 +283,32 @@ export function DetailsSidebar() {
             </span>
             <span className="text-[11px] font-medium text-gray-2">{progress}%</span>
           </div>
-        </div>
+        </InfoTarget>
 
-        <div className="mt-auto flex flex-col gap-2.5 pt-8">
-          <p className="text-sm font-semibold text-deep-black">Learn more</p>
-          <button
-            type="button"
-            className="flex items-center gap-3 rounded-full border border-stroke-subtle bg-white px-4 py-2.5 text-left transition-colors hover:bg-white/60"
-          >
-            <CircleHelp className="size-4 shrink-0 text-gray-2" strokeWidth={2} />
-            <span className="h-2.5 w-36 rounded-full skeleton-shimmer" aria-hidden />
-            <span className="sr-only">How your details shape your plan</span>
-          </button>
-        </div>
+        {/* The v2 hover-help box replaces the placeholder "Learn more" link. */}
+        {infoTip ? null : (
+          <div className="mt-auto flex flex-col gap-2.5 pt-8">
+            <p className="text-sm font-semibold text-deep-black">Learn more</p>
+            <button
+              type="button"
+              className="flex items-center gap-3 rounded-full border border-stroke-subtle bg-white px-4 py-2.5 text-left transition-colors hover:bg-white/60"
+            >
+              <CircleHelp className="size-4 shrink-0 text-gray-2" strokeWidth={2} />
+              <span className="h-2.5 w-36 rounded-full skeleton-shimmer" aria-hidden />
+              <span className="sr-only">How your details shape your plan</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Pinned footer: the ask-question pill stays visible while the section
-          list above scrolls behind it. */}
+      {/* Pinned footer: the hover-help box (v2) plus the ask-question pill stay
+          visible while the section list above scrolls behind them. */}
       <div className="shrink-0 px-3 pb-3">
+        {infoTip ? (
+          <div className="mb-2.5">
+            <InfoTipBox />
+          </div>
+        ) : null}
         <motion.div
           className="flex items-center justify-between rounded-full bg-white py-1.5 pl-4 pr-1.5"
           animate={{

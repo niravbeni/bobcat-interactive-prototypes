@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { DetailsShell } from "@/components/prototypes/details/DetailsShell";
+import { InfoTarget } from "@/components/prototypes/details/DetailsInfoTip";
 import { cn } from "@/lib/cn";
 import type { DetailsSpending } from "@/lib/types";
 
@@ -40,8 +41,12 @@ interface MethodOption {
   title: string;
   description: string;
   icon: LucideIcon;
-  /** Not yet designed — rendered greyed-out and non-clickable. */
-  disabled?: boolean;
+  /**
+   * Not yet designed — rendered as a normal (non-greyed) card for visual parity
+   * with the working option, but the click is intentionally inert (never changes
+   * the selected method), like the "Connect with Plaid" option on the Assets tab.
+   */
+  muted?: boolean;
 }
 
 const METHODS: MethodOption[] = [
@@ -50,14 +55,14 @@ const METHODS: MethodOption[] = [
     title: "I know the number",
     description: "Enter your own total spending figure.",
     icon: Pencil,
-    disabled: true,
+    muted: true,
   },
   {
     id: "estimate",
     title: "Estimate it for me",
     description: "Set a target within what your plan can support.",
     icon: Sparkles,
-    disabled: true,
+    muted: true,
   },
   {
     id: "workout",
@@ -67,7 +72,7 @@ const METHODS: MethodOption[] = [
   },
 ];
 
-const SAFETY_OPTIONS = ["Low ($15k)", "Medium ($30k)", "High ($50k)"];
+const SAFETY_OPTIONS = ["Low ($30k)", "Medium ($60k)", "High ($100k)"];
 
 interface SpendCategory {
   id: string;
@@ -221,52 +226,52 @@ const EXTRA_CATEGORIES: ExtraCategory[] = [
  */
 const BREAKDOWNS: Record<string, { label: string; monthly: number }[]> = {
   home: [
-    { label: "Rent or mortgage", monthly: 850 },
-    { label: "Utilities", monthly: 180 },
-    { label: "Insurance", monthly: 90 },
-    { label: "Upkeep & repairs", monthly: 80 },
+    { label: "Rent or mortgage", monthly: 2400 },
+    { label: "Utilities", monthly: 700 },
+    { label: "Insurance", monthly: 400 },
+    { label: "Upkeep & repairs", monthly: 300 },
   ],
   transport: [
-    { label: "Car payment", monthly: 180 },
-    { label: "Fuel & charging", monthly: 110 },
-    { label: "Insurance, tax & registration", monthly: 60 },
-    { label: "Servicing & repairs", monthly: 30 },
-    { label: "Public transport", monthly: 20 },
+    { label: "Car payment", monthly: 300 },
+    { label: "Fuel & charging", monthly: 180 },
+    { label: "Insurance, tax & registration", monthly: 120 },
+    { label: "Servicing & repairs", monthly: 60 },
+    { label: "Public transport", monthly: 40 },
   ],
   food: [
-    { label: "Groceries", monthly: 420 },
-    { label: "Household items", monthly: 100 },
-    { label: "Clothing", monthly: 80 },
+    { label: "Groceries", monthly: 1050 },
+    { label: "Household items", monthly: 250 },
+    { label: "Clothing", monthly: 200 },
   ],
   health: [
-    { label: "Insurance premiums", monthly: 120 },
-    { label: "Prescriptions", monthly: 40 },
-    { label: "Out-of-pocket costs", monthly: 40 },
+    { label: "Insurance premiums", monthly: 650 },
+    { label: "Prescriptions", monthly: 200 },
+    { label: "Out-of-pocket costs", monthly: 150 },
   ],
   personal: [
-    { label: "Subscriptions", monthly: 70 },
-    { label: "Gym & memberships", monthly: 80 },
-    { label: "Haircuts & grooming", monthly: 50 },
+    { label: "Subscriptions", monthly: 200 },
+    { label: "Gym & memberships", monthly: 250 },
+    { label: "Haircuts & grooming", monthly: 150 },
   ],
   travel: [
-    { label: "Flights", monthly: 220 },
-    { label: "Accommodation", monthly: 180 },
-    { label: "Activities & excursions", monthly: 100 },
+    { label: "Flights", monthly: 900 },
+    { label: "Accommodation", monthly: 800 },
+    { label: "Activities & excursions", monthly: 500 },
   ],
   hobbies: [
-    { label: "Classes & memberships", monthly: 110 },
-    { label: "Equipment & gear", monthly: 90 },
-    { label: "Supplies", monthly: 50 },
+    { label: "Classes & memberships", monthly: 350 },
+    { label: "Equipment & gear", monthly: 300 },
+    { label: "Supplies", monthly: 150 },
   ],
   dining: [
-    { label: "Restaurants", monthly: 160 },
-    { label: "Bars & nights out", monthly: 90 },
-    { label: "Coffee & takeout", monthly: 50 },
+    { label: "Restaurants", monthly: 550 },
+    { label: "Bars & nights out", monthly: 300 },
+    { label: "Coffee & takeout", monthly: 150 },
   ],
   gifts: [
-    { label: "Gifts", monthly: 70 },
-    { label: "Celebrations", monthly: 50 },
-    { label: "Donations", monthly: 30 },
+    { label: "Gifts", monthly: 200 },
+    { label: "Celebrations", monthly: 130 },
+    { label: "Donations", monthly: 70 },
   ],
   childcare: [
     { label: "Tuition & fees", monthly: 200 },
@@ -315,6 +320,20 @@ const enter = (delay: number) => ({
 });
 
 /**
+ * Details v2 gives the page header a lighter, origin-cued settle (a gentle
+ * overshoot spring) so it feels like it arrives when navigating from the hub.
+ * Non-v2 keeps the original tween so the shared screen stays pristine.
+ */
+const headerEnterFor = (isV2: boolean) =>
+  isV2
+    ? {
+        initial: { opacity: 0, y: 10, scale: 0.98 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        transition: { type: "spring" as const, stiffness: 320, damping: 24 },
+      }
+    : enter(0);
+
+/**
  * Spending details page (frames 979-33502 + states). New content styled like
  * Smart Assets, bound to the shared details.spending: a method chooser, a live
  * spend summary and per-category monthly/yearly inputs.
@@ -332,8 +351,9 @@ interface AddedCategory {
 }
 
 export function SpendingDetailsScreen() {
-  const { answers, setDetails } = useFlow();
+  const { answers, setDetails, variant } = useFlow();
   const spending = answers.details.spending;
+  const headerEnter = headerEnterFor(variant === "details-flow-v2");
   const [added, setAdded] = useState<AddedCategory[]>([]);
 
   const set = (patch: Partial<DetailsSpending>) =>
@@ -401,9 +421,9 @@ export function SpendingDetailsScreen() {
 
   return (
     <DetailsShell>
-      <motion.div {...enter(0)} className="mt-3 max-w-[680px]">
+      <motion.div {...headerEnter} className="mt-3 max-w-[680px]">
         <h1 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-deep-black sm:text-[30px]">
-          Spending details
+          <InfoTarget tipId="spending">Spending details</InfoTarget>
         </h1>
         <p className="mt-1.5 text-sm leading-snug text-black/70">
           Decide how much you want to spend once you retire.
@@ -413,6 +433,7 @@ export function SpendingDetailsScreen() {
       </motion.div>
 
       {/* Method chooser */}
+      <InfoTarget tipId="method-chooser" as="div" interactive>
       <motion.div
         {...enter(0.06)}
         className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3"
@@ -424,18 +445,17 @@ export function SpendingDetailsScreen() {
             <button
               key={m.id}
               type="button"
-              disabled={m.disabled}
               aria-pressed={selected}
               onClick={() => {
-                if (!m.disabled) set({ method: m.id });
+                // Only the working method updates the selection; the muted
+                // cards stay clickable/focusable but their click is inert.
+                if (!m.muted) set({ method: m.id });
               }}
               className={cn(
                 "group relative flex h-full flex-col items-start gap-2.5 rounded-card border px-4 py-4 text-left transition-colors",
-                m.disabled
-                  ? "cursor-not-allowed border-divider bg-ghost-white"
-                  : selected
-                    ? "border-violet bg-white ring-1 ring-violet/40"
-                    : "border-stroke-subtle bg-white hover:border-violet/50 hover:bg-violet/5",
+                selected
+                  ? "border-violet bg-white ring-1 ring-violet/40"
+                  : "border-stroke-subtle bg-white hover:border-violet/50 hover:bg-violet/5",
               )}
             >
               {selected ? (
@@ -443,36 +463,20 @@ export function SpendingDetailsScreen() {
                   <Check className="size-3.5" strokeWidth={3} />
                 </span>
               ) : null}
-              <span
-                className={cn(
-                  "flex size-10 items-center justify-center rounded-full border",
-                  m.disabled
-                    ? "border-divider bg-ghost-white text-gray-2"
-                    : "border-stroke-subtle bg-white text-deep-black",
-                )}
-              >
+              <span className="flex size-10 items-center justify-center rounded-full border border-stroke-subtle bg-white text-deep-black">
                 <Icon className="size-5" strokeWidth={1.9} />
               </span>
-              <span
-                className={cn(
-                  "text-base font-semibold",
-                  m.disabled ? "text-gray-2" : "text-deep-black",
-                )}
-              >
+              <span className="text-base font-semibold text-deep-black">
                 {m.title}
               </span>
-              <span
-                className={cn(
-                  "text-sm leading-snug",
-                  m.disabled ? "text-gray-2/80" : "text-gray-1",
-                )}
-              >
+              <span className="text-sm leading-snug text-gray-1">
                 {m.description}
               </span>
             </button>
           );
         })}
       </motion.div>
+      </InfoTarget>
 
       {/* Spend summary */}
       <motion.div
@@ -480,12 +484,12 @@ export function SpendingDetailsScreen() {
         className="mt-4 rounded-card border border-stroke-subtle bg-white px-6 py-5"
       >
         <div className="flex items-start justify-between gap-4">
-          <p className="text-sm font-medium text-deep-black">
+          <InfoTarget tipId="spend-estimate" as="span" className="text-sm font-medium text-deep-black">
             I want to be able to spend
-          </p>
+          </InfoTarget>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-xs font-semibold text-success">
             <span className="size-1.5 rounded-full bg-success" />
-            Your assets &amp; income can support about $3,250–$4,250 a month
+            Your assets &amp; income can support about $11,000–$13,000 a month
           </span>
         </div>
         <div className="mt-2 flex items-baseline gap-2">
@@ -498,7 +502,7 @@ export function SpendingDetailsScreen() {
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2 text-base text-deep-black">
           <span>With a</span>
-          <div className="relative inline-flex">
+          <InfoTarget tipId="safety-buffer" as="div" interactive className="relative inline-flex">
             <select
               value={spending.safetyBuffer}
               onChange={(e) => set({ safetyBuffer: e.target.value })}
@@ -512,7 +516,7 @@ export function SpendingDetailsScreen() {
               ))}
             </select>
             <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-gray-2" />
-          </div>
+          </InfoTarget>
           <span>safety buffer kept aside on top.</span>
         </div>
       </motion.div>
@@ -766,14 +770,16 @@ function CategoryRow({
 
       {!expanded ? (
         <div className="mt-3 flex items-center gap-4">
-          <button
-            type="button"
-            onClick={openBreakdown}
-            className="inline-flex items-center gap-1.5 text-[13px] font-bold text-stratosphere transition-opacity hover:opacity-70"
-          >
-            Break it down
-            <ChevronDown className="size-4" strokeWidth={2.2} />
-          </button>
+          <InfoTarget tipId="break-it-down" as="span" interactive>
+            <button
+              type="button"
+              onClick={openBreakdown}
+              className="inline-flex items-center gap-1.5 text-[13px] font-bold text-stratosphere transition-opacity hover:opacity-70"
+            >
+              Break it down
+              <ChevronDown className="size-4" strokeWidth={2.2} />
+            </button>
+          </InfoTarget>
           {onRemove ? (
             <button
               type="button"

@@ -112,9 +112,10 @@ function StatusIndicator({ status }: { status: RowStatus }) {
  * which stays locked. Rendered with the sidebar-less shell.
  */
 export function DetailsHomeScreen() {
-  const { answers, goTo } = useFlow();
+  const { answers, goTo, variant } = useFlow();
   const completion = computeDetailsCompletion(answers.details);
   const progress = computeDetailsProgress(answers.details);
+  const isV2 = variant === "details-flow-v2";
 
   return (
     <DetailsShell withSidebar={false}>
@@ -190,13 +191,14 @@ export function DetailsHomeScreen() {
             return (
               <motion.div key={row.title} {...enter(0.06 + i * 0.05)}>
                 {clickable ? (
-                  <button
+                  <motion.button
                     type="button"
                     onClick={() => goTo(row.step as StepId)}
+                    whileTap={isV2 ? { scale: 0.98 } : undefined}
                     className="flex w-full items-center gap-4 rounded-card border border-stroke-subtle bg-white px-5 py-4 text-left transition-all hover:-translate-y-0.5 hover:border-violet/50 hover:shadow-[0_8px_24px_-16px_rgba(127,53,178,0.5)]"
                   >
                     {body}
-                  </button>
+                  </motion.button>
                 ) : (
                   <div
                     className="flex w-full cursor-not-allowed items-center gap-4 rounded-card border border-dashed border-stroke-subtle bg-white/70 px-5 py-4 text-left"

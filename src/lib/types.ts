@@ -126,6 +126,11 @@ export interface DetailsSpending {
 export interface DetailsGoals {
   /** Placed timeline order, low → high (card ids). */
   order: string[];
+  /**
+   * The Not-important shelf, kept separate from `order` (v2 only). Optional so
+   * the v1 screen, which never sets it, stays untouched; v1 ignores this field.
+   */
+  notImportant?: string[];
   confirmed: boolean;
 }
 
@@ -228,7 +233,7 @@ export const initialAnswers: FlowAnswers = {
   planCondition: "typical",
   planConditionT: 50,
   outlook: {
-    spendingAim: 4000,
+    spendingAim: 12000,
     marketT: 50,
     riskT: 50,
     comparisonNew: true,
@@ -240,7 +245,7 @@ export const initialAnswers: FlowAnswers = {
       firstName: "Gloria",
       middleName: "Jean",
       lastName: "Bennett",
-      dob: "21/08/1961",
+      dob: "15/01/1955",
       zip: "91102",
       relationship: "Widowed",
     },
@@ -250,7 +255,7 @@ export const initialAnswers: FlowAnswers = {
         provider: "Fidelity",
         accountType: "401(k)",
         taxStatus: "tax-deferred",
-        balance: 124000,
+        balance: 500000,
         source: "ai",
       },
       {
@@ -258,7 +263,15 @@ export const initialAnswers: FlowAnswers = {
         provider: "Vanguard",
         accountType: "Roth IRA",
         taxStatus: "tax-free",
-        balance: 42000,
+        balance: 320000,
+        source: "ai",
+      },
+      {
+        id: "seed-ally",
+        provider: "Ally",
+        accountType: "CD",
+        taxStatus: "taxable",
+        balance: 400000,
         source: "ai",
       },
       {
@@ -266,29 +279,30 @@ export const initialAnswers: FlowAnswers = {
         provider: "Chase",
         accountType: "Savings",
         taxStatus: "taxable",
-        balance: 18000,
+        balance: 100000,
         source: "manual",
       },
     ],
     spending: {
       method: "workout",
-      aim: 4000,
-      safetyBuffer: "Medium ($30k)",
+      aim: 12000,
+      safetyBuffer: "Medium ($60k)",
       tab: "essentials",
       categories: {
-        home: 1200,
-        transport: 400,
-        food: 600,
-        health: 200,
-        personal: 200,
-        travel: 500,
-        hobbies: 250,
-        dining: 300,
-        gifts: 150,
+        home: 3800,
+        transport: 700,
+        food: 1500,
+        health: 1000,
+        personal: 600,
+        travel: 2200,
+        hobbies: 800,
+        dining: 1000,
+        gifts: 400,
       },
     },
     goals: {
       order: [],
+      notImportant: [],
       confirmed: false,
     },
   },

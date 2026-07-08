@@ -77,7 +77,7 @@ export function NewOutlookPostFeedbackV2Screen() {
         </motion.h1>
 
         <motion.div {...enter(0.06)} className="flex items-center justify-end">
-          <InfoTarget tipId="comparison" as="div">
+          <InfoTarget tipId="comparison" as="div" interactive>
             <ComparisonToggle
               on={comparisonNew}
               onChange={(next) => setOutlook({ comparisonNew: next })}

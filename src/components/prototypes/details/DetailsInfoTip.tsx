@@ -11,13 +11,13 @@ import { motion, AnimatePresence } from "motion/react";
 import { Info } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
-  OUTLOOK_INFO_TIPS,
-  type OutlookInfoTipId,
-} from "@/lib/outlookInfoTips";
+  DETAILS_INFO_TIPS,
+  type DetailsInfoTipId,
+} from "@/lib/detailsInfoTips";
 
 interface InfoTipContextValue {
-  activeId: OutlookInfoTipId | null;
-  show: (id: OutlookInfoTipId) => void;
+  activeId: DetailsInfoTipId | null;
+  show: (id: DetailsInfoTipId) => void;
   clear: () => void;
 }
 
@@ -25,16 +25,16 @@ const InfoTipContext = createContext<InfoTipContextValue | null>(null);
 
 /**
  * Holds the currently-hovered tip so the bottom-of-sidebar box and every
- * hover target can share one source of truth. Mounted once in OutlookShell,
- * wrapping both the sidebar and the main content.
+ * hover target can share one source of truth. Mounted in DetailsShell (v2
+ * only), wrapping both the sidebar and the main content.
  */
-export function OutlookInfoTipProvider({
+export function DetailsInfoTipProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [activeId, setActiveId] = useState<OutlookInfoTipId | null>(null);
-  const show = useCallback((id: OutlookInfoTipId) => setActiveId(id), []);
+  const [activeId, setActiveId] = useState<DetailsInfoTipId | null>(null);
+  const show = useCallback((id: DetailsInfoTipId) => setActiveId(id), []);
   const clear = useCallback(() => setActiveId(null), []);
   const value = useMemo(
     () => ({ activeId, show, clear }),
@@ -45,15 +45,15 @@ export function OutlookInfoTipProvider({
   );
 }
 
-function useOutlookInfoTip() {
+function useDetailsInfoTip() {
   return useContext(InfoTipContext);
 }
 
 /**
- * Wraps a hoverable element (graph, highlighted term, sidebar control). On
+ * Wraps a hoverable element (section header, value, highlighted term). On
  * hover/focus it fills the InfoTipBox with the matching definition; on
- * leave/blur it clears it. When `enabled` is false (or there is no provider)
- * it renders its children untouched, so non-v2 flows stay pristine.
+ * leave/blur it clears it. When there is no provider (the original Details
+ * flow) or `enabled` is false, it renders its children untouched.
  */
 export function InfoTarget({
   tipId,
@@ -63,15 +63,15 @@ export function InfoTarget({
   className,
   children,
 }: {
-  tipId: OutlookInfoTipId;
+  tipId: DetailsInfoTipId;
   as?: "span" | "div";
   enabled?: boolean;
-  /** Clickable control (button/select/slider/etc.) — shows a pointer instead of help. */
+  /** Clickable control (button/select/etc.) — shows a pointer instead of help. */
   interactive?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
-  const ctx = useOutlookInfoTip();
+  const ctx = useDetailsInfoTip();
   const Tag = as;
 
   if (!ctx || !enabled) {
@@ -101,8 +101,8 @@ export function InfoTarget({
  * that target's title + description with a soft fade.
  */
 export function InfoTipBox() {
-  const ctx = useOutlookInfoTip();
-  const tip = ctx?.activeId ? OUTLOOK_INFO_TIPS[ctx.activeId] : null;
+  const ctx = useDetailsInfoTip();
+  const tip = ctx?.activeId ? DETAILS_INFO_TIPS[ctx.activeId] : null;
   const Icon = tip?.icon ?? Info;
 
   return (
@@ -155,7 +155,7 @@ export function InfoTipBox() {
             transition={{ duration: 0.18 }}
             className="mt-1.5 text-[11px] leading-snug text-gray-2"
           >
-            Hover over a chart or highlighted term to see what it means.
+            Hover over a value or highlighted term to see what it means.
           </motion.p>
         )}
       </AnimatePresence>

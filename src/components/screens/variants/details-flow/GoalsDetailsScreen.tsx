@@ -4,6 +4,7 @@ import { AnimatePresence, Reorder, motion } from "motion/react";
 import { Check } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { DetailsShell } from "@/components/prototypes/details/DetailsShell";
+import { InfoTarget } from "@/components/prototypes/details/DetailsInfoTip";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import {
@@ -17,14 +18,33 @@ import {
 } from "@/lib/detailsGoals";
 
 /**
+ * Details v2 gives the page header a lighter, origin-cued settle (a gentle
+ * overshoot spring) so it feels like it arrives when navigating from the hub.
+ * Non-v2 keeps the original tween so the shared screen stays pristine.
+ */
+const headerEnterFor = (isV2: boolean) =>
+  isV2
+    ? {
+        initial: { opacity: 0, y: 10, scale: 0.98 },
+        animate: { opacity: 1, y: 0, scale: 1 },
+        transition: { type: "spring" as const, stiffness: 320, damping: 24 },
+      }
+    : {
+        initial: { opacity: 0, y: 24 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const },
+      };
+
+/**
  * Goals details page (frames 979-33247 + 979-33374). Ports the Card Sort
  * structure (chooser, importance buckets, drag-to-reorder timeline, confirm)
  * with Details-flow-only data + a brighter-purple/grey importance scheme, bound
  * to the shared details.goals so the sidebar Goals accordion reflects it.
  */
 export function GoalsDetailsScreen() {
-  const { answers, setDetails } = useFlow();
+  const { answers, setDetails, variant } = useFlow();
   const { order, confirmed } = answers.details.goals;
+  const headerEnter = headerEnterFor(variant === "details-flow-v2");
 
   const setOrder = (next: string[]) =>
     setDetails({ goals: { order: next, confirmed } });
@@ -57,14 +77,9 @@ export function GoalsDetailsScreen() {
   return (
     <DetailsShell>
       <div className="mt-3 flex items-start justify-between gap-6">
-        <motion.div
-          className="max-w-[640px]"
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        >
+        <motion.div {...headerEnter} className="max-w-[640px]">
           <h1 className="text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-deep-black sm:text-[30px]">
-            Sort your priorities
+            <InfoTarget tipId="goals">Sort your priorities</InfoTarget>
           </h1>
           <p className="mt-2 text-sm leading-snug text-black/70">
             For each goal, choose how much it matters. We drop it onto your
@@ -111,7 +126,12 @@ export function GoalsDetailsScreen() {
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
               <ChooserCard card={current} />
-              <div className="mt-3 grid grid-cols-3 gap-2.5">
+              <InfoTarget
+                tipId="goal-importance"
+                as="div"
+                interactive
+                className="mt-3 grid grid-cols-3 gap-2.5"
+              >
                 {DETAILS_BUCKETS.map((b) => (
                   <BucketButton
                     key={b.id}
@@ -120,7 +140,7 @@ export function GoalsDetailsScreen() {
                     onClick={() => place(b.id)}
                   />
                 ))}
-              </div>
+              </InfoTarget>
               <p className="mt-1.5 text-center text-[12px] text-gray-2">
                 {placedCount + 1} of {DETAILS_GOAL_CARDS.length}
               </p>

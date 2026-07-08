@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, ChevronDown, Lock, Pencil } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { InfoTarget } from "./DetailsInfoTip";
+import type { DetailsInfoTipId } from "@/lib/detailsInfoTips";
 
 /**
  * Click-to-edit primitives for the Details-flow sidebar. These are duplicated
@@ -143,6 +145,7 @@ export function AccordionSection({
   locked = false,
   readOnly = false,
   complete = true,
+  infoTipId,
 }: {
   label: string;
   open: boolean;
@@ -164,6 +167,8 @@ export function AccordionSection({
   readOnly?: boolean;
   /** Whether the collapsed pill shows a green check (complete) or empty ring. */
   complete?: boolean;
+  /** When set (Details v2), the label becomes a hover target for the help box. */
+  infoTipId?: DetailsInfoTipId;
 }) {
   if (readOnly) {
     return (
@@ -175,9 +180,18 @@ export function AccordionSection({
             ) : (
               <span className="size-5 shrink-0 rounded-full border-2 border-divider" />
             )}
-            <span className="truncate text-sm font-semibold text-deep-black">
-              {label}
-            </span>
+            {infoTipId ? (
+              <InfoTarget
+                tipId={infoTipId}
+                className="truncate text-sm font-semibold text-deep-black"
+              >
+                {label}
+              </InfoTarget>
+            ) : (
+              <span className="truncate text-sm font-semibold text-deep-black">
+                {label}
+              </span>
+            )}
           </span>
           {/* Decorative-only chevron: present for visual parity, not interactive. */}
           <ChevronDown className="size-4 shrink-0 text-gray-2" strokeWidth={2} aria-hidden />
@@ -226,7 +240,17 @@ export function AccordionSection({
           ) : (
             <span className="size-5 shrink-0 rounded-full border-2 border-divider" />
           )}
-          <span className="truncate text-sm font-semibold">{label}</span>
+          {infoTipId ? (
+            <InfoTarget
+              tipId={infoTipId}
+              interactive
+              className="truncate text-sm font-semibold"
+            >
+              {label}
+            </InfoTarget>
+          ) : (
+            <span className="truncate text-sm font-semibold">{label}</span>
+          )}
         </button>
         <button
           type="button"

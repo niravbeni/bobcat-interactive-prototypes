@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { OutlookTopNav } from "@/components/prototypes/outlook/OutlookTopNav";
 import { DetailsSidebar } from "./DetailsSidebar";
+import { DetailsInfoTipProvider } from "./DetailsInfoTip";
 
 /**
  * Viewport-locked page shell for the Details flow. Mirrors OutlookShell's
@@ -23,7 +24,32 @@ export function DetailsShell({
   children: React.ReactNode;
   withSidebar?: boolean;
 }) {
-  const { goTo } = useFlow();
+  const { goTo, variant } = useFlow();
+  const infoTip = variant === "details-flow-v2";
+
+  // Detail-page body (sidebar + scrollable main). The info-tip provider is
+  // mounted ONLY for v2 so the original Details flow stays completely pristine
+  // (screen-level InfoTargets no-op without a provider in scope).
+  const sidebarBody = (
+    <div className="flex min-h-0 w-full flex-1 gap-4 px-4 pb-4 pt-4">
+      <DetailsSidebar infoTip={infoTip} />
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <main className="scrollbar-slim flex min-h-0 flex-1 flex-col overflow-y-auto rounded-field bg-ghost-white px-5 py-5 xl:px-10 xl:py-6">
+          <div className="mx-auto flex w-full max-w-[820px] flex-1 flex-col xl:max-w-[1040px]">
+            <button
+              type="button"
+              onClick={() => goTo("details-home")}
+              className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-deep-black transition-opacity hover:opacity-60"
+            >
+              <ChevronLeft className="size-4 shrink-0" strokeWidth={2.2} />
+              Back to summary
+            </button>
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
 
   return (
     <motion.div
@@ -35,24 +61,11 @@ export function DetailsShell({
       <OutlookTopNav activeTab="Details" />
 
       {withSidebar ? (
-        <div className="flex min-h-0 w-full flex-1 gap-4 px-4 pb-4 pt-4">
-          <DetailsSidebar />
-          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-            <main className="scrollbar-slim flex min-h-0 flex-1 flex-col overflow-y-auto rounded-field bg-ghost-white px-5 py-5 xl:px-10 xl:py-6">
-              <div className="mx-auto flex w-full max-w-[820px] flex-1 flex-col xl:max-w-[1040px]">
-                <button
-                  type="button"
-                  onClick={() => goTo("details-home")}
-                  className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-deep-black transition-opacity hover:opacity-60"
-                >
-                  <ChevronLeft className="size-4 shrink-0" strokeWidth={2.2} />
-                  Back to summary
-                </button>
-                {children}
-              </div>
-            </main>
-          </div>
-        </div>
+        infoTip ? (
+          <DetailsInfoTipProvider>{sidebarBody}</DetailsInfoTipProvider>
+        ) : (
+          sidebarBody
+        )
       ) : (
         <main className="scrollbar-slim flex min-h-0 w-full flex-1 flex-col overflow-y-auto bg-white px-4 pb-10 pt-6">
           {children}

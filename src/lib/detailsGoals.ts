@@ -141,3 +141,16 @@ export function detailsBucketForIndex(
   if (index < lowCount + medCount) return "medium";
   return "high";
 }
+
+/**
+ * The importance bucket for a card on the v2 TOP timeline, which holds only
+ * Important + Very important. Split down the middle: the left half reads as
+ * "medium" (Important), the right half as "high" (Very important); on an odd
+ * count the extra card falls on the left/Important side.
+ */
+export function detailsTopBucketForIndex(
+  index: number,
+  total: number,
+): "medium" | "high" {
+  return index < Math.ceil(total / 2) ? "medium" : "high";
+}
