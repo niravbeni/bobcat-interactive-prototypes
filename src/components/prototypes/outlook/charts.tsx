@@ -249,6 +249,8 @@ export function AssetCurve({
   tall = false,
   fill = false,
   areaFill = false,
+  revealMode,
+  replayNonce = 0,
 }: {
   current?: OutlookStats;
   personalized?: OutlookStats;
@@ -257,6 +259,16 @@ export function AssetCurve({
   fill?: boolean;
   /** Enhanced flow: animated gradient wash under each curve. */
   areaFill?: boolean;
+  /**
+   * PF v2 "purple reveals over grey" first-entry choreography. When set, the
+   * grey (current) layer renders immediately at full and the violet
+   * (personalized) layer either draws in ("draw") or morphs from the current
+   * curve ("morph"). Undefined = the shared, pre-existing behavior for every
+   * other flow.
+   */
+  revealMode?: "draw" | "morph";
+  /** Bump to replay the reveal (used by the debug toggle). */
+  replayNonce?: number;
 }) {
   const gradId = useId().replace(/:/g, "");
   const hero = personalized ?? current;
@@ -282,6 +294,41 @@ export function AssetCurve({
       : `${toPath(pts, true)} L${pts[pts.length - 1].x.toFixed(1)},${CURVE_H} L${pts[0].x.toFixed(1)},${CURVE_H} Z`;
   const gridValues: number[] = [];
   for (let v = 500_000; v < domainTop - 1; v += 500_000) gridValues.push(v);
+
+  // ---- PF v2 first-entry reveal choreography (no-op for every other flow) --
+  const doReveal = revealMode !== undefined && !!personalized;
+  // Morph needs a grey/current curve to grow out of; without one (comparison
+  // off) we gracefully fall back to the draw-in behavior.
+  const doMorph = doReveal && revealMode === "morph" && !!current;
+  const doDraw = doReveal && !doMorph;
+  const VIOLET_DELAY = 0.3;
+  // Morph plays once, on mount: the violet layer sits on the grey/current path
+  // for the first frame, then animates to the personalized path when the parent
+  // bumps `replayNonce` (0 → 1) on the next frame. Second in the staggered
+  // choreography (success counts first, then the curve, then the loss bars).
+  const morphNow = doMorph && replayNonce > 0;
+  // Curve is the middle beat of the reveal: it starts ~0.3s after the success
+  // number and morphs slowly so the line feels like it "arrives". The peak
+  // dot gives a soft scale-pulse + glow as it reaches the personalized peak.
+  const MORPH_DELAY = 0.3;
+  const MORPH_DUR = 2.0;
+  const PEAK_PULSE_DELAY = MORPH_DELAY + MORPH_DUR - 0.55;
+  const currentPts = current ? curvePoints(current, domainTop) : null;
+  const currentPeakPt = currentPts
+    ? currentPts.reduce((a, b) => (b.y < a.y ? b : a))
+    : peakPt;
+  const heroStroke = toPath(heroPts, true);
+  const heroArea = toArea(heroPts);
+  const currentStroke = currentPts ? toPath(currentPts, true) : heroStroke;
+  const currentArea = currentPts ? toArea(currentPts) : heroArea;
+  const peakLeftFor = (pt: { x: number; y: number }) =>
+    `calc(1.75rem + (100% - 1.75rem) * ${(pt.x / CURVE_W).toFixed(4)})`;
+  const peakTopFor = (pt: { x: number; y: number }) =>
+    `${((pt.y / CURVE_H) * 100).toFixed(2)}%`;
+  const peakLabelLeftFor = (pt: { x: number; y: number }) =>
+    `calc(1.75rem + (100% - 1.75rem) * ${(pt.x / CURVE_W).toFixed(4)} - 24px)`;
+  const peakLabelTopFor = (pt: { x: number; y: number }) =>
+    `calc(${((pt.y / CURVE_H) * 100).toFixed(2)}% - 20px)`;
 
   return (
     <div className={cn("flex w-full flex-col", fill && "lg:h-full")}>
@@ -327,25 +374,48 @@ export function AssetCurve({
           {areaFill && current ? (
             <motion.path
               key="comparison-area"
-              d={toArea(curvePoints(current, domainTop))}
+              d={currentArea}
               fill={`url(#asset-grey-${gradId})`}
               stroke="none"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, d: toArea(curvePoints(current, domainTop)) }}
-              transition={{ duration: 0.7, ease: EXPO }}
+              initial={doReveal ? { opacity: 1 } : { opacity: 0 }}
+              animate={{ opacity: 1, d: currentArea }}
+              transition={doReveal ? { duration: 0 } : { duration: 0.7, ease: EXPO }}
               className="pointer-events-none"
             />
           ) : null}
           {areaFill && personalized ? (
-            <motion.path
-              d={toArea(heroPts)}
-              fill={`url(#asset-violet-${gradId})`}
-              stroke="none"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, d: toArea(heroPts) }}
-              transition={{ duration: 0.7, ease: EXPO }}
-              className="pointer-events-none"
-            />
+            doReveal ? (
+              <motion.path
+                key={`violet-area-${revealMode}`}
+                d={doMorph ? currentArea : heroArea}
+                fill={`url(#asset-violet-${gradId})`}
+                stroke="none"
+                initial={
+                  doMorph ? { opacity: 1, d: currentArea } : { opacity: 0 }
+                }
+                animate={
+                  doMorph
+                    ? { opacity: 1, d: morphNow ? heroArea : currentArea }
+                    : { opacity: 1 }
+                }
+                transition={
+                  doMorph
+                    ? { duration: MORPH_DUR, delay: MORPH_DELAY, ease: EXPO }
+                    : { opacity: { duration: 0.5, delay: VIOLET_DELAY, ease: EXPO } }
+                }
+                className="pointer-events-none"
+              />
+            ) : (
+              <motion.path
+                d={toArea(heroPts)}
+                fill={`url(#asset-violet-${gradId})`}
+                stroke="none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, d: toArea(heroPts) }}
+                transition={{ duration: 0.7, ease: EXPO }}
+                className="pointer-events-none"
+              />
+            )
           ) : null}
           {gridValues.map((v) => (
             <line
@@ -372,32 +442,61 @@ export function AssetCurve({
             {current ? (
               <motion.path
                 key="comparison-curve"
-                d={toPath(curvePoints(current, domainTop), true)}
+                d={currentStroke}
                 fill="none"
                 stroke={personalized ? SERIES_GREY : "#8b919a"}
                 strokeWidth={1.8}
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{
-                  pathLength: 1,
-                  opacity: 1,
-                  d: toPath(curvePoints(current, domainTop), true),
-                }}
+                initial={
+                  doReveal
+                    ? { pathLength: 1, opacity: 1 }
+                    : { pathLength: 0, opacity: 0 }
+                }
+                animate={{ pathLength: 1, opacity: 1, d: currentStroke }}
                 exit={{ pathLength: 0, opacity: 0 }}
-                transition={{ duration: 0.6, ease: EXPO }}
+                transition={doReveal ? { duration: 0 } : { duration: 0.6, ease: EXPO }}
               />
             ) : null}
           </AnimatePresence>
           {personalized ? (
-            <motion.path
-              d={toPath(heroPts, true)}
-              fill="none"
-              stroke={SERIES_VIOLET}
-              strokeWidth={2.2}
-              strokeLinecap="round"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1, d: toPath(heroPts, true) }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            />
+            doReveal ? (
+              <motion.path
+                key={`violet-stroke-${revealMode}`}
+                d={doMorph ? currentStroke : heroStroke}
+                fill="none"
+                stroke={SERIES_VIOLET}
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                initial={
+                  doMorph
+                    ? { pathLength: 1, opacity: 1 }
+                    : { pathLength: 0, opacity: 0 }
+                }
+                animate={
+                  doMorph
+                    ? { pathLength: 1, opacity: 1, d: morphNow ? heroStroke : currentStroke }
+                    : { pathLength: 1, opacity: 1 }
+                }
+                transition={
+                  doMorph
+                    ? { duration: MORPH_DUR, delay: MORPH_DELAY, ease: EXPO }
+                    : {
+                        pathLength: { duration: 0.8, delay: VIOLET_DELAY, ease: EXPO },
+                        opacity: { duration: 0.3, delay: VIOLET_DELAY },
+                      }
+                }
+              />
+            ) : (
+              <motion.path
+                d={toPath(heroPts, true)}
+                fill="none"
+                stroke={SERIES_VIOLET}
+                strokeWidth={2.2}
+                strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1, d: toPath(heroPts, true) }}
+                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              />
+            )
           ) : null}
         </svg>
         {/* Peak marker + label as HTML overlays so the dot stays a true circle
@@ -405,28 +504,138 @@ export function AssetCurve({
             stretched into an ellipse). The svg is inset by 1.75rem on the left,
             so map x across (100% - 1.75rem) to sit exactly on the curve. */}
         {personalized ? (
-          <motion.span
-            className="pointer-events-none absolute size-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet ring-2 ring-white"
-            animate={{
-              left: `calc(1.75rem + (100% - 1.75rem) * ${(peakPt.x / CURVE_W).toFixed(4)})`,
-              top: `${((peakPt.y / CURVE_H) * 100).toFixed(2)}%`,
-            }}
-            // Match the personalized line's morph exactly so the dot stays glued
-            // to the curve instead of springing on a different timing curve.
-            transition={{ duration: 0.7, ease: EXPO }}
-          />
+          doReveal ? (
+            <motion.span
+              key={`peak-dot-${revealMode}`}
+              className="pointer-events-none absolute size-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet ring-2 ring-white"
+              initial={
+                doMorph
+                  ? {
+                      left: peakLeftFor(currentPeakPt),
+                      top: peakTopFor(currentPeakPt),
+                      opacity: 1,
+                      scale: 1,
+                    }
+                  : {
+                      left: peakLeftFor(peakPt),
+                      top: peakTopFor(peakPt),
+                      opacity: 0,
+                      scale: 0,
+                    }
+              }
+              animate={
+                doMorph
+                  ? {
+                      left: peakLeftFor(morphNow ? peakPt : currentPeakPt),
+                      top: peakTopFor(morphNow ? peakPt : currentPeakPt),
+                      opacity: 1,
+                      scale: morphNow ? [1, 1.5, 1] : 1,
+                      filter: morphNow
+                        ? [
+                            "drop-shadow(0 0 0px rgba(127,53,178,0))",
+                            "drop-shadow(0 0 7px rgba(127,53,178,0.85))",
+                            "drop-shadow(0 0 0px rgba(127,53,178,0))",
+                          ]
+                        : "drop-shadow(0 0 0px rgba(127,53,178,0))",
+                    }
+                  : {
+                      left: peakLeftFor(peakPt),
+                      top: peakTopFor(peakPt),
+                      opacity: 1,
+                      scale: 1,
+                    }
+              }
+              transition={
+                doDraw
+                  ? {
+                      delay: VIOLET_DELAY + 0.55,
+                      type: "spring",
+                      stiffness: 320,
+                      damping: 22,
+                    }
+                  : {
+                      left: { duration: MORPH_DUR, delay: MORPH_DELAY, ease: EXPO },
+                      top: { duration: MORPH_DUR, delay: MORPH_DELAY, ease: EXPO },
+                      // The pulse + glow land as the dot reaches the peak.
+                      scale: {
+                        duration: 0.85,
+                        delay: PEAK_PULSE_DELAY,
+                        ease: "easeInOut",
+                        times: [0, 0.5, 1],
+                      },
+                      filter: {
+                        duration: 0.85,
+                        delay: PEAK_PULSE_DELAY,
+                        ease: "easeInOut",
+                        times: [0, 0.5, 1],
+                      },
+                    }
+              }
+            />
+          ) : (
+            <motion.span
+              className="pointer-events-none absolute size-[7px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet ring-2 ring-white"
+              animate={{
+                left: `calc(1.75rem + (100% - 1.75rem) * ${(peakPt.x / CURVE_W).toFixed(4)})`,
+                top: `${((peakPt.y / CURVE_H) * 100).toFixed(2)}%`,
+              }}
+              // Match the personalized line's morph exactly so the dot stays glued
+              // to the curve instead of springing on a different timing curve.
+              transition={{ duration: 0.7, ease: EXPO }}
+            />
+          )
         ) : null}
         {personalized ? (
-          <motion.span
-            className="absolute rounded-full bg-deep-black px-1.5 py-0.5 text-[9px] font-medium text-white"
-            animate={{
-              left: `calc(1.75rem + (100% - 1.75rem) * ${(peakPt.x / CURVE_W).toFixed(4)} - 24px)`,
-              top: `calc(${((peakPt.y / CURVE_H) * 100).toFixed(2)}% - 20px)`,
-            }}
-            transition={{ duration: 0.7, ease: EXPO }}
-          >
-            {fmtCompact(hero.peak.value)}
-          </motion.span>
+          doReveal ? (
+            <motion.span
+              key={`peak-label-${revealMode}`}
+              className="absolute rounded-full bg-deep-black px-1.5 py-0.5 text-[9px] font-medium text-white"
+              initial={
+                doMorph
+                  ? {
+                      left: peakLabelLeftFor(currentPeakPt),
+                      top: peakLabelTopFor(currentPeakPt),
+                      opacity: 1,
+                    }
+                  : {
+                      left: peakLabelLeftFor(peakPt),
+                      top: peakLabelTopFor(peakPt),
+                      opacity: 0,
+                    }
+              }
+              animate={
+                doMorph
+                  ? {
+                      left: peakLabelLeftFor(morphNow ? peakPt : currentPeakPt),
+                      top: peakLabelTopFor(morphNow ? peakPt : currentPeakPt),
+                      opacity: 1,
+                    }
+                  : {
+                      left: peakLabelLeftFor(peakPt),
+                      top: peakLabelTopFor(peakPt),
+                      opacity: 1,
+                    }
+              }
+              transition={
+                doDraw
+                  ? { delay: VIOLET_DELAY + 0.55, duration: 0.3, ease: EXPO }
+                  : { duration: MORPH_DUR, delay: MORPH_DELAY, ease: EXPO }
+              }
+            >
+              {fmtCompact(hero.peak.value)}
+            </motion.span>
+          ) : (
+            <motion.span
+              className="absolute rounded-full bg-deep-black px-1.5 py-0.5 text-[9px] font-medium text-white"
+              animate={{
+                left: `calc(1.75rem + (100% - 1.75rem) * ${(peakPt.x / CURVE_W).toFixed(4)} - 24px)`,
+                top: `calc(${((peakPt.y / CURVE_H) * 100).toFixed(2)}% - 20px)`,
+              }}
+              transition={{ duration: 0.7, ease: EXPO }}
+            >
+              {fmtCompact(hero.peak.value)}
+            </motion.span>
+          )
         ) : null}
         <span className="absolute bottom-1 right-0 rounded-sm bg-white/80 px-1 text-[9px] text-gray-2">
           Age 90

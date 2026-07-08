@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { OutlookShell } from "@/components/prototypes/outlook/OutlookShell";
@@ -31,9 +31,24 @@ export function NewOutlookPostFeedbackV2Screen() {
     setOutlook({ comparisonNew: true });
   }, [setOutlook]);
 
+  // First-entry reveal (plays on every arrival at this page): the grey
+  // current-plan graphs render immediately and fully (no entrance fade on the
+  // stats panel), with the violet layers sitting exactly on top of the grey for
+  // a deliberate hold. After the hold, `revealStarted` flips and the violet
+  // layers slowly morph up to the personalized values as the focal celebratory
+  // beat — success first, then the asset curve, then the loss bars (each graph's
+  // long duration + widened stagger lives in the chart components). The hold is
+  // long enough that the eye clearly registers the grey "before" state first.
+  const REVEAL_HOLD_MS = 700;
+  const [revealStarted, setRevealStarted] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setRevealStarted(true), REVEAL_HOLD_MS);
+    return () => clearTimeout(id);
+  }, []);
+
   const current = useMemo(
     () =>
-      computeOutlook({ plan: "current", spendingAim, marketT, riskT, events: customEvents }),
+      computeOutlook({ plan: "current", spendingAim, marketT, riskT, events: customEvents, preset: "pfV2" }),
     [spendingAim, marketT, riskT, customEvents],
   );
   const personalized = useMemo(
@@ -44,6 +59,7 @@ export function NewOutlookPostFeedbackV2Screen() {
         marketT,
         riskT,
         events: customEvents,
+        preset: "pfV2",
       }),
     [spendingAim, marketT, riskT, customEvents],
   );
@@ -85,15 +101,19 @@ export function NewOutlookPostFeedbackV2Screen() {
           </InfoTarget>
         </motion.div>
 
-        {/* Graphs fill the remaining space */}
-        <motion.div {...enter(0.12)} className="flex flex-col lg:min-h-0 lg:flex-1">
+        {/* Graphs fill the remaining space. No entrance fade/slide here: the
+            grey current-plan graphs must be fully on screen from frame 0 so the
+            purple morph reads as a distinct beat happening on top of them. */}
+        <div className="flex flex-col lg:min-h-0 lg:flex-1">
           <OutlookStatsPanelPFV2
             current={current}
             personalized={personalized}
             comparison={comparisonNew}
             fill
+            revealMode="morph"
+            replayNonce={revealStarted ? 1 : 0}
           />
-        </motion.div>
+        </div>
 
         {/* Description hero + fee savings, now below the graphs */}
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.7fr_1fr]">

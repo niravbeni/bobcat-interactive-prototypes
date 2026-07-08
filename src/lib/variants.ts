@@ -47,6 +47,14 @@ export interface VariantMeta {
   skipInFlow?: { label: string };
   /** Highlight this flow on the dashboard (e.g. the active client deliverable). */
   featured?: boolean;
+  /** Whether this is a standalone component prototype or an end-to-end flow. */
+  kind: "flow" | "component";
+  /** Older/superseded work. Drives default ordering (recent first, older last). */
+  archived?: boolean;
+  /** Approximate creation date (ISO, from git history), shown as a card pill. */
+  created: string;
+  /** Approximate last-modified date (ISO, from git history of the variant's files). */
+  modified: string;
 }
 
 const BASE_STEPS: StepId[] = [
@@ -80,6 +88,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Work-in-progress iteration of the conversational flow, being shaped as a client deliverable.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-06-23",
+    modified: "2026-06-24",
     steps: ["outlook", "details", "chat", "complete", "marketplace"],
     skipInFlow: { label: "the goals chat" },
   },
@@ -101,6 +113,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
       "outlook",
       "marketplace",
     ],
+    kind: "flow",
+    archived: true,
+    created: "2026-06-25",
+    modified: "2026-06-26",
     skipTo: { step: "goals", label: "the goals" },
   },
   hybrid: {
@@ -109,6 +125,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Start by choosing how you'd like to build your retirement plan: a quick draft outlook you refine later, a guided step-by-step build, or talking to an advisor. Each path then runs end to end.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-06-26",
+    modified: "2026-06-26",
     // The picker is a single screen that branches into the hybrid-quick /
     // hybrid-guided flows (each its own variant so answers reset cleanly).
     steps: ["persona"],
@@ -119,6 +139,9 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Persona 1: capture a rich profile in one page, see a draft outlook immediately, then optionally add Income & Spending detail and rank goals to firm it up.",
     status: "ready",
+    kind: "flow",
+    created: "2026-06-26",
+    modified: "2026-06-26",
     // Continue path: profile (rich madlib) → loading (simulation pause) →
     // outlook (draft) → details/income/spending (scrollable section screens) →
     // goals (questions + swipe rank) → back to the full outlook. complete +
@@ -142,6 +165,9 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Persona 2: a blend of three onboarding styles — the mad-libs About you page, a one-question-at-a-time Income & Spending wizard, and a swipe-to-rank Goals deck — all feeding the same live side panel and outlook.",
     status: "ready",
+    kind: "flow",
+    created: "2026-06-26",
+    modified: "2026-06-26",
     // Continue path: education → details (madlib) → income (wizard) → summary →
     // spending (wizard) → summary → goals (questions + rank) → outlook →
     // complete. The single summary step is revisited via goTo after income and
@@ -166,6 +192,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "The core click-through flow: future income, summary, spending and a guided Retirement Goals chat.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-06-22",
+    modified: "2026-06-24",
     steps: BASE_STEPS,
     skipTo: { step: "goals", label: "the Retirement Goals chat" },
   },
@@ -175,6 +205,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Goals are shown back to you as cards you can edit, add to, then drag to rank what matters most.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-06-22",
+    modified: "2026-06-24",
     steps: PRIORITIZE_STEPS,
     skipTo: { step: "goals", label: "the goal card sort" },
   },
@@ -184,6 +218,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "A Tinder-style deck: swipe each retirement priority up, right or left to rank what matters.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-06-22",
+    modified: "2026-06-24",
     steps: PRIORITIZE_STEPS,
     skipTo: { step: "goals", label: "the swipe deck" },
   },
@@ -193,6 +231,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "The Retirement Goals chat breaks out into a drag-to-rank card sort mid-conversation, then returns.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-06-22",
+    modified: "2026-06-24",
     steps: BASE_STEPS,
     skipTo: { step: "goals", label: "the chat + card sort" },
   },
@@ -202,6 +244,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "A breakout that pops out of the flow: picture your retirement on a mood board, saved back to your outlook.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-06-22",
+    modified: "2026-06-24",
     steps: BASE_STEPS,
     skipTo: { step: "goals", label: "the happiness chapter" },
   },
@@ -211,6 +257,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "The whole onboarding delivered as one conversational chat, with actions embedded inline.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-06-22",
+    modified: "2026-06-24",
     steps: ["chat", "complete"],
   },
   "smart-sort": {
@@ -219,6 +269,9 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Type a bank or provider and an AI-style autocomplete recognizes the account, then auto-tags it by tax treatment so your savings sort themselves.",
     status: "ready",
+    kind: "component",
+    created: "2026-07-01",
+    modified: "2026-07-01",
     steps: ["smart-sort"],
   },
   "data-dump": {
@@ -227,6 +280,9 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Throw everything at one canvas — files, screenshots, pasted notes, a voice memo or a phone scan — then let AI structure the mess into an editable account profile you can tweak.",
     status: "ready",
+    kind: "component",
+    created: "2026-07-01",
+    modified: "2026-07-01",
     steps: ["data-dump"],
   },
   "card-sort": {
@@ -235,6 +291,9 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Decide how much each financial goal matters with one clear tap, watch it drop onto a low-to-high timeline, then drag the cards to fine-tune your ranking.",
     status: "ready",
+    kind: "component",
+    created: "2026-07-01",
+    modified: "2026-07-02",
     steps: ["card-sort"],
   },
   "smart-assets": {
@@ -243,6 +302,9 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "Bring in everything in one place: connect with Plaid, drop your statements, notes and voice memos into an AI canvas, or search and add accounts by hand — all collected into one editable list.",
     status: "ready",
+    kind: "component",
+    created: "2026-07-01",
+    modified: "2026-07-02",
     steps: ["smart-assets"],
   },
   "outlook-flow": {
@@ -251,6 +313,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "See your current outlook in a typical retail experience, watch a personalized plan get built, compare the two side by side, then refine your risk profile — every chart driven live by the sliders.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-07-07",
+    modified: "2026-07-07",
     steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
   },
   "outlook-flow-enhanced": {
@@ -259,6 +325,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "The Outlook Flow with extra polish: an animated gradient wash under the asset curve, shimmering placeholder copy and soft aurora hero cards — same live, slider-driven charts.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-07-07",
+    modified: "2026-07-07",
     steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
   },
   "outlook-flow-post-feedback": {
@@ -267,6 +337,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "The enhanced Outlook Flow reworked with post-feedback edits.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-07-07",
+    modified: "2026-07-07",
     steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
   },
   "outlook-flow-post-feedback-v2": {
@@ -275,7 +349,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "The Post Feedback Outlook Flow with a persistent hover-help box: point at any chart, highlighted term or sidebar control and a plain-language explanation appears in the bottom-left of the sidebar.",
     status: "ready",
+    kind: "flow",
     featured: true,
+    created: "2026-07-07",
+    modified: "2026-07-08",
     steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
   },
   "details-flow": {
@@ -284,6 +361,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "A hub-and-spoke \"Your details\" dashboard: review your progress at a glance, then dive into About you, Assets, Spending or Goals — each an editable detail page that feeds a live left panel and returns you to the summary.",
     status: "ready",
+    kind: "flow",
+    archived: true,
+    created: "2026-07-07",
+    modified: "2026-07-08",
     steps: [
       "details-home",
       "details-about",
@@ -298,7 +379,10 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     description:
       "The Details Flow with a persistent hover-help box: point at a section, value or highlighted term and a plain-language explanation appears in the bottom-left of the sidebar.",
     status: "ready",
+    kind: "flow",
     featured: true,
+    created: "2026-07-08",
+    modified: "2026-07-08",
     steps: [
       "details-home",
       "details-about",

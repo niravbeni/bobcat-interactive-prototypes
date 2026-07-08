@@ -40,7 +40,7 @@ export function RefineOutlookPostFeedbackV2Screen() {
 
   const current = useMemo(
     () =>
-      computeOutlook({ plan: "current", spendingAim, marketT, riskT, events: customEvents }),
+      computeOutlook({ plan: "current", spendingAim, marketT, riskT, events: customEvents, preset: "pfV2" }),
     [spendingAim, marketT, riskT, customEvents],
   );
   const personalized = useMemo(
@@ -51,6 +51,7 @@ export function RefineOutlookPostFeedbackV2Screen() {
         marketT,
         riskT,
         events: customEvents,
+        preset: "pfV2",
       }),
     [spendingAim, marketT, riskT, customEvents],
   );

@@ -101,18 +101,6 @@ const CATEGORIES: Record<"essentials" | "lifestyle", SpendCategory[]> = {
       description: "Groceries, clothing and household items.",
       icon: ShoppingCart,
     },
-    {
-      id: "health",
-      title: "Health",
-      description: "Premiums, deductibles and out-of-pocket costs.",
-      icon: HeartPulse,
-    },
-    {
-      id: "personal",
-      title: "Personal & subscriptions",
-      description: "Haircuts, gym, memberships and subscriptions.",
-      icon: CreditCard,
-    },
   ],
   lifestyle: [
     {
@@ -132,12 +120,6 @@ const CATEGORIES: Record<"essentials" | "lifestyle", SpendCategory[]> = {
       title: "Dining & going out",
       description: "Restaurants, bars and entertainment.",
       icon: Utensils,
-    },
-    {
-      id: "gifts",
-      title: "Gifts & giving",
-      description: "Presents, celebrations and donations.",
-      icon: Gift,
     },
   ],
 };
@@ -163,6 +145,22 @@ const TAB_HEADINGS: Record<SpendTab, string> = {
 const EXTRA_CATEGORIES: ExtraCategory[] = [
   {
     tab: "essentials",
+    id: "health",
+    title: "Health",
+    description: "Premiums, deductibles and out-of-pocket costs.",
+    icon: HeartPulse,
+    defaultMonthly: 1000,
+  },
+  {
+    tab: "essentials",
+    id: "personal",
+    title: "Personal & subscriptions",
+    description: "Haircuts, gym, memberships and subscriptions.",
+    icon: CreditCard,
+    defaultMonthly: 600,
+  },
+  {
+    tab: "essentials",
     id: "childcare",
     title: "Childcare & education",
     description: "Tuition, childcare and school costs.",
@@ -184,6 +182,14 @@ const EXTRA_CATEGORIES: ExtraCategory[] = [
     description: "Renovations, furniture and improvements.",
     icon: Hammer,
     defaultMonthly: 200,
+  },
+  {
+    tab: "lifestyle",
+    id: "gifts",
+    title: "Gifts & giving",
+    description: "Presents, celebrations and donations.",
+    icon: Gift,
+    defaultMonthly: 400,
   },
   {
     tab: "lifestyle",

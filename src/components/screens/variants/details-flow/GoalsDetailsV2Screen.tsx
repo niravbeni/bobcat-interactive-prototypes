@@ -134,164 +134,172 @@ export function GoalsDetailsV2Screen() {
         </div>
       </div>
 
-      {/* Chooser */}
-      <div className="mt-2 flex min-h-[176px] flex-1 flex-col items-center justify-center">
-        <AnimatePresence mode="popLayout">
-          {current ? (
-            <motion.div
-              key={current.id}
-              className="w-full max-w-[300px]"
-              initial={{ opacity: 0, y: -16, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 150, scale: 0.85 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <ChooserCard card={current} />
-              <InfoTarget
-                tipId="goal-importance"
-                as="div"
-                interactive
-                className="mt-2.5 grid grid-cols-3 gap-2.5"
+      {/* Sorting workspace: the chooser and both timelines are kept as one
+          vertically-centered cluster with tight internal gaps so there's no
+          dead space between the question card and the sort rows. */}
+      <div className="mt-2 flex min-h-0 flex-1 flex-col justify-center gap-3">
+        {/* Chooser */}
+        <div className="flex flex-col items-center">
+          <AnimatePresence mode="popLayout">
+            {current ? (
+              <motion.div
+                key={current.id}
+                className="w-full max-w-[320px]"
+                initial={{ opacity: 0, y: -16, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 150, scale: 0.85 }}
+                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
               >
-                {DETAILS_BUCKETS.map((b) => (
-                  <BucketButton
-                    key={b.id}
-                    label={b.label}
-                    color={b.color}
-                    onClick={() => place(b.id)}
-                  />
-                ))}
-              </InfoTarget>
-              <p className="mt-1.5 text-center text-[12px] text-gray-2">
-                {placedCount + 1} of {DETAILS_GOAL_CARDS.length}
-              </p>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="chooser-done"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col items-center gap-1.5 text-center"
-            >
-              <span className="flex size-10 items-center justify-center rounded-full bg-violet/12 text-violet">
-                <Check className="size-5" strokeWidth={2.5} />
-              </span>
-              <p className="text-base font-semibold text-deep-black">
-                All sorted
-              </p>
-              <p className="max-w-[360px] text-sm text-gray-2">
-                Fine-tune each row by dragging, or use the arrows to move a card
-                between the timeline and the shelf, then confirm.
-              </p>
-              <Button
-                variant="outline"
-                size="md"
-                onClick={startOver}
-                className="mt-1.5"
+                <ChooserCard card={current} />
+                <InfoTarget
+                  tipId="goal-importance"
+                  as="div"
+                  interactive
+                  className="mt-3 grid grid-cols-3 gap-2.5"
+                >
+                  {DETAILS_BUCKETS.map((b) => (
+                    <BucketButton
+                      key={b.id}
+                      label={b.label}
+                      color={b.color}
+                      onClick={() => place(b.id)}
+                    />
+                  ))}
+                </InfoTarget>
+                <p className="mt-2 text-center text-[12px] text-gray-2">
+                  {placedCount + 1} of {DETAILS_GOAL_CARDS.length}
+                </p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="chooser-done"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="flex flex-col items-center gap-2 text-center"
               >
-                Start over
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Top timeline: Important → Very important */}
-      <div className="mt-2 flex w-full flex-col">
-        <div className="flex items-center justify-between px-1 text-[11px] font-semibold uppercase tracking-[0.1em]">
-          <span style={{ color: detailsBucketMeta("medium").color }}>
-            Important
-          </span>
-          <span style={{ color: detailsBucketMeta("high").color }}>
-            Very important
-          </span>
+                <span className="flex size-12 items-center justify-center rounded-full bg-violet/12 text-violet">
+                  <Check className="size-6" strokeWidth={2.5} />
+                </span>
+                <p className="text-lg font-semibold text-deep-black">
+                  All sorted
+                </p>
+                <p className="max-w-[360px] text-sm text-gray-2">
+                  Fine-tune each row by dragging, or use the arrows to move a
+                  card between the timeline and the shelf, then confirm.
+                </p>
+                <Button
+                  variant="outline"
+                  size="md"
+                  onClick={startOver}
+                  className="mt-1.5"
+                >
+                  Start over
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <div className="relative mt-1.5 min-h-[132px] rounded-card border border-stroke-subtle bg-white px-4 py-2.5">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-6 top-1/2 flex -translate-y-1/2 items-center"
-          >
-            <span className="size-0 shrink-0 border-y-[5px] border-r-[7px] border-y-transparent border-r-[#9145c4]/50" />
-            <span
-              className="h-[3px] flex-1 rounded-full"
-              style={{
-                background:
-                  "linear-gradient(90deg, #9145c4 0%, #7f35b2 100%)",
-                opacity: 0.8,
-              }}
-            />
-            <span className="size-0 shrink-0 border-y-[5px] border-l-[7px] border-y-transparent border-l-violet/70" />
+        {/* Top timeline: Important → Very important */}
+        <div className="flex w-full flex-col">
+          <div className="flex items-center justify-between px-1 text-[11px] font-semibold uppercase tracking-[0.1em]">
+            <span style={{ color: detailsBucketMeta("medium").color }}>
+              Important
+            </span>
+            <span style={{ color: detailsBucketMeta("high").color }}>
+              Very important
+            </span>
           </div>
 
-          {order.length === 0 ? (
-            <p className="pointer-events-none absolute inset-x-4 top-5 text-center text-sm text-gray-2">
-              Important goals you sort will land here.
-            </p>
-          ) : (
-            <Reorder.Group
-              axis="x"
-              values={order}
-              onReorder={setOrder}
-              className="relative flex flex-nowrap items-stretch justify-center gap-2"
+          <div className="relative mt-1.5 min-h-[112px] rounded-card border border-stroke-subtle bg-white px-4 py-2">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-6 top-1/2 flex -translate-y-1/2 items-center"
             >
-              <AnimatePresence initial={false}>
-                {order.map((id, index) => {
-                  const card = DETAILS_GOAL_BY_ID[id];
-                  if (!card) return null;
-                  const bucket = detailsTopBucketForIndex(index, order.length);
-                  return (
-                    <TimelineCard
-                      key={id}
-                      id={id}
-                      card={card}
-                      bucket={bucket}
-                      actionIcon="down"
-                      onAction={() => demote(id)}
-                    />
-                  );
-                })}
-              </AnimatePresence>
-            </Reorder.Group>
-          )}
-        </div>
-      </div>
+              <span className="size-0 shrink-0 border-y-[5px] border-r-[7px] border-y-transparent border-r-[#9145c4]/50" />
+              <span
+                className="h-[3px] flex-1 rounded-full"
+                style={{
+                  background:
+                    "linear-gradient(90deg, #9145c4 0%, #7f35b2 100%)",
+                  opacity: 0.8,
+                }}
+              />
+              <span className="size-0 shrink-0 border-y-[5px] border-l-[7px] border-y-transparent border-l-violet/70" />
+            </div>
 
-      {/* Bottom shelf: Not important */}
-      <div className="mt-3 flex w-full flex-col pb-2">
-        <div className="flex items-center px-1 text-[11px] font-semibold uppercase tracking-[0.1em]">
-          <span className="text-gray-2">Not important</span>
+            {order.length === 0 ? (
+              <p className="pointer-events-none absolute inset-x-4 top-5 text-center text-sm text-gray-2">
+                Important goals you sort will land here.
+              </p>
+            ) : (
+              <Reorder.Group
+                axis="x"
+                values={order}
+                onReorder={setOrder}
+                className="relative flex flex-nowrap items-stretch justify-center gap-2"
+              >
+                <AnimatePresence initial={false}>
+                  {order.map((id, index) => {
+                    const card = DETAILS_GOAL_BY_ID[id];
+                    if (!card) return null;
+                    const bucket = detailsTopBucketForIndex(
+                      index,
+                      order.length,
+                    );
+                    return (
+                      <TimelineCard
+                        key={id}
+                        id={id}
+                        card={card}
+                        bucket={bucket}
+                        actionIcon="down"
+                        onAction={() => demote(id)}
+                      />
+                    );
+                  })}
+                </AnimatePresence>
+              </Reorder.Group>
+            )}
+          </div>
         </div>
 
-        <div className="relative mt-1.5 min-h-[132px] rounded-card border border-stroke-subtle bg-ghost-white/60 px-4 py-2.5">
-          {notImportant.length === 0 ? (
-            <p className="pointer-events-none absolute inset-x-4 top-5 text-center text-sm text-gray-2">
-              Cards you mark not important will rest here.
-            </p>
-          ) : (
-            <Reorder.Group
-              axis="x"
-              values={notImportant}
-              onReorder={setNotImportant}
-              className="relative flex flex-nowrap items-stretch justify-center gap-2"
-            >
-              <AnimatePresence initial={false}>
-                {notImportant.map((id) => {
-                  const card = DETAILS_GOAL_BY_ID[id];
-                  if (!card) return null;
-                  return (
-                    <ShelfCard
-                      key={id}
-                      id={id}
-                      card={card}
-                      onAction={() => promote(id)}
-                    />
-                  );
-                })}
-              </AnimatePresence>
-            </Reorder.Group>
-          )}
+        {/* Bottom shelf: Not important */}
+        <div className="flex w-full flex-col">
+          <div className="flex items-center px-1 text-[11px] font-semibold uppercase tracking-[0.1em]">
+            <span className="text-gray-2">Not important</span>
+          </div>
+
+          <div className="relative mt-1.5 min-h-[112px] rounded-card border border-stroke-subtle bg-ghost-white/60 px-4 py-2">
+            {notImportant.length === 0 ? (
+              <p className="pointer-events-none absolute inset-x-4 top-5 text-center text-sm text-gray-2">
+                Cards you mark not important will rest here.
+              </p>
+            ) : (
+              <Reorder.Group
+                axis="x"
+                values={notImportant}
+                onReorder={setNotImportant}
+                className="relative flex flex-nowrap items-stretch justify-center gap-2"
+              >
+                <AnimatePresence initial={false}>
+                  {notImportant.map((id) => {
+                    const card = DETAILS_GOAL_BY_ID[id];
+                    if (!card) return null;
+                    return (
+                      <ShelfCard
+                        key={id}
+                        id={id}
+                        card={card}
+                        onAction={() => promote(id)}
+                      />
+                    );
+                  })}
+                </AnimatePresence>
+              </Reorder.Group>
+            )}
+          </div>
         </div>
       </div>
     </DetailsShell>
@@ -302,18 +310,18 @@ export function GoalsDetailsV2Screen() {
 function ChooserCard({ card }: { card: DetailsGoalCard }) {
   const Icon = card.icon;
   return (
-    <div className="flex min-h-[140px] w-full flex-row items-center gap-3.5 rounded-card border border-violet/25 bg-gradient-to-br from-violet/[0.12] via-white to-white px-5 py-4 shadow-[0_8px_22px_-16px_rgba(127,53,178,0.5)]">
+    <div className="flex min-h-[176px] w-full flex-col items-center justify-center gap-3.5 rounded-card border border-violet/25 bg-gradient-to-br from-violet/[0.12] via-white to-white px-6 py-6 text-center shadow-[0_8px_22px_-16px_rgba(127,53,178,0.5)]">
       <span
-        className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet text-white shadow-[0_10px_22px_-8px_rgba(127,53,178,0.75)]"
+        className="grid size-14 shrink-0 place-items-center rounded-2xl bg-violet text-white shadow-[0_10px_22px_-8px_rgba(127,53,178,0.75)]"
         aria-hidden
       >
-        <Icon className="size-5" strokeWidth={2.1} />
+        <Icon className="size-7" strokeWidth={2.1} />
       </span>
-      <div className="flex min-w-0 flex-col">
-        <h2 className="text-[17px] font-bold leading-[1.2] tracking-[-0.01em] text-deep-black">
+      <div className="flex min-w-0 flex-col items-center gap-1.5">
+        <h2 className="text-[19px] font-bold leading-[1.2] tracking-[-0.01em] text-deep-black">
           {card.title}
         </h2>
-        <p className="mt-1.5 text-[13px] leading-snug text-gray-1">
+        <p className="text-[13.5px] leading-snug text-gray-1">
           {card.description}
         </p>
       </div>
@@ -335,7 +343,7 @@ function BucketButton({
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col items-center justify-center gap-1.5 rounded-card border-2 px-2.5 py-2.5 text-center transition-all hover:-translate-y-0.5 active:scale-[0.97]"
+      className="group flex flex-col items-center justify-center gap-1.5 rounded-card border-2 px-2.5 py-3 text-center transition-all hover:-translate-y-0.5 active:scale-[0.97]"
       style={{
         borderColor: `${color}59`,
         background: `${color}14`,
@@ -385,7 +393,7 @@ function TimelineCard({
       whileDrag={{ scale: 1.05, zIndex: 10 }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        "relative z-[1] flex h-[114px] min-w-0 flex-1 basis-0 max-w-[132px] cursor-grab touch-none select-none flex-col overflow-hidden rounded-card border bg-white px-2.5 py-2 shadow-[0_4px_16px_-6px_rgba(16,24,32,0.18)] active:cursor-grabbing",
+        "relative z-[1] flex h-[104px] min-w-0 flex-1 basis-0 max-w-[132px] cursor-grab touch-none select-none flex-col overflow-hidden rounded-card border bg-white px-2.5 py-2 shadow-[0_4px_16px_-6px_rgba(16,24,32,0.18)] active:cursor-grabbing",
       )}
       style={{ borderColor: `${meta.color}59` }}
     >
@@ -440,7 +448,7 @@ function ShelfCard({
       exit={{ opacity: 0, y: -24, scale: 0.85 }}
       whileDrag={{ scale: 1.05, zIndex: 10 }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-[1] flex h-[114px] min-w-0 flex-1 basis-0 max-w-[132px] cursor-grab touch-none select-none flex-col overflow-hidden rounded-card border bg-white px-2.5 py-2 shadow-[0_4px_16px_-6px_rgba(16,24,32,0.18)] active:cursor-grabbing"
+      className="relative z-[1] flex h-[104px] min-w-0 flex-1 basis-0 max-w-[132px] cursor-grab touch-none select-none flex-col overflow-hidden rounded-card border bg-white px-2.5 py-2 shadow-[0_4px_16px_-6px_rgba(16,24,32,0.18)] active:cursor-grabbing"
       style={{ borderColor: `${meta.color}59` }}
     >
       <div className="flex items-center justify-between">

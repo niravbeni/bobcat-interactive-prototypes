@@ -12,6 +12,7 @@ import {
   LossBars,
   avgLifetimeDelta,
   netLossOver30y,
+  type RevealMode,
 } from "../outlook-post-feedback/pfCharts";
 
 /* ------------------------------------------------------------- metrics -- */
@@ -30,6 +31,10 @@ interface MetricProps {
   comparison: boolean;
   tall?: boolean;
   fill?: boolean;
+  /** PF v2 first-entry "purple reveals over grey" reveal choreography. */
+  revealMode?: RevealMode;
+  /** Bump to replay the reveal (driven by the debug toggle). */
+  replayNonce?: number;
 }
 
 /** The visualization for a metric (post-feedback designs). */
@@ -40,6 +45,8 @@ function MetricVisual({
   comparison,
   tall,
   fill,
+  revealMode,
+  replayNonce,
 }: MetricProps & { metric: OutlookMetric }) {
   switch (metric) {
     case "success":
@@ -50,6 +57,8 @@ function MetricVisual({
           comparison={comparison}
           tall={tall}
           fill={fill}
+          revealMode={revealMode}
+          replayNonce={replayNonce}
         />
       );
     case "assets": {
@@ -63,6 +72,8 @@ function MetricVisual({
           tall={tall}
           fill={fill}
           areaFill
+          revealMode={revealMode}
+          replayNonce={replayNonce}
         />
       );
     }
@@ -74,6 +85,8 @@ function MetricVisual({
           comparison={comparison}
           tall={tall}
           fill={fill}
+          revealMode={revealMode}
+          replayNonce={replayNonce}
         />
       );
   }
@@ -189,6 +202,8 @@ function PFCard({
   personalized,
   comparison,
   fill,
+  revealMode,
+  replayNonce,
   onClick,
 }: MetricProps & { metric: OutlookMetric; onClick?: () => void }) {
   const Tag = onClick ? motion.button : motion.div;
@@ -218,6 +233,8 @@ function PFCard({
           personalized={personalized}
           comparison={comparison}
           fill={fill}
+          revealMode={revealMode}
+          replayNonce={replayNonce}
         />
       </InfoTarget>
       <div className="mt-5">
@@ -237,6 +254,8 @@ function SummaryRow({
   personalized,
   comparison,
   fill,
+  revealMode,
+  replayNonce,
   onCardClick,
 }: MetricProps & { onCardClick?: (m: OutlookMetric) => void }) {
   return (
@@ -249,6 +268,8 @@ function SummaryRow({
           personalized={personalized}
           comparison={comparison}
           fill={fill}
+          revealMode={revealMode}
+          replayNonce={replayNonce}
           onClick={onCardClick ? () => onCardClick(metric) : undefined}
         />
       ))}
@@ -277,6 +298,8 @@ export function OutlookStatsPanelPFV2({
   personalized,
   comparison,
   fill,
+  revealMode,
+  replayNonce,
 }: MetricProps) {
   const [tab, setTab] = useState<TabId>("summary");
 
@@ -324,6 +347,8 @@ export function OutlookStatsPanelPFV2({
                 personalized={personalized}
                 comparison={comparison}
                 fill={fill}
+                revealMode={revealMode}
+                replayNonce={replayNonce}
                 onCardClick={(m) => setTab(m)}
               />
             </motion.div>
@@ -361,6 +386,8 @@ export function OutlookStatsPanelPFV2({
                     comparison={comparison}
                     tall
                     fill={fill}
+                    revealMode={revealMode}
+                    replayNonce={replayNonce}
                   />
                 </InfoTarget>
               </motion.div>

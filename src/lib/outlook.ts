@@ -10,6 +10,14 @@
  * reproduce Gloria's CSV reference numbers:
  *   current       → 60% success, $182,000 assets at 90, $220,000 loss, 17% dd
  *   personalized  → 72% success, $400,000 assets at 90, $190,000 loss, 15% dd
+ *
+ * The "pfV2" preset swaps ONLY the base constants (all modifier math is shared)
+ * to reproduce the Post-Feedback v2 reference table at the same default inputs:
+ *   current       → 86% success, ~$1,346,000 assets at 90, $254,000 loss
+ *   personalized  → 97% success, ~$2,085,000 assets at 90, $127,000 loss
+ * The $254k / $127k loss headlines are chosen so the 5-bucket loss chart lands
+ * in the table's range: the deepest (0.1) bucket is 1.9× the headline, so
+ * current peaks at ~$483k and personalized at ~$242k (see lossAtProbability).
  */
 
 export type PlanKind = "current" | "personalized";
@@ -25,6 +33,14 @@ export interface OutlookInputs {
   /** Active "custom event" ids (see {@link OUTLOOK_EVENTS}) modelled onto the
    * timeline. Undefined/empty reproduces the untouched baseline numbers. */
   events?: string[];
+  /**
+   * Which set of base constants to use. "default" is the original CSV baseline
+   * shared by the base / enhanced / post-feedback-v1 flows; "pfV2" swaps in the
+   * Post-Feedback v2 reference-table numbers (86%/97%, ~1.346M/~2.085M). Only
+   * the base constants differ — every modifier (market/spending/risk, events,
+   * curve, drawdown, allocation) is identical across presets.
+   */
+  preset?: "default" | "pfV2";
 }
 
 export interface AllocationBreakdown {
@@ -365,6 +381,9 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
   const r = (clamp(inputs.riskT, 0, 100) - 50) / 50; // −1 low … +1 high
 
   const isPersonal = plan === "personalized";
+  // Base-constant preset. Only the *base* numbers below switch on this; the
+  // modifier math is shared so sliders/events behave identically either way.
+  const isPfV2 = (inputs.preset ?? "default") === "pfV2";
 
   // Fold the cumulative impact of any active custom events into the headline
   // numbers (the curve gets its own age-localized reshaping below).
@@ -376,7 +395,7 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
   // --- Chance of success -------------------------------------------------
   // Market tilts both plans; spending drags success down as it rises. Risk
   // barely moves success ("all are efficient") — a slight dip at the extremes.
-  const baseSuccess = isPersonal ? 72 : 60;
+  const baseSuccess = isPfV2 ? (isPersonal ? 97 : 86) : isPersonal ? 72 : 60;
   const successPct = Math.round(
     clamp(
       baseSuccess + m * 5 - s * 6 - (isPersonal ? Math.abs(r) * 1.5 : 0) + eventSuccessPts,
@@ -389,13 +408,24 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
   // --- Expected assets remaining at 90 ------------------------------------
   // Market and spending scale the endpoint; risk raises the personalized
   // ceiling (more equities → more expected growth).
-  const baseEnd = isPersonal ? 400_000 : 182_000;
+  const baseEnd = isPfV2
+    ? isPersonal
+      ? 2_085_000
+      : 1_346_000
+    : isPersonal
+      ? 400_000
+      : 182_000;
   const baseAssetsAt90 = round1000(
     baseEnd * (1 + 0.16 * m) * (1 - 0.1 * s) * (isPersonal ? 1 + 0.12 * r : 1),
   );
 
   const start = 1_320_000 * (1 + 0.02 * m);
-  const bump = isPersonal ? 160_000 * (1 + 0.25 * r) : 240_000;
+  // pfV2's personalized endpoint (~2.085M) sits well above `start`, so the
+  // default 160k sine bump would balloon the mid-curve above the age-90
+  // headline; a gentler bump keeps it a clean, mostly-rising line.
+  const bump = isPersonal
+    ? (isPfV2 ? 80_000 : 160_000) * (1 + 0.25 * r)
+    : 240_000;
   // Reshape the base curve with the active events, then re-derive the headline
   // endpoint and peak from the reshaped curve so chart and numbers stay in sync.
   const assetCurve = applyEvents(buildCurve(start, baseAssetsAt90, bump), activeEvents);
@@ -405,7 +435,7 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
 
   // --- Potential loss in any given year ------------------------------------
   // Worst markets deepen losses; higher risk raises personalized volatility.
-  const baseLoss = isPersonal ? 190_000 : 220_000;
+  const baseLoss = isPfV2 ? (isPersonal ? 127_000 : 254_000) : isPersonal ? 190_000 : 220_000;
   const potentialLoss = round1000(
     clamp(
       baseLoss * (1 - 0.2 * m) * (isPersonal ? 1 + 0.24 * r : 1) + eventLoss,
@@ -413,7 +443,7 @@ export function computeOutlook(inputs: OutlookInputs): OutlookStats {
       2_000_000,
     ),
   );
-  const baseDrawdown = isPersonal ? 15 : 17;
+  const baseDrawdown = isPfV2 ? (isPersonal ? 10 : 14) : isPersonal ? 15 : 17;
   const drawdownPct = Math.round(
     clamp(
       baseDrawdown * (1 - 0.15 * m) * (isPersonal ? 1 + 0.28 * r : 1) + eventDrawdownPts,
