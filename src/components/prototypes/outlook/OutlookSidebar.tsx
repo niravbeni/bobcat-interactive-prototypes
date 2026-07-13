@@ -249,7 +249,8 @@ export function OutlookSidebar({
   const enhanced =
     variant === "outlook-flow-enhanced" ||
     variant === "outlook-flow-post-feedback" ||
-    variant === "outlook-flow-post-feedback-v2";
+    variant === "outlook-flow-post-feedback-v2" ||
+    variant === "details-to-outlook";
 
   // "Model custom events" opens a compact popover anchored to the trigger.
   // Only one copy of the button is ever mounted (card OR refine dropdown), so a

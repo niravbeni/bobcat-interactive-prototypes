@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { ChevronLeft } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
+import { isDetailsV2Variant } from "@/lib/variants";
 import { OutlookTopNav } from "@/components/prototypes/outlook/OutlookTopNav";
 import { DetailsSidebar } from "./DetailsSidebar";
 import { DetailsInfoTipProvider } from "./DetailsInfoTip";
@@ -25,7 +26,7 @@ export function DetailsShell({
   withSidebar?: boolean;
 }) {
   const { goTo, variant } = useFlow();
-  const infoTip = variant === "details-flow-v2";
+  const infoTip = isDetailsV2Variant(variant);
 
   // Detail-page body (sidebar + scrollable main). The info-tip provider is
   // mounted ONLY for v2 so the original Details flow stays completely pristine

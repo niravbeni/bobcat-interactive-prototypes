@@ -5,6 +5,8 @@ import { motion } from "motion/react";
 import { CircleHelp } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { AskSendIcon } from "@/components/ui/AskSendIcon";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Button } from "@/components/ui/Button";
 import { DETAILS_GOAL_BY_ID } from "@/lib/detailsGoals";
 import { computeDetailsCompletion, computeDetailsProgress } from "@/lib/detailsProgress";
 import type { AssetRow, DetailsAbout, StepId } from "@/lib/types";
@@ -71,8 +73,15 @@ const ABOUT_FIELDS: [keyof DetailsAbout, string][] = [
  * active step is auto-expanded. Income is locked (greyed, non-expandable).
  */
 export function DetailsSidebar({ infoTip = false }: { infoTip?: boolean }) {
-  const { answers, setDetails, step, goTo } = useFlow();
+  const { answers, setDetails, step, goTo, variant } = useFlow();
   const details = answers.details;
+
+  // In the merged Details → Outlook flow the completion card's "See your plan"
+  // button crosses into the outlook half; standalone Details v2 keeps it inert.
+  const onSeePlan =
+    variant === "details-to-outlook"
+      ? () => goTo("current-outlook")
+      : undefined;
 
   const completion = computeDetailsCompletion(details);
   const progress = computeDetailsProgress(details);
@@ -257,33 +266,37 @@ export function DetailsSidebar({ infoTip = false }: { infoTip?: boolean }) {
           </AccordionSection>
         ))}
 
-        {/* Mandatory-data nudge with the REQUIRED DETAILS progress bar. */}
-        <InfoTarget
-          tipId="progress"
-          as="div"
-          enabled={infoTip}
-          className="mt-2 rounded-card bg-white/70 px-4 py-4"
-        >
-          <p className="text-sm font-semibold leading-snug text-deep-black">
-            Your plan will update once we have initial mandatory data.
-          </p>
-          <div className="mt-3 flex items-center gap-2.5">
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-divider">
-              <motion.div
-                className="h-full rounded-full bg-violet"
-                initial={false}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              />
+        {infoTip && progress === 100 ? (
+          <PlanRefreshedCard onSeePlan={onSeePlan} />
+        ) : (
+          /* Mandatory-data nudge with the REQUIRED DETAILS progress bar. */
+          <InfoTarget
+            tipId="progress"
+            as="div"
+            enabled={infoTip}
+            className="mt-2 rounded-card bg-white/70 px-4 py-4"
+          >
+            <p className="text-sm font-semibold leading-snug text-deep-black">
+              Your plan will update once we have initial mandatory data.
+            </p>
+            <div className="mt-3 flex items-center gap-2.5">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-divider">
+                <motion.div
+                  className="h-full rounded-full bg-violet"
+                  initial={false}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                />
+              </div>
             </div>
-          </div>
-          <div className="mt-1.5 flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
-              Required details
-            </span>
-            <span className="text-[11px] font-medium text-gray-2">{progress}%</span>
-          </div>
-        </InfoTarget>
+            <div className="mt-1.5 flex items-center justify-between">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
+                Required details
+              </span>
+              <span className="text-[11px] font-medium text-gray-2">{progress}%</span>
+            </div>
+          </InfoTarget>
+        )}
 
         {/* The v2 hover-help box replaces the placeholder "Learn more" link. */}
         {infoTip ? null : (
@@ -341,5 +354,34 @@ export function DetailsSidebar({ infoTip = false }: { infoTip?: boolean }) {
         </motion.div>
       </div>
     </aside>
+  );
+}
+
+/**
+ * Details v2 completion card shown in place of the required-details progress
+ * block once every mandatory section is complete (progress === 100).
+ */
+function PlanRefreshedCard({ onSeePlan }: { onSeePlan?: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="mt-2 rounded-card bg-white/70 px-4 py-4"
+    >
+      <StatusBadge tone="success">Plan refreshed</StatusBadge>
+      <p className="mt-3 text-sm leading-snug text-deep-black">
+        Your plan has refreshed. It will now update anytime you add additional
+        information or make edits.
+      </p>
+      <Button
+        variant="primary"
+        size="md"
+        className="mt-4 w-full bg-violet hover:bg-violet"
+        onClick={onSeePlan}
+      >
+        See your plan
+      </Button>
+    </motion.div>
   );
 }

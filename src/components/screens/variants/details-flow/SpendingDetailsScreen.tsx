@@ -32,6 +32,7 @@ import { useFlow } from "@/components/flow/FlowProvider";
 import { DetailsShell } from "@/components/prototypes/details/DetailsShell";
 import { InfoTarget } from "@/components/prototypes/details/DetailsInfoTip";
 import { cn } from "@/lib/cn";
+import { isDetailsV2Variant } from "@/lib/variants";
 import type { DetailsSpending } from "@/lib/types";
 
 type SpendMethod = DetailsSpending["method"];
@@ -359,7 +360,7 @@ interface AddedCategory {
 export function SpendingDetailsScreen() {
   const { answers, setDetails, variant } = useFlow();
   const spending = answers.details.spending;
-  const headerEnter = headerEnterFor(variant === "details-flow-v2");
+  const headerEnter = headerEnterFor(isDetailsV2Variant(variant));
   const [added, setAdded] = useState<AddedCategory[]>([]);
 
   const set = (patch: Partial<DetailsSpending>) =>

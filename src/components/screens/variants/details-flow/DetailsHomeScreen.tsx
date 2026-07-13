@@ -20,6 +20,7 @@ import {
   type DetailsCompletion,
 } from "@/lib/detailsProgress";
 import { cn } from "@/lib/cn";
+import { isDetailsV2Variant } from "@/lib/variants";
 import type { StepId } from "@/lib/types";
 
 type RowStatus = "complete" | "in-progress" | "not-started" | "locked";
@@ -115,7 +116,7 @@ export function DetailsHomeScreen() {
   const { answers, goTo, variant } = useFlow();
   const completion = computeDetailsCompletion(answers.details);
   const progress = computeDetailsProgress(answers.details);
-  const isV2 = variant === "details-flow-v2";
+  const isV2 = isDetailsV2Variant(variant);
 
   return (
     <DetailsShell withSidebar={false}>

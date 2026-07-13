@@ -22,6 +22,7 @@ import {
 } from "@/lib/institutions";
 import type { DumpCompletion } from "@/components/prototypes/DumpCanvas";
 import { makeId, type DumpItem, type StructuredResult } from "@/lib/dataDump";
+import { isDetailsV2Variant } from "@/lib/variants";
 import type { AssetRow } from "@/lib/types";
 
 const fmtMoney = (n: number): string => `$${Math.round(n).toLocaleString("en-US")}`;
@@ -137,7 +138,7 @@ const ACCOUNT_TYPE_OPTIONS: string[] = [
 export function AssetsDetailsScreen() {
   const { answers, setDetails, variant } = useFlow();
   const assets = answers.details.accounts;
-  const headerEnter = headerEnterFor(variant === "details-flow-v2");
+  const headerEnter = headerEnterFor(isDetailsV2Variant(variant));
 
   const setAssets = (updater: (prev: AssetRow[]) => AssetRow[]) =>
     setDetails({ accounts: updater(answers.details.accounts) });

@@ -5,6 +5,7 @@ import { ChevronDown } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { DetailsShell } from "@/components/prototypes/details/DetailsShell";
 import { InfoTarget } from "@/components/prototypes/details/DetailsInfoTip";
+import { isDetailsV2Variant } from "@/lib/variants";
 import type { DetailsAbout } from "@/lib/types";
 
 const RELATIONSHIP_OPTIONS = [
@@ -63,7 +64,7 @@ const headerEnterFor = (isV2: boolean) =>
 export function AboutYouDetailsScreen() {
   const { answers, setDetails, variant } = useFlow();
   const about = answers.details.about;
-  const headerEnter = headerEnterFor(variant === "details-flow-v2");
+  const headerEnter = headerEnterFor(isDetailsV2Variant(variant));
 
   const set = (patch: Partial<DetailsAbout>) =>
     setDetails({ about: { ...about, ...patch } });

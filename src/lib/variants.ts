@@ -24,7 +24,8 @@ export type VariantId =
   | "outlook-flow-post-feedback"
   | "outlook-flow-post-feedback-v2"
   | "details-flow"
-  | "details-flow-v2";
+  | "details-flow-v2"
+  | "details-to-outlook";
 
 export interface VariantMeta {
   id: VariantId;
@@ -391,6 +392,27 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
       "details-goals",
     ],
   },
+  "details-to-outlook": {
+    id: "details-to-outlook",
+    title: "Details to Outlook Flow",
+    description:
+      "The Details Flow v2 and Outlook Flow (Post Feedback) v2 joined into one continuous experience: fill in your details, then flow straight into your personalized outlook.",
+    status: "ready",
+    kind: "flow",
+    created: "2026-07-13",
+    modified: "2026-07-13",
+    steps: [
+      "details-home",
+      "details-about",
+      "details-assets",
+      "details-spending",
+      "details-goals",
+      "current-outlook",
+      "loading",
+      "new-outlook",
+      "refine-outlook",
+    ],
+  },
 };
 
 /** Standalone signature-component prototypes, shown first on the dashboard. */
@@ -405,6 +427,7 @@ export const COMPONENT_PROTOTYPE_ORDER: VariantId[] = [
 export const FLOW_ORDER: VariantId[] = [
   "outlook-flow-post-feedback-v2",
   "details-flow-v2",
+  "details-to-outlook",
   "details-flow",
   "outlook-flow-post-feedback",
   "outlook-flow-enhanced",
@@ -427,6 +450,11 @@ export const VARIANT_ORDER: VariantId[] = [
 
 export function isVariantId(value: string): value is VariantId {
   return value in VARIANTS;
+}
+
+/** True for the v2 Details experiences (standalone v2 + the merged flow). */
+export function isDetailsV2Variant(v: VariantId): boolean {
+  return v === "details-flow-v2" || v === "details-to-outlook";
 }
 
 export function firstStep(variant: VariantId): StepId {

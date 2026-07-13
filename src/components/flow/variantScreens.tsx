@@ -154,6 +154,17 @@ export function VariantScreen({
           <GoalsDetailsScreen />
         );
       return null;
+    case "details-to-outlook":
+      if (step === "details-home") return <DetailsHomeScreen />;
+      if (step === "details-about") return <AboutYouDetailsScreen />;
+      if (step === "details-assets") return <AssetsDetailsScreen />;
+      if (step === "details-spending") return <SpendingDetailsScreen />;
+      if (step === "details-goals") return <GoalsDetailsV2Screen />;
+      if (step === "current-outlook") return <CurrentOutlookPostFeedbackV2Screen />;
+      if (step === "loading") return <OutlookLoadingScreen manualContinue />;
+      if (step === "new-outlook") return <NewOutlookPostFeedbackV2Screen />;
+      if (step === "refine-outlook") return <RefineOutlookPostFeedbackV2Screen />;
+      return null;
     case "hybrid-quick":
       if (step === "profile")
         return <NarrativeScreen step="profile" hideSidebar />;
