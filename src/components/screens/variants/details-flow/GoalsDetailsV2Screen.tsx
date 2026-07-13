@@ -103,9 +103,11 @@ export function GoalsDetailsV2Screen() {
             <InfoTarget tipId="goals">Sort your priorities</InfoTarget>
           </h1>
           <p className="mt-2 text-sm leading-snug text-black/70">
-            For each goal, choose how much it matters. Not-important goals rest
-            on the shelf below; the rest land on your timeline. Use the arrows to
-            move a card between rows, and drag left or right to fine-tune.
+            For each goal, choose how much it matters. Important goals land on the
+            timeline below (left is important, right is very important), while
+            not-important ones rest on the shelf beneath it. Drag a card left or
+            right to reorder a row, use the arrows to move it between the timeline
+            and the shelf, then confirm your ranking.
           </p>
         </motion.div>
 
