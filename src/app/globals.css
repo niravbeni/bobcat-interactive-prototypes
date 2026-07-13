@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Brand / WTW palette */
+  /* Brand palette */
   --color-violet: #7f35b2;
   --color-violet-disabled: #e4cff3;
   --color-deep-black: #101820;

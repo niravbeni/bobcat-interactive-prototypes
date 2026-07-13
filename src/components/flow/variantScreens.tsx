@@ -137,7 +137,7 @@ export function VariantScreen({
       return null;
     case "outlook-flow-post-feedback-v2":
       if (step === "current-outlook") return <CurrentOutlookPostFeedbackV2Screen />;
-      if (step === "loading") return <OutlookLoadingScreen />;
+      if (step === "loading") return <OutlookLoadingScreen manualContinue />;
       if (step === "new-outlook") return <NewOutlookPostFeedbackV2Screen />;
       if (step === "refine-outlook") return <RefineOutlookPostFeedbackV2Screen />;
       return null;

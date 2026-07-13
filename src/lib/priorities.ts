@@ -24,7 +24,7 @@ export interface Priority {
 /**
  * Retirement priorities used by the swipe-to-prioritize variation. Ported from
  * the Bobcat research prototype so the interaction stays faithful, themed to the
- * WTW palette.
+ * Brand palette.
  */
 export const RETIREMENT_PRIORITIES: Priority[] = [
   {

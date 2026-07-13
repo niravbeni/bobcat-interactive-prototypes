@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
-import { motion } from "motion/react";
-import { ShieldCheck, TrendingDown, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  ShieldCheck,
+  TrendingDown,
+  FileText,
+  Check,
+  ArrowRight,
+} from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { OutlookTopNav } from "@/components/prototypes/outlook/OutlookTopNav";
 
@@ -29,45 +35,70 @@ const CARDS = [
 
 /**
  * Screen 2 — a brief interstitial while the personalized plan is "built".
- * A violet arc spinner with three staggered info cards, auto-advancing to the
- * recommendation after {@link DURATION_MS}.
+ * A violet arc spinner with three staggered info cards.
+ *
+ * By default it auto-advances to the recommendation after {@link DURATION_MS}.
+ * When {@link manualContinue} is set, it instead settles into a "ready" state
+ * (spinner swaps to a check, copy updates) and surfaces a bottom-right Continue
+ * button so the member can read the content before moving on.
  */
-export function OutlookLoadingScreen() {
+export function OutlookLoadingScreen({
+  manualContinue = false,
+}: {
+  /** When true, wait for an explicit Continue click instead of auto-advancing. */
+  manualContinue?: boolean;
+}) {
   const { goNext } = useFlow();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (manualContinue) {
+      const t = window.setTimeout(() => setReady(true), DURATION_MS);
+      return () => window.clearTimeout(t);
+    }
     const t = window.setTimeout(goNext, DURATION_MS);
     return () => window.clearTimeout(t);
-  }, [goNext]);
+  }, [goNext, manualContinue]);
 
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-white">
       <OutlookTopNav />
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
-        {/* Violet arc spinner */}
-        <motion.svg
-          viewBox="0 0 48 48"
-          className="size-14"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.1, ease: "linear", repeat: Infinity }}
-          aria-hidden="true"
-        >
-          <circle
-            cx="24"
-            cy="24"
-            r="20"
-            fill="none"
-            stroke="#e4cff3"
-            strokeWidth="5"
-          />
-          <path
-            d="M24 4 a20 20 0 0 1 20 20"
-            fill="none"
-            stroke="#7f35b2"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-        </motion.svg>
+        {/* Violet arc spinner — swaps to a static check once ready. */}
+        {ready ? (
+          <motion.div
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 18 }}
+            className="flex size-14 items-center justify-center rounded-full bg-violet/10 text-violet"
+          >
+            <Check className="size-7" strokeWidth={2.5} />
+          </motion.div>
+        ) : (
+          <motion.svg
+            viewBox="0 0 48 48"
+            className="size-14"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.1, ease: "linear", repeat: Infinity }}
+            aria-hidden="true"
+          >
+            <circle
+              cx="24"
+              cy="24"
+              r="20"
+              fill="none"
+              stroke="#e4cff3"
+              strokeWidth="5"
+            />
+            <path
+              d="M24 4 a20 20 0 0 1 20 20"
+              fill="none"
+              stroke="#7f35b2"
+              strokeWidth="5"
+              strokeLinecap="round"
+            />
+          </motion.svg>
+        )}
 
         <motion.h1
           initial={{ opacity: 0, y: 16 }}
@@ -75,7 +106,9 @@ export function OutlookLoadingScreen() {
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="mt-6 text-2xl font-semibold tracking-[-0.01em] text-deep-black"
         >
-          Creating your personalized plan
+          {ready
+            ? "Your personalized plan is ready"
+            : "Creating your personalized plan"}
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
@@ -83,8 +116,9 @@ export function OutlookLoadingScreen() {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="mt-2 max-w-[480px] text-sm text-gray-1"
         >
-          Rebuilding your outlook with protected income, lower fees and your
-          spending aim in mind.
+          {ready
+            ? "Take a moment to review what changed, then continue when you're ready."
+            : "Rebuilding your outlook with protected income, lower fees and your spending aim in mind."}
         </motion.p>
 
         <div className="mt-10 grid w-full max-w-[860px] grid-cols-1 gap-4 sm:grid-cols-3">
@@ -130,6 +164,25 @@ export function OutlookLoadingScreen() {
           })}
         </div>
       </div>
+
+      {manualContinue && (
+        <AnimatePresence>
+          {ready && (
+            <motion.button
+              type="button"
+              onClick={goNext}
+              initial={{ opacity: 0, y: 12, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 260, damping: 22 }}
+              className="absolute bottom-6 right-6 flex items-center gap-2 whitespace-nowrap rounded-full bg-violet px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_-12px_rgba(127,53,178,0.6)] transition-colors hover:brightness-110"
+            >
+              Continue
+              <ArrowRight className="size-4" strokeWidth={2.5} />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      )}
     </div>
   );
 }

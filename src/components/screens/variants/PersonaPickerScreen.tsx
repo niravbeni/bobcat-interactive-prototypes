@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { FullscreenPlaceholder } from "@/components/v2/FullscreenPlaceholder";
 import { pathFor } from "@/lib/variants";
 import { cn } from "@/lib/cn";
+import { SHOW_WTW } from "@/lib/brand";
 
 type CardId = "card1" | "card2" | "card3";
 
@@ -121,8 +122,12 @@ export function PersonaPickerScreen() {
       {advisorOpen ? (
         <FullscreenPlaceholder
           eyebrow="Talk to an advisor"
-          title="Talk to a WTW advisor"
-          copy="We're still designing this. You'll be able to find a time with a WTW retirement advisor right here, then pick up your plan whenever you're ready."
+          title={SHOW_WTW ? "Talk to a WTW advisor" : "Talk to an advisor"}
+          copy={
+            SHOW_WTW
+              ? "We're still designing this. You'll be able to find a time with a WTW retirement advisor right here, then pick up your plan whenever you're ready."
+              : "We're still designing this. You'll be able to find a time with a retirement advisor right here, then pick up your plan whenever you're ready."
+          }
           backLabel="Back"
           onClose={() => setAdvisorOpen(false)}
         />

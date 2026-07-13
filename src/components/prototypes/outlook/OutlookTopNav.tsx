@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { ChevronDown, SquareUser } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { BrandWordmark } from "@/components/chrome/BrandWordmark";
 
 const TABS = ["Details", "Outlook", "Market"] as const;
 
@@ -15,27 +16,8 @@ const GLORIA_MENU = [
   "Sign out",
 ] as const;
 
-/** The wtw wordmark used by the app's shared navbar. */
-function WtwLogo() {
-  return (
-    <svg
-      width="72"
-      height="24"
-      viewBox="0 0 90 29"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M90 5.70254L81.1742 28.4837H73.7419L70.0258 15.7617L66.2806 28.4837H58.8542L52.3277 11.4921H48.2632V19.1438C48.2632 22.7347 49.7148 23.3265 51.7006 23.3265C52.2268 23.316 52.7504 23.2499 53.2626 23.1292L55.2948 28.4199C53.7119 28.8074 52.0878 29.0022 50.4581 29C43.6529 29 40.7497 26.2212 40.7497 19.7181V11.4921H37.649L31.0703 28.4837H23.6381L19.9277 15.7617L16.171 28.4837H8.74452L0 5.70254H8.42516L12.8206 19.4687L17.0129 5.70254H22.8194L27.0523 19.4687L31.4245 5.70254H40.7497V1.60692L48.2632 0V5.70254H58.5348L62.9245 19.4687L67.1168 5.70254H72.9232L77.1561 19.4687L81.511 5.70254H90Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
 /**
- * Figma-style top nav for the Outlook flow: wtw wordmark, a centered
+ * Figma-style top nav for the Outlook flow: brand wordmark, a centered
  * Details / Outlook / Market pill toggle (Outlook active), and the advisor /
  * help / profile cluster on the right. Help surfaces a placeholder modal and
  * Gloria opens a small account menu; "Chat with an Advisor" is a placeholder
@@ -60,7 +42,7 @@ export function OutlookTopNav({
           aria-label="Back to dashboard"
           className="inline-flex shrink-0 items-center text-deep-black transition-opacity hover:opacity-60"
         >
-          <WtwLogo />
+          <BrandWordmark width={72} height={24} />
         </Link>
       </div>
 

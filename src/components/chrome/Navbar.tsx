@@ -8,6 +8,7 @@ import { FullscreenPlaceholder } from "@/components/v2/FullscreenPlaceholder";
 import { VARIANTS, SKIP_INTERACTION_EVENT } from "@/lib/variants";
 import { sampleNarrativeAnswers } from "@/lib/narrative";
 import { cn } from "@/lib/cn";
+import { SHOW_WTW } from "@/lib/brand";
 import type { StepId } from "@/lib/types";
 
 type V2TabId = "details" | "plan" | "marketplace";
@@ -240,8 +241,12 @@ export function Navbar() {
       {advisorOpen ? (
         <FullscreenPlaceholder
           eyebrow="Talk to an advisor"
-          title="Talk to a WTW advisor"
-          copy="We're still designing this. You'll be able to find a time with a WTW retirement advisor right here."
+          title={SHOW_WTW ? "Talk to a WTW advisor" : "Talk to an advisor"}
+          copy={
+            SHOW_WTW
+              ? "We're still designing this. You'll be able to find a time with a WTW retirement advisor right here."
+              : "We're still designing this. You'll be able to find a time with a retirement advisor right here."
+          }
           onClose={() => setAdvisorOpen(false)}
         />
       ) : null}

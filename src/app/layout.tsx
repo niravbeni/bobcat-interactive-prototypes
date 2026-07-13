@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { FlowProvider } from "@/components/flow/FlowProvider";
 import { PasswordGate } from "@/components/chrome/PasswordGate";
+import { SHOW_WTW } from "@/lib/brand";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -11,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Bobcat | WTW Retirement",
+  title: SHOW_WTW ? "Bobcat | WTW Retirement" : "Bobcat",
   description: "Bobcat retirement planning prototype",
 };
 

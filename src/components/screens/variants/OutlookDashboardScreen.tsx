@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { SnapSlider } from "@/components/ui/SnapSlider";
 import { FullscreenPlaceholder } from "@/components/v2/FullscreenPlaceholder";
 import { cn } from "@/lib/cn";
+import { SHOW_WTW } from "@/lib/brand";
 
 /** Lifetime fee of the user's current plan, in thousands (constant baseline). */
 const CURRENT_FEE_K = 272;
@@ -319,7 +320,11 @@ export function OutlookDashboardScreen() {
         <FullscreenPlaceholder
           eyebrow="Book an advisor"
           title="Booking a chat with an advisor"
-          copy="We're still designing this. You'll be able to find a time with a WTW retirement advisor right here."
+          copy={
+            SHOW_WTW
+              ? "We're still designing this. You'll be able to find a time with a WTW retirement advisor right here."
+              : "We're still designing this. You'll be able to find a time with a retirement advisor right here."
+          }
           backLabel="Back to outlook"
           onClose={() => setAdvisorOpen(false)}
         />
