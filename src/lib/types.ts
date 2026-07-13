@@ -245,7 +245,7 @@ export const initialAnswers: FlowAnswers = {
       firstName: "Gloria",
       middleName: "Jean",
       lastName: "Bennett",
-      dob: "15/01/1955",
+      dob: "01/15/1955",
       zip: "91102",
       relationship: "Widowed",
     },

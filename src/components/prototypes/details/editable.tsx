@@ -228,7 +228,14 @@ export function AccordionSection({
       >
         <button
           type="button"
-          onClick={onOpenPage ?? onToggle}
+          onClick={() => {
+            if (onOpenPage) {
+              onOpenPage();
+              if (!open) onToggle();
+            } else {
+              onToggle();
+            }
+          }}
           className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
         >
           {active ? (

@@ -229,9 +229,9 @@ function SelectField({
 }
 
 /**
- * Day / Month / Year "age scroller" for the date of birth. Parses and emits a
- * DD/MM/YYYY string (kept in sync with the sidebar), clamping the day to the
- * number of days in the selected month/year.
+ * Month / Day / Year "age scroller" for the date of birth. Parses and emits a
+ * MM/DD/YYYY string (American order, kept in sync with the sidebar), clamping
+ * the day to the number of days in the selected month/year.
  */
 function DobPicker({
   value,
@@ -240,7 +240,7 @@ function DobPicker({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const [dRaw, mRaw, yRaw] = value.split("/");
+  const [mRaw, dRaw, yRaw] = value.split("/");
   const day = Number(dRaw) || 1;
   const month = Number(mRaw) || 1;
   const year = Number(yRaw) || 1970;
@@ -257,22 +257,22 @@ function DobPicker({
     const clampedDay = Math.min(d, daysInMonth(m, y));
     const dd = String(clampedDay).padStart(2, "0");
     const mm = String(m).padStart(2, "0");
-    onChange(`${dd}/${mm}/${y}`);
+    onChange(`${mm}/${dd}/${y}`);
   };
 
   return (
-    <div className="grid grid-cols-[1fr_1.4fr_1fr] gap-2">
-      <SelectField
-        ariaLabel="Day of birth"
-        value={day}
-        onChange={(v) => emit(Number(v), month, year)}
-        options={days.map((d) => ({ value: d, label: String(d) }))}
-      />
+    <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2">
       <SelectField
         ariaLabel="Month of birth"
         value={month}
         onChange={(v) => emit(day, Number(v), year)}
         options={MONTHS.map((name, i) => ({ value: i + 1, label: name }))}
+      />
+      <SelectField
+        ariaLabel="Day of birth"
+        value={day}
+        onChange={(v) => emit(Number(v), month, year)}
+        options={days.map((d) => ({ value: d, label: String(d) }))}
       />
       <SelectField
         ariaLabel="Year of birth"

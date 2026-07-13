@@ -361,7 +361,7 @@ export function LossBars({
                           <motion.div
                             key={`${pl.key}-reveal`}
                             layout="position"
-                            className={cn("w-6 origin-top", pl.color)}
+                            className={cn("min-w-0 flex-1 max-w-6 origin-top", pl.color)}
                             initial={{ height: targetH, opacity: 1 }}
                             animate={{ height: targetH, opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
@@ -380,7 +380,7 @@ export function LossBars({
                           <motion.div
                             key={`${pl.key}-${revealMode}`}
                             layout="position"
-                            className={cn("w-6 origin-top", pl.color)}
+                            className={cn("min-w-0 flex-1 max-w-6 origin-top", pl.color)}
                             initial={{ height: fromH, opacity: canMorph ? 1 : 0 }}
                             animate={{ height: toH, opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
@@ -410,7 +410,7 @@ export function LossBars({
                         <motion.div
                           key={pl.key}
                           layout="position"
-                          className={cn("w-6 origin-top", pl.color)}
+                          className={cn("min-w-0 flex-1 max-w-6 origin-top", pl.color)}
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: targetH, opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}

@@ -143,7 +143,9 @@ export function DetailsSidebar({ infoTip = false }: { infoTip?: boolean }) {
           />
         );
       case "Assets":
-        return (
+        return details.accounts.length === 0 ? (
+          <p className="text-xs text-gray-2">No accounts yet — add them on the Assets page.</p>
+        ) : (
           <ul className="flex flex-col gap-2.5">
             {details.accounts.map((account: AssetRow) => (
               <li key={account.id} className="flex flex-col gap-0.5">
