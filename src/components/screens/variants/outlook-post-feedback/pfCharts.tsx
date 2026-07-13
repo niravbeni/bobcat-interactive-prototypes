@@ -124,7 +124,7 @@ export function SuccessDelta({
   return (
     <div
       className={cn(
-        "flex w-full flex-col items-center justify-center text-center",
+        "flex w-full min-w-0 flex-col items-center justify-center text-center",
         fill
           ? cn(tall ? "max-lg:h-72" : "max-lg:h-56", "lg:min-h-0 lg:flex-1")
           : tall
@@ -309,10 +309,10 @@ export function LossBars({
     `${(lossAtProbability(stats.potentialLoss, p) / domainMax) * 100}%`;
 
   return (
-    <div className={cn("flex w-full flex-col", fill && "lg:h-full")}>
+    <div className={cn("flex w-full min-w-0 flex-col", fill && "lg:min-h-0 lg:flex-1")}>
       <div
         className={cn(
-          "relative w-full",
+          "relative w-full min-w-0",
           fill
             ? cn(tall ? "max-lg:h-72" : "max-lg:h-64", "lg:min-h-0 lg:flex-1")
             : tall

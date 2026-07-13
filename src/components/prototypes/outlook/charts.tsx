@@ -331,10 +331,10 @@ export function AssetCurve({
     `calc(${((pt.y / CURVE_H) * 100).toFixed(2)}% - 20px)`;
 
   return (
-    <div className={cn("flex w-full flex-col", fill && "lg:h-full")}>
+    <div className={cn("flex w-full min-w-0 flex-col", fill && "lg:min-h-0 lg:flex-1")}>
       <div
         className={cn(
-          "relative w-full",
+          "relative w-full min-w-0 pl-7",
           fill
             ? cn(tall ? "max-lg:h-80" : "max-lg:h-64", "lg:min-h-0 lg:flex-1")
             : tall
@@ -354,11 +354,17 @@ export function AssetCurve({
             </span>
           ))}
         </div>
-        <svg
-          viewBox={`0 0 ${CURVE_W} ${CURVE_H}`}
-          preserveAspectRatio="none"
-          className="absolute inset-y-0 left-7 right-0 h-full w-[calc(100%-1.75rem)]"
-        >
+        {/* Plot area: the SVG is an in-flow child of the plot box (which has a
+            pl-7 left gutter for the y-axis labels). Mirroring DrawdownLine's
+            pattern — an in-flow svg with viewBox + preserveAspectRatio="none"
+            and no width/height presentation attributes — avoids Safari
+            collapsing the SVG to a thin sliver when nested in an
+            absolutely-positioned box. */}
+          <svg
+            viewBox={`0 0 ${CURVE_W} ${CURVE_H}`}
+            preserveAspectRatio="none"
+            className="block h-full w-full"
+          >
           {areaFill ? (
             <defs>
               <linearGradient id={`asset-violet-${gradId}`} x1="0" y1="0" x2="0" y2="1">
@@ -498,7 +504,7 @@ export function AssetCurve({
               />
             )
           ) : null}
-        </svg>
+          </svg>
         {/* Peak marker + label as HTML overlays so the dot stays a true circle
             (an SVG circle inside this preserveAspectRatio="none" chart gets
             stretched into an ellipse). The svg is inset by 1.75rem on the left,

@@ -67,7 +67,7 @@ export function RefineOutlookPostFeedbackV2Screen() {
       sidebarComplete
       showInfoTip
     >
-      <div className="flex min-h-0 min-w-0 flex-col gap-3 pb-2 pr-1 lg:flex-1">
+      <div className="flex min-w-0 shrink-0 flex-col gap-3 pb-2 pr-1">
         <motion.section
           {...enter(0)}
           className="rounded-card bg-[radial-gradient(circle_at_12%_18%,rgba(160,110,203,0.30),transparent_55%),radial-gradient(circle_at_90%_88%,rgba(201,0,172,0.14),transparent_50%),rgba(127,53,178,0.10)] p-5"
@@ -185,12 +185,11 @@ export function RefineOutlookPostFeedbackV2Screen() {
           </InfoTarget>
         </motion.div>
 
-        <motion.div {...enter(0.16)} className="flex min-h-0 flex-col lg:flex-1">
+        <motion.div {...enter(0.16)} className="flex flex-col">
           <OutlookStatsPanelPFV2
             current={current}
             personalized={personalized}
             comparison={comparisonRefine}
-            fill
           />
         </motion.div>
       </div>

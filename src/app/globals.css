@@ -65,19 +65,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Finger pointer on every interactive control */
-button:not(:disabled),
-[role="button"]:not([aria-disabled="true"]),
-a[href],
-select:not(:disabled),
-summary {
-  cursor: pointer;
-}
+/* Finger pointer on every interactive control.
+   Kept in `@layer base` so it overrides the UA default (WebKit/Safari renders a
+   plain arrow on <button>, unlike Chromium) while any explicit Tailwind
+   `cursor-*` utility (e.g. the `cursor-help` on InfoTargets or `cursor-default`
+   on inert/backdrop buttons) still WINS, because the `utilities` layer ranks
+   above `base` in the cascade. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  label[for],
+  select:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
 
-button:disabled,
-select:disabled,
-[aria-disabled="true"] {
-  cursor: not-allowed;
+  button:disabled,
+  select:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 /* Breakout overlay enter animations */

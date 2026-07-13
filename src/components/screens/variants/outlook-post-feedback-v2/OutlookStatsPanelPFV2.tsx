@@ -225,7 +225,7 @@ function PFCard({
       <InfoTarget
         tipId={metric}
         as="div"
-        className={cn("mt-3", fill && "lg:flex lg:min-h-0 lg:flex-1 lg:flex-col")}
+        className={cn("mt-3 w-full min-w-0", fill && "lg:flex lg:min-h-0 lg:flex-1 lg:flex-col")}
       >
         <MetricVisual
           metric={metric}
@@ -259,7 +259,12 @@ function SummaryRow({
   onCardClick,
 }: MetricProps & { onCardClick?: (m: OutlookMetric) => void }) {
   return (
-    <div className={cn("grid grid-cols-1 gap-3 lg:grid-cols-3", fill && "lg:h-full")}>
+    <div
+      className={cn(
+        "grid grid-cols-1 gap-3 lg:grid-cols-3",
+        fill && "lg:min-h-0 lg:flex-1 lg:auto-rows-fr",
+      )}
+    >
       {(["success", "assets", "loss"] as const).map((metric) => (
         <PFCard
           key={metric}
@@ -304,7 +309,7 @@ export function OutlookStatsPanelPFV2({
   const [tab, setTab] = useState<TabId>("summary");
 
   return (
-    <div className={cn("flex min-w-0 flex-col", fill && "lg:h-full lg:min-h-0")}>
+    <div className={cn("flex min-w-0 flex-col", fill && "lg:min-h-0 lg:flex-1")}>
       <div className="flex flex-wrap items-end gap-1">
         {TABS.map((t) => {
           const active = tab === t.id;
@@ -361,7 +366,7 @@ export function OutlookStatsPanelPFV2({
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
                 "grid grid-cols-1 gap-4 lg:grid-cols-[1.3fr_1fr]",
-                fill && "lg:min-h-0 lg:flex-1",
+                fill && "lg:min-h-0 lg:flex-1 lg:auto-rows-fr",
               )}
             >
               <motion.div
@@ -377,7 +382,7 @@ export function OutlookStatsPanelPFV2({
                 <InfoTarget
                   tipId={tab}
                   as="div"
-                  className={cn("mt-4", fill && "lg:flex lg:min-h-0 lg:flex-1 lg:flex-col")}
+                  className={cn("mt-4 w-full min-w-0", fill && "lg:flex lg:min-h-0 lg:flex-1 lg:flex-col")}
                 >
                   <MetricVisual
                     metric={tab}

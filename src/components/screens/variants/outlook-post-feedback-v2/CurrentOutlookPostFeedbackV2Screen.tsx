@@ -39,7 +39,7 @@ export function CurrentOutlookPostFeedbackV2Screen() {
       onBack={goBack}
       showInfoTip
     >
-      <div className="flex min-h-0 min-w-0 flex-col gap-3 pb-2 pr-1 lg:flex-1">
+      <div className="flex min-w-0 shrink-0 flex-col gap-3 pb-2 pr-1">
         {/* Intro line — sets up the baseline outlook above the graphs */}
         <motion.h1
           {...enter(0)}
@@ -56,9 +56,10 @@ export function CurrentOutlookPostFeedbackV2Screen() {
           is projected to perform.
         </motion.h1>
 
-        {/* Graphs fill the remaining space */}
-        <motion.div {...enter(0.12)} className="flex flex-col lg:min-h-0 lg:flex-1">
-          <OutlookStatsPanelPFV2 current={current} comparison={false} fill />
+        {/* Graphs keep their natural height; the shell's main column scrolls
+            when the viewport is too short instead of squashing them. */}
+        <motion.div {...enter(0.12)} className="flex flex-col">
+          <OutlookStatsPanelPFV2 current={current} comparison={false} />
         </motion.div>
 
         {/* Current-strategy diagnosis + lifetime fees, now below the graphs */}

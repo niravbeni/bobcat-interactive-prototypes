@@ -72,7 +72,7 @@ export function NewOutlookPostFeedbackV2Screen() {
       onBack={() => goTo("current-outlook")}
       showInfoTip
     >
-      <div className="flex min-h-0 min-w-0 flex-col gap-3 pb-2 pr-1 lg:flex-1">
+      <div className="flex min-w-0 shrink-0 flex-col gap-3 pb-2 pr-1">
         {/* Intro line — emphasis on the improved outlook */}
         <motion.h1
           {...enter(0)}
@@ -104,12 +104,11 @@ export function NewOutlookPostFeedbackV2Screen() {
         {/* Graphs fill the remaining space. No entrance fade/slide here: the
             grey current-plan graphs must be fully on screen from frame 0 so the
             purple morph reads as a distinct beat happening on top of them. */}
-        <div className="flex flex-col lg:min-h-0 lg:flex-1">
+        <div className="flex flex-col">
           <OutlookStatsPanelPFV2
             current={current}
             personalized={personalized}
             comparison={comparisonNew}
-            fill
             revealMode="morph"
             replayNonce={revealStarted ? 1 : 0}
           />
