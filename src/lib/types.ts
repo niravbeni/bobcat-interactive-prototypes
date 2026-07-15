@@ -301,4 +301,5 @@ export type StepId =
   | "details-about"
   | "details-assets"
   | "details-spending"
-  | "details-goals";
+  | "details-goals"
+  | "card-sort-hifi";

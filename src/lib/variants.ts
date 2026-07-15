@@ -18,6 +18,7 @@ export type VariantId =
   | "smart-sort"
   | "data-dump"
   | "card-sort"
+  | "card-sort-hifi"
   | "smart-assets"
   | "outlook-flow"
   | "outlook-flow-enhanced"
@@ -297,6 +298,17 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
     modified: "2026-07-02",
     steps: ["card-sort"],
   },
+  "card-sort-hifi": {
+    id: "card-sort-hifi",
+    title: "Card Sort (High Fidelity)",
+    description:
+      "A refined restyle of the goal card sort: an intro cluster, a binary \"does this matter?\" step with a stacked gradient card deck, then a single-select rank of the goals that matter most.",
+    status: "ready",
+    kind: "component",
+    created: "2026-07-15",
+    modified: "2026-07-15",
+    steps: ["card-sort-hifi"],
+  },
   "smart-assets": {
     id: "smart-assets",
     title: "Smart Assets",
@@ -420,6 +432,7 @@ export const COMPONENT_PROTOTYPE_ORDER: VariantId[] = [
   "smart-assets",
   "smart-sort",
   "card-sort",
+  "card-sort-hifi",
   "data-dump",
 ];
 

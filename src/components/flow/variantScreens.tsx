@@ -29,6 +29,7 @@ import { LoadingSimScreen } from "@/components/screens/variants/LoadingSimScreen
 import { SmartSortScreen } from "@/components/screens/variants/SmartSortScreen";
 import { DataDumpScreen } from "@/components/screens/variants/DataDumpScreen";
 import { CardSortScreen } from "@/components/screens/variants/CardSortScreen";
+import { CardSortHiFiScreen } from "@/components/screens/variants/CardSortHiFiScreen";
 import { SmartAssetsScreen } from "@/components/screens/variants/SmartAssetsScreen";
 import { CurrentOutlookScreen } from "@/components/screens/variants/CurrentOutlookScreen";
 import { OutlookLoadingScreen } from "@/components/screens/variants/OutlookLoadingScreen";
@@ -115,6 +116,8 @@ export function VariantScreen({
       return <DataDumpScreen />;
     case "card-sort":
       return <CardSortScreen />;
+    case "card-sort-hifi":
+      return <CardSortHiFiScreen />;
     case "smart-assets":
       return <SmartAssetsScreen />;
     case "outlook-flow":
