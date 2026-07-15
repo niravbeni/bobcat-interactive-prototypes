@@ -6,7 +6,6 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  Sparkle,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -15,8 +14,19 @@ import { AskSendIcon } from "@/components/ui/AskSendIcon";
 import { cn } from "@/lib/cn";
 import { DETAILS_GOAL_CARDS, type DetailsGoalCard } from "@/lib/detailsGoals";
 
-type Phase = "intro" | "sort" | "rank" | "done";
+type Phase = "intro" | "sort" | "rank";
 type ExitDir = "yes" | "no" | "undo";
+
+/**
+ * How the active deck card should animate: `dir` drives the exit (Yes flies
+ * right, No flies left, undo sinks back into the deck) and `entry` drives
+ * where the next card comes from (the deck, or back in from the side the
+ * undone card exited to).
+ */
+interface DeckMotion {
+  dir: ExitDir;
+  entry: "deck" | "right" | "left";
+}
 
 const CORAL = "#f6517f";
 const BLUE = "#327fef";
@@ -34,14 +44,17 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 /**
  * Card Sort (High Fidelity) — a standalone component prototype that re-skins the
  * goal card sort to the refined Figma. Internal phase machine
- * (intro → sort → rank → done) rendered inside a self-contained, details-style
+ * (intro → sort → rank) rendered inside a self-contained, details-style
  * chrome with the Goals section selected.
  */
 export function CardSortHiFiScreen() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [answered, setAnswered] = useState<string[]>([]);
   const [matters, setMatters] = useState<Record<string, boolean>>({});
-  const [dir, setDir] = useState<ExitDir>("yes");
+  const [deckMotion, setDeckMotion] = useState<DeckMotion>({
+    dir: "yes",
+    entry: "deck",
+  });
   const [topGoalId, setTopGoalId] = useState<string | null>(null);
 
   const index = answered.length;
@@ -67,18 +80,20 @@ export function CardSortHiFiScreen() {
   const resetSorting = () => {
     setAnswered([]);
     setMatters({});
+    setDeckMotion({ dir: "undo", entry: "deck" });
   };
 
-  const startOver = () => {
+  /** Rank-screen reset: clear the pick and restart the sort from goal 1. */
+  const resetFromRank = () => {
     resetSorting();
     setTopGoalId(null);
-    setPhase("intro");
+    setPhase("sort");
   };
 
   const answer = (keep: boolean) => {
     if (!current) return;
     const id = current.id;
-    setDir(keep ? "yes" : "no");
+    setDeckMotion({ dir: keep ? "yes" : "no", entry: "deck" });
     setAnswered((prev) => [...prev, id]);
     setMatters((prev) => ({ ...prev, [id]: keep }));
   };
@@ -86,7 +101,8 @@ export function CardSortHiFiScreen() {
   const undo = () => {
     if (answered.length === 0) return;
     const lastId = answered[answered.length - 1];
-    setDir("undo");
+    // The restored card returns from the side it originally exited to.
+    setDeckMotion({ dir: "undo", entry: matters[lastId] ? "right" : "left" });
     setAnswered((prev) => prev.slice(0, -1));
     setMatters((prev) => {
       const next = { ...prev };
@@ -97,7 +113,6 @@ export function CardSortHiFiScreen() {
 
   const pickTop = (id: string) => {
     setTopGoalId(id);
-    setPhase("done");
   };
 
   return (
@@ -152,21 +167,16 @@ export function CardSortHiFiScreen() {
                     key="sort"
                     current={current}
                     index={index}
-                    dir={dir}
+                    deckMotion={deckMotion}
                     onAnswer={answer}
                   />
-                ) : phase === "rank" ? (
+                ) : (
                   <RankPhase
                     key="rank"
                     candidates={candidates}
+                    selectedId={topGoalId}
                     onPick={pickTop}
-                    onReset={startOver}
-                  />
-                ) : (
-                  <DonePhase
-                    key="done"
-                    goal={topGoal}
-                    onStartOver={startOver}
+                    onReset={resetFromRank}
                   />
                 )}
               </AnimatePresence>
@@ -264,23 +274,37 @@ function IntroPhase({ onStart }: { onStart: () => void }) {
 /* Sort                                                                */
 /* ------------------------------------------------------------------ */
 
-const cardExit = (dir: ExitDir) => {
-  if (dir === "yes")
-    return { opacity: 0, x: 220, y: -170, rotate: 18, scale: 0.9 };
-  if (dir === "no")
-    return { opacity: 0, x: -220, y: 180, rotate: -18, scale: 0.9 };
-  return { opacity: 0, y: 36, scale: 0.92 };
+/**
+ * Deck-card motion: Yes exits clearly to the RIGHT, No clearly to the LEFT
+ * (horizontal travel with a slight tilt, no vertical arc). An undone card
+ * re-enters from the side it exited; the next card otherwise rises out of
+ * the deck.
+ */
+const deckCardVariants = {
+  enter: ({ entry }: DeckMotion) =>
+    entry === "right"
+      ? { opacity: 0, x: 320, y: 0, rotate: 10, scale: 0.96 }
+      : entry === "left"
+        ? { opacity: 0, x: -320, y: 0, rotate: -10, scale: 0.96 }
+        : { opacity: 0, x: 0, y: 16, rotate: 0, scale: 0.94 },
+  center: { opacity: 1, x: 0, y: 0, rotate: -0.15, scale: 1 },
+  exit: ({ dir }: DeckMotion) =>
+    dir === "yes"
+      ? { opacity: 0, x: 320, y: 0, rotate: 10, scale: 0.96 }
+      : dir === "no"
+        ? { opacity: 0, x: -320, y: 0, rotate: -10, scale: 0.96 }
+        : { opacity: 0, x: 0, y: 20, rotate: 0, scale: 0.94 },
 };
 
 function SortPhase({
   current,
   index,
-  dir,
+  deckMotion,
   onAnswer,
 }: {
   current: DetailsGoalCard | null;
   index: number;
-  dir: ExitDir;
+  deckMotion: DeckMotion;
   onAnswer: (keep: boolean) => void;
 }) {
   const remaining = TOTAL - index;
@@ -302,15 +326,16 @@ function SortPhase({
           active card via a stronger tilt (Figma: -4.48° behind -0.15°). */}
       <div className="relative mx-auto mt-16 h-[240px] w-[200px]">
         {remaining > 1 ? <DeckBacker /> : null}
-        <AnimatePresence mode="popLayout" custom={dir}>
+        <AnimatePresence mode="popLayout" custom={deckMotion}>
           {current ? (
             <motion.div
               key={current.id}
-              custom={dir}
+              custom={deckMotion}
               className="absolute inset-0"
-              initial={{ opacity: 0, y: 16, scale: 0.94, rotate: 0 }}
-              animate={{ opacity: 1, y: 0, scale: 1, rotate: -0.15 }}
-              exit={cardExit(dir)}
+              variants={deckCardVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
               transition={{ duration: 0.34, ease: EASE }}
             >
               <SortCard goal={current} />
@@ -436,21 +461,16 @@ function VerdictButton({
 
 function RankPhase({
   candidates,
+  selectedId,
   onPick,
   onReset,
 }: {
   candidates: DetailsGoalCard[];
+  /** The persistently selected top goal (lives in the parent). */
+  selectedId: string | null;
   onPick: (id: string) => void;
   onReset: () => void;
 }) {
-  const [selected, setSelected] = useState<string | null>(null);
-
-  const choose = (id: string) => {
-    setSelected(id);
-    // Let the radio fill register before advancing.
-    setTimeout(() => onPick(id), 240);
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -472,7 +492,7 @@ function RankPhase({
       <ul className="flex flex-col gap-2">
         {candidates.map((goal, i) => {
           const Icon = goal.icon;
-          const active = selected === goal.id;
+          const active = selectedId === goal.id;
           return (
             <motion.li
               key={goal.id}
@@ -482,7 +502,7 @@ function RankPhase({
             >
               <button
                 type="button"
-                onClick={() => choose(goal.id)}
+                onClick={() => onPick(goal.id)}
                 className={cn(
                   "flex w-full items-center justify-between gap-3 rounded-[14px] border-[0.5px] bg-black/[0.02] px-6 py-4 text-left transition-colors",
                   active ? "border-violet" : "border-[#eeeeee] hover:border-violet/40",
@@ -522,71 +542,6 @@ function RankPhase({
           Reset sorting
         </ChromePill>
       </div>
-    </motion.div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Done                                                                */
-/* ------------------------------------------------------------------ */
-
-function DonePhase({
-  goal,
-  onStartOver,
-}: {
-  goal: DetailsGoalCard | null;
-  onStartOver: () => void;
-}) {
-  const Icon = goal?.icon;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.35, ease: EASE }}
-      className="flex flex-col items-center text-center"
-    >
-      <motion.span
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.1 }}
-        className="grid size-12 place-items-center rounded-full bg-violet/12 text-violet"
-      >
-        <Check className="size-6" strokeWidth={2.6} />
-      </motion.span>
-
-      <h1 className="mt-4 text-2xl font-medium tracking-[-0.48px] text-[#18181b]">
-        All done
-      </h1>
-      <p className="mt-2 max-w-[360px] text-sm leading-snug text-gray-1">
-        We&apos;ll build your plan around the goal that matters most to you.
-      </p>
-
-      {goal ? (
-        <div className="mt-5 flex w-full max-w-[360px] items-center gap-3 rounded-[14px] border-[0.5px] border-[#eeeeee] bg-black/[0.02] px-6 py-4 text-left">
-          {Icon ? (
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-violet p-2 text-white">
-              <Icon className="size-5" strokeWidth={2.1} />
-            </span>
-          ) : null}
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="text-[10px] font-medium uppercase tracking-[0.66px] text-[#8a8a93]">
-              Your #1 goal
-            </span>
-            <span className="text-base font-normal leading-tight tracking-[-0.32px] text-[#171717]">
-              {goal.title}
-            </span>
-          </div>
-        </div>
-      ) : null}
-
-      <button
-        type="button"
-        onClick={onStartOver}
-        className="mt-7 inline-flex h-8 items-center justify-center rounded-full border-[0.75px] border-gray-1 px-3 text-sm tracking-[0.14px] text-gray-1 transition-colors hover:bg-ghost-white"
-      >
-        Start over
-      </button>
     </motion.div>
   );
 }
@@ -701,7 +656,10 @@ function StaticGoalsSidebar({ topGoal }: { topGoal: DetailsGoalCard | null }) {
               <span className="min-w-0 text-[11px] leading-6 tracking-[-0.22px] text-gray-2">
                 {q}
               </span>
-              <Sparkle className="size-4 shrink-0 text-violet" strokeWidth={2} />
+              <span
+                aria-hidden
+                className="size-1.5 shrink-0 rounded-full bg-violet/60"
+              />
             </button>
           ))}
         </div>
