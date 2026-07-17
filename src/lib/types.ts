@@ -302,4 +302,9 @@ export type StepId =
   | "details-assets"
   | "details-spending"
   | "details-goals"
-  | "card-sort-hifi";
+  | "card-sort-hifi"
+  | "sig-story"
+  | "sig-home"
+  | "sig-assets"
+  | "sig-expense"
+  | "sig-goals";

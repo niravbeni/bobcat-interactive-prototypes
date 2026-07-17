@@ -41,6 +41,8 @@ export function AccountSearch({
   nameOnly = false,
   providerGhost = false,
   compact = false,
+  menuZIndex = 50,
+  chrome = "glow",
 }: {
   onSelect: (acc: InstitutionAccount) => void;
   placeholder?: string;
@@ -60,6 +62,14 @@ export function AccountSearch({
   providerGhost?: boolean;
   /** Slimmer sizing so the field matches sibling form inputs. */
   compact?: boolean;
+  /** z-index for the portaled suggestion menu (raise above modals). */
+  menuZIndex?: number;
+  /**
+   * Container chrome. "glow" (default) renders the violet AI-glow field.
+   * "bare" strips the border/background/padding so the input can be embedded
+   * inside a parent-styled field (used by the redesigned Add-account modal).
+   */
+  chrome?: "glow" | "bare";
 }) {
   const [internalQuery, setInternalQuery] = useState("");
   const query = value !== undefined ? value : internalQuery;
@@ -224,10 +234,15 @@ export function AccountSearch({
     <div ref={wrapRef} className="relative w-full">
       <div
         className={cn(
-          "ai-glow flex items-center border border-violet/40 bg-white",
-          compact
-            ? "h-11 gap-2 rounded-field px-3.5"
-            : "gap-2.5 rounded-card px-3.5 py-3",
+          "flex items-center",
+          chrome === "bare"
+            ? "w-full gap-2"
+            : cn(
+                "ai-glow border border-violet/40 bg-white",
+                compact
+                  ? "h-11 gap-2 rounded-field px-3.5"
+                  : "gap-2.5 rounded-card px-3.5 py-3",
+              ),
         )}
       >
         {showIcon ? (
@@ -242,7 +257,11 @@ export function AccountSearch({
             aria-hidden
             className={cn(
               "pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-pre",
-              compact ? "text-sm" : "text-base",
+              chrome === "bare"
+                ? "text-[15.5px] leading-[18.7px]"
+                : compact
+                  ? "text-sm"
+                  : "text-base",
             )}
           >
             <span className="invisible">{query}</span>
@@ -268,12 +287,16 @@ export function AccountSearch({
             autoComplete="off"
             className={cn(
               "relative w-full bg-transparent text-deep-black outline-none placeholder:text-gray-text",
-              compact ? "text-sm" : "text-base",
+              chrome === "bare"
+                ? "caret-violet text-[15.5px] leading-[18.7px]"
+                : compact
+                  ? "text-sm"
+                  : "text-base",
             )}
           />
         </div>
 
-        {query ? (
+        {query && chrome !== "bare" ? (
           <button
             type="button"
             aria-label="Clear"
@@ -301,8 +324,9 @@ export function AccountSearch({
                 left: coords.left,
                 width: coords.width,
                 maxHeight: coords.maxHeight,
+                zIndex: menuZIndex,
               }}
-              className="scrollbar-slim z-50 overflow-y-auto rounded-card border border-stroke-subtle bg-white p-1.5 shadow-[0_16px_48px_rgba(16,24,32,0.16)]"
+              className="scrollbar-slim overflow-y-auto rounded-card border border-stroke-subtle bg-white p-1.5 shadow-[0_16px_48px_rgba(16,24,32,0.16)]"
             >
               {thinking ? (
                 <div className="flex items-center gap-2 px-2.5 py-2 text-sm text-violet">

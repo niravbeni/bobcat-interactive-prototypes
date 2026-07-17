@@ -26,7 +26,8 @@ export type VariantId =
   | "outlook-flow-post-feedback-v2"
   | "details-flow"
   | "details-flow-v2"
-  | "details-to-outlook";
+  | "details-to-outlook"
+  | "signature-flow";
 
 export interface VariantMeta {
   id: VariantId;
@@ -425,6 +426,17 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
       "refine-outlook",
     ],
   },
+  "signature-flow": {
+    id: "signature-flow",
+    title: "Signature Flow",
+    description:
+      "A motion-first take on the signature onboarding moments: tell your retirement story as a mad-lib, land on a Home Base hub, then aggregate every asset into one live net-worth picture.",
+    status: "ready",
+    kind: "flow",
+    created: "2026-07-16",
+    modified: "2026-07-16",
+    steps: ["sig-story", "sig-home", "sig-assets", "sig-expense", "sig-goals"],
+  },
 };
 
 /** Standalone signature-component prototypes, shown first on the dashboard. */
@@ -438,6 +450,7 @@ export const COMPONENT_PROTOTYPE_ORDER: VariantId[] = [
 
 /** The end-to-end retirement onboarding UX flows. */
 export const FLOW_ORDER: VariantId[] = [
+  "signature-flow",
   "outlook-flow-post-feedback-v2",
   "details-flow-v2",
   "details-to-outlook",

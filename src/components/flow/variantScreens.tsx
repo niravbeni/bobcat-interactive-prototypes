@@ -50,6 +50,11 @@ import { AssetsDetailsScreen } from "@/components/screens/variants/details-flow/
 import { SpendingDetailsScreen } from "@/components/screens/variants/details-flow/SpendingDetailsScreen";
 import { GoalsDetailsScreen } from "@/components/screens/variants/details-flow/GoalsDetailsScreen";
 import { GoalsDetailsV2Screen } from "@/components/screens/variants/details-flow/GoalsDetailsV2Screen";
+import { SignatureStoryScreen } from "@/components/screens/variants/signature/SignatureStoryScreen";
+import { SignatureHomeScreen } from "@/components/screens/variants/signature/SignatureHomeScreen";
+import { SignatureAssetsScreen } from "@/components/screens/variants/signature/SignatureAssetsScreen";
+import { SignatureExpenseScreen } from "@/components/screens/variants/signature/SignatureExpenseScreen";
+import { SignatureGoalsScreen } from "@/components/screens/variants/signature/SignatureGoalsScreen";
 
 /** The income/summary/spending/complete steps are identical across variants. */
 function sharedStep(step: StepId) {
@@ -167,6 +172,13 @@ export function VariantScreen({
       if (step === "loading") return <OutlookLoadingScreen manualContinue />;
       if (step === "new-outlook") return <NewOutlookPostFeedbackV2Screen />;
       if (step === "refine-outlook") return <RefineOutlookPostFeedbackV2Screen />;
+      return null;
+    case "signature-flow":
+      if (step === "sig-story") return <SignatureStoryScreen />;
+      if (step === "sig-home") return <SignatureHomeScreen />;
+      if (step === "sig-assets") return <SignatureAssetsScreen />;
+      if (step === "sig-expense") return <SignatureExpenseScreen />;
+      if (step === "sig-goals") return <SignatureGoalsScreen />;
       return null;
     case "hybrid-quick":
       if (step === "profile")
