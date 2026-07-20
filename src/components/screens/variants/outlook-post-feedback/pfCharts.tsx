@@ -59,6 +59,35 @@ export function netLossOver30y(potentialLoss: number): number {
   return round1000(potentialLoss * 3.5);
 }
 
+/**
+ * Y-domain (max loss) sizing for the loss chart. A fixed floor keeps the bars
+ * visibly growing/shrinking as the sliders deepen or ease the losses (an
+ * auto-fit domain pinned the deepest bar to the top and made slider changes look
+ * almost static), and the domain only expands past the floor in `AXIS_STEP`
+ * increments for extreme (event-driven) losses.
+ */
+export const LOSS_AXIS_STEP = 150_000;
+export const LOSS_AXIS_FLOOR = 600_000;
+
+/**
+ * Adaptive loss-chart y-domain for a set of plans. This is the shared PF v2
+ * behavior; the Signature flow passes the *max* of this across the whole slider
+ * range as a fixed `domainMax` so its bars tween within a steady frame instead
+ * of re-snapping their scale per slider tick.
+ */
+export function lossDomainMaxFor(statsList: OutlookStats[]): number {
+  const maxLoss = Math.max(
+    1,
+    ...LOSS_PROBABILITIES.flatMap((p) =>
+      statsList.map((st) => lossAtProbability(st.potentialLoss, p)),
+    ),
+  );
+  return Math.max(
+    LOSS_AXIS_FLOOR,
+    Math.ceil((maxLoss * 1.18) / LOSS_AXIS_STEP) * LOSS_AXIS_STEP,
+  );
+}
+
 /* --------------------------------------------------------- SuccessDelta -- */
 
 /**
@@ -250,6 +279,7 @@ export function LossBars({
   fill = false,
   revealMode,
   replayNonce = 0,
+  domainMax: domainMaxProp,
 }: {
   current?: OutlookStats;
   personalized?: OutlookStats;
@@ -258,6 +288,12 @@ export function LossBars({
   fill?: boolean;
   revealMode?: RevealMode;
   replayNonce?: number;
+  /**
+   * Optional slider-independent y-domain (max loss). When supplied, the bars
+   * grow/shrink smoothly within a fixed frame instead of re-snapping their scale
+   * as the sliders move. Undefined = the shared auto-fit behavior (unchanged).
+   */
+  domainMax?: number;
 }) {
   const plans: { key: string; stats: OutlookStats; color: string }[] = [];
   if (personalized) {
@@ -271,26 +307,15 @@ export function LossBars({
 
   if (plans.length === 0) return null;
 
-  const maxLoss = Math.max(
-    1,
-    ...LOSS_PROBABILITIES.flatMap((p) =>
-      plans.map((pl) => lossAtProbability(pl.stats.potentialLoss, p)),
-    ),
-  );
-  // Fixed y-domain floor so bars visibly grow/shrink as the sliders deepen or
-  // ease the losses. An auto-fit domain rescaled with the data, which kept the
-  // deepest bar pinned near the top and made slider changes look almost static.
-  // The domain only expands past the floor for extreme (event-driven) losses.
-  const AXIS_STEP = 150_000;
-  const AXIS_FLOOR = 600_000;
-  const domainMax = Math.max(
-    AXIS_FLOOR,
-    Math.ceil((maxLoss * 1.18) / AXIS_STEP) * AXIS_STEP,
-  );
+  // Shared PF v2 behavior when no fixed frame is supplied: adaptively size the
+  // domain (floored, then stepped up for extreme losses). The Signature flow
+  // instead passes a slider-independent `domainMax` so the axis frame doesn't
+  // rescale per slider tick (which read as a jump/snap on drag).
+  const domainMax = domainMaxProp ?? lossDomainMaxFor(plans.map((pl) => pl.stats));
   // Draw gridlines up to (but not including) the domain max — the bottom-most
   // line is just the scaling floor's headroom and only adds clutter.
   const grid: number[] = [];
-  for (let v = 0; v < domainMax; v += AXIS_STEP) grid.push(v);
+  for (let v = 0; v < domainMax; v += LOSS_AXIS_STEP) grid.push(v);
   const showLegend = plans.length > 1;
 
   // Reveal choreography: grey/current bars land immediately; the violet

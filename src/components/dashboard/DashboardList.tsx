@@ -70,6 +70,7 @@ export function DashboardList() {
   const [sort, setSort] = useState<Sort>("edited");
 
   const pinned = useMemo(() => PINNED_IDS.map((id) => VARIANTS[id]), []);
+  const pinnedHeading = pinned[0]?.featuredLabel ?? "Ready for testing";
   const prototypes = useMemo(
     () => applyFilterSort(PROTOTYPE_IDS, typeFilter, sort),
     [typeFilter, sort],
@@ -77,14 +78,16 @@ export function DashboardList() {
 
   return (
     <div className="mt-10">
-      <section>
-        <h2 className={SECTION_TITLE_CLASS}>Ready for testing</h2>
-        <div className={GRID_CLASS}>
-          {pinned.map((v) => (
-            <VariationCard key={v.id} v={v} />
-          ))}
-        </div>
-      </section>
+      {pinned.length > 0 ? (
+        <section>
+          <h2 className={SECTION_TITLE_CLASS}>{pinnedHeading}</h2>
+          <div className={GRID_CLASS}>
+            {pinned.map((v) => (
+              <VariationCard key={v.id} v={v} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="mt-12 flex flex-wrap items-center justify-between gap-4">
         <div

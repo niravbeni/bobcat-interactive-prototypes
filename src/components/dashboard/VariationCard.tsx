@@ -32,7 +32,9 @@ export function VariationCard({ v }: { v: VariantMeta }) {
     >
       <div className="flex items-start justify-between gap-3">
         <h2 className="text-xl font-semibold tracking-[-0.01em] text-deep-black">{v.title}</h2>
-        {featured ? <StatusBadge tone="brand">Ready for testing</StatusBadge> : null}
+        {featured ? (
+          <StatusBadge tone="brand">{v.featuredLabel ?? "Ready for testing"}</StatusBadge>
+        ) : null}
       </div>
       <p className="mt-3 flex-1 text-base leading-[1.5] text-gray-text">{v.description}</p>
 

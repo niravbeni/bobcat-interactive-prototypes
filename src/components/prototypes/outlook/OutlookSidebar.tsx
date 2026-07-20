@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Check, ChevronDown, Pencil, CircleHelp } from "lucide-react";
+import { motion, AnimatePresence, Reorder } from "motion/react";
+import { Check, ChevronDown, Pencil, CircleHelp, GripVertical } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { SnapSlider } from "@/components/ui/SnapSlider";
 import { AskSendIcon } from "@/components/ui/AskSendIcon";
 import { CustomEventsModal } from "@/components/prototypes/outlook/CustomEventsModal";
 import { InfoTarget, InfoTipBox } from "@/components/prototypes/outlook/OutlookInfoTip";
 import { SPENDING_RANGE } from "@/lib/outlook";
+import { SIG_SPRING } from "@/components/screens/variants/signature/shared";
 import { cn } from "@/lib/cn";
 
 type SectionId = "About you" | "Assets" | "Income" | "Spending" | "Goals";
@@ -161,6 +162,35 @@ function EditableRows({
 }
 
 /**
+ * A single draggable, ranked goal row (signature flow only). Reuses the drag
+ * tuning proven in the Signature story screen to avoid jitter: `layout="position"`
+ * (not full layout), `whileDrag` with scale/shadow only (never x/y/zIndex), and
+ * `touch-none select-none` so the pointer owns the drag.
+ */
+function GoalRankRow({ label, rank }: { label: string; rank: number }) {
+  return (
+    <Reorder.Item
+      value={label}
+      as="div"
+      layout="position"
+      transition={SIG_SPRING}
+      whileDrag={{ scale: 1.02, boxShadow: "0 10px 24px rgba(16,24,32,0.14)" }}
+      className="flex cursor-grab touch-none select-none items-center gap-2.5 rounded-card bg-white/60 px-2.5 py-2 text-xs text-deep-black active:cursor-grabbing"
+    >
+      <span className="grid size-5 shrink-0 place-items-center rounded-full bg-deep-black text-[11px] font-semibold leading-none text-white">
+        {rank}
+      </span>
+      <span className="min-w-0 flex-1 truncate font-medium">{label}</span>
+      <GripVertical
+        className="size-3.5 shrink-0 text-gray-2"
+        strokeWidth={2}
+        aria-hidden
+      />
+    </Reorder.Item>
+  );
+}
+
+/**
  * A single collapsible sidebar section: a pill header that toggles open, and an
  * animated content panel. Open sections adopt the dark "active" treatment; the
  * (completed) closed sections keep the green-check white pill.
@@ -250,7 +280,14 @@ export function OutlookSidebar({
     variant === "outlook-flow-enhanced" ||
     variant === "outlook-flow-post-feedback" ||
     variant === "outlook-flow-post-feedback-v2" ||
-    variant === "details-to-outlook";
+    variant === "details-to-outlook" ||
+    variant === "signature-flow";
+  // The Signature flow renders the interactive sidebar controls (spending +
+  // market sliders and the custom-events button) in stratosphere blue; every
+  // other outlook flow keeps them violet. Gated so shared chrome isn't restyled
+  // for the violet flows.
+  const signature = variant === "signature-flow";
+  const sliderAccent = signature ? "blue" : "violet";
 
   // "Model custom events" opens a compact popover anchored to the trigger.
   // Only one copy of the button is ever mounted (card OR refine dropdown), so a
@@ -331,7 +368,7 @@ export function OutlookSidebar({
             <InfoTarget tipId="spending-aim" as="div" enabled={infoTip} interactive>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-2">
-                  Spending aim
+                  {signature ? "Spending target" : "Spending aim"}
                 </span>
                 <span className="text-sm font-semibold text-deep-black">
                   ${spendingAim.toLocaleString("en-US")}
@@ -344,7 +381,7 @@ export function OutlookSidebar({
                 snapPoints={[0, 50, 100]}
                 onChange={(t) => setOutlook({ spendingAim: spendFromT(t) })}
                 className="mt-1.5"
-                accent="violet"
+                accent={sliderAccent}
               />
               <div className="mt-0.5 flex items-center justify-between text-[11px] text-gray-2">
                 <span>${SPENDING_RANGE.min.toLocaleString("en-US")}</span>
@@ -373,6 +410,23 @@ export function OutlookSidebar({
           </>
         );
       case "Goals":
+        // Signature flow: goals are a fixed, non-editable set the user ranks by
+        // dragging. Every other outlook flow keeps the editable goal rows.
+        if (signature) {
+          return (
+            <Reorder.Group
+              axis="y"
+              values={goals}
+              onReorder={setGoals}
+              as="div"
+              className="flex flex-col gap-1.5"
+            >
+              {goals.map((goal, i) => (
+                <GoalRankRow key={goal} label={goal} rank={i + 1} />
+              ))}
+            </Reorder.Group>
+          );
+        }
         return (
           <ul className="flex flex-col gap-1.5">
             {goals.map((goal, i) => (
@@ -414,7 +468,7 @@ export function OutlookSidebar({
           snapPoints={[0, 50, 100]}
           onChange={(t) => setOutlook({ marketT: t })}
           className="mt-1.5"
-          accent="violet"
+          accent={sliderAccent}
         />
         <div className="mt-0.5 flex items-center justify-between text-[11px] text-gray-2">
           <span>Worst case</span>
@@ -428,15 +482,22 @@ export function OutlookSidebar({
           onClick={() => setEventsOpen((o) => !o)}
           className={cn(
             "mt-3 flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-colors",
-            eventCount > 0
-              ? "bg-violet/10 text-violet hover:bg-violet/15"
-              : "bg-ghost-white text-deep-black hover:bg-divider/40",
+            signature
+              ? "bg-stratosphere text-white hover:bg-stratosphere/90"
+              : eventCount > 0
+                ? "bg-violet/10 text-violet hover:bg-violet/15"
+                : "bg-ghost-white text-deep-black hover:bg-divider/40",
           )}
         >
           <Pencil className="size-3.5 shrink-0" strokeWidth={2} />
           Model custom events
           {eventCount > 0 ? (
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-violet text-[11px] font-semibold text-white">
+            <span
+              className={cn(
+                "flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                signature ? "bg-white/25 text-white" : "bg-violet text-white",
+              )}
+            >
               {eventCount}
             </span>
           ) : null}

@@ -9,12 +9,25 @@
   --color-card: #f3f4f5;
   --color-field: #f2f2f2;
 
+  /* Signature flow — heading accent bar. Distinct from `violet` (#7f35b2):
+     Figma uses a brighter purple for the vertical accent bar next to page
+     titles (Asset aggregator node 2212:10155). Canonical source of truth —
+     SectionHeading references this as `bg-accent-bar`. */
+  --color-accent-bar: #9f48e1;
+
+  /* Signature flow — canonical near-black title ink (Figma page-title +
+     card titles, e.g. #18181b). Phase 2: migrate #171717 / text-black title
+     usages in signature screens to `text-title-ink`. */
+  --color-title-ink: #18181b;
+
   --color-ink: #1e1717;
   --color-gray-text: #666666;
   --color-gray-1: #585d65;
   --color-gray-2: #8b919a;
 
   --color-divider: #d9d9d9;
+  /* Signature flow — canonical subtle card border. Phase 2: migrate
+     `border-[#eee]` card usages to `border-stroke-subtle`. */
   --color-stroke-subtle: #e7dddd;
 
   --color-success: #007d61;

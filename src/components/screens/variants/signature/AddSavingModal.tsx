@@ -13,6 +13,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { AccountSearch } from "@/components/ui/AccountSearch";
+import { DumpCanvas, type DumpCompletion } from "@/components/prototypes/DumpCanvas";
+import {
+  makeId,
+  type DumpItem,
+  type StructuredAccount,
+  type StructuredResult,
+} from "@/lib/dataDump";
 import {
   TAX_STATUS_LABEL,
   accountTypesForProvider,
@@ -23,6 +30,59 @@ import {
 } from "@/lib/institutions";
 import { SIG_EASE } from "./shared";
 import type { SigAsset } from "./SignatureAssetsScreen";
+
+/**
+ * Seed inputs for the Smart-Add canvas, mirrored from the details flow
+ * (AssetsDetailsScreen) so the mechanic reads identically. The typed notes are
+ * cosmetic — the structured balances come from the shared dataDump result — so
+ * we keep the same figures the details flow uses for consistency.
+ */
+const MODAL_SEED_NOTES = [
+  "ok dumping my retirement stuff here:",
+  "- 401k at Fidelity, roughly $500k",
+  "- Roth IRA at Vanguard, ~$320k (mine plus my late husband's)",
+  "- CDs & money market at Ally, about $400k",
+  "- checking + savings, another ~$100k",
+  "guaranteed income ~$5,600/mo (SS $2,400, pension $2,000, survivor $1,200)",
+  "spending runs around $12k/mo",
+  "goal: leaving behind enough for the family",
+].join("\n");
+
+const MODAL_SEED_ITEMS: DumpItem[] = [
+  {
+    id: "sig-modal-seed-fidelity",
+    kind: "image",
+    title: "Fidelity 401(k) statement",
+    fileMeta: { name: "fidelity_401k_statement.png", size: "612 KB" },
+    addedVia: "upload",
+    at: Date.now() - 1000 * 60 * 6,
+  },
+];
+
+const MODAL_VOICE_TRANSCRIPT =
+  "One more thing I almost forgot — there's also a Fidelity HSA with about nine thousand two hundred in it from my old health plan. The 401k's been with Fidelity for years, and the Vanguard Roth includes my late husband's. My main goal now is making sure there's enough to leave behind for the family.";
+
+const makeModalScan = (): DumpItem[] => {
+  const at = Date.now();
+  return [
+    {
+      id: makeId("scan"),
+      kind: "image",
+      title: "Chase savings screenshot",
+      fileMeta: { name: "chase_savings.png", size: "508 KB" },
+      addedVia: "phone",
+      at,
+    },
+    {
+      id: makeId("scan"),
+      kind: "scan",
+      title: "Latest payslip",
+      fileMeta: { name: "payslip_scan.jpg", size: "1.1 MB" },
+      addedVia: "phone",
+      at,
+    },
+  ];
+};
 
 const TAX_OPTIONS: TaxStatus[] = [
   "tax-free",
@@ -53,7 +113,8 @@ const OTHER_CATEGORY_OPTIONS = [
   "Other",
 ];
 
-/** The two add-method tabs; only "manual" is active, "smart" is inert.
+/** The two add-method tabs; both are selectable and toggle the modal body
+    between the manual form and the Smart-Add canvas.
     Icons are the exact SVGs exported from Figma 2005:34310 / 2005:34285.
     Subtitles are filler, so they render as shimmer bars (no copy here). */
 const TABS: { id: "manual" | "smart"; title: string; iconSrc: string }[] = [
@@ -120,7 +181,7 @@ export function AddSavingModal({
             className="scrollbar-slim relative max-h-[90vh] w-full max-w-[1105px] overflow-y-auto rounded-[16px] bg-[#f7f7f7] p-6 sm:p-8"
           >
             <div className="flex items-center justify-between gap-8">
-              <h2 className="text-[26px] font-normal leading-[1.28] tracking-[-0.64px] text-black sm:text-[32px]">
+              <h2 className="text-[26px] font-normal leading-[1.28] tracking-[-0.64px] text-title-ink sm:text-[32px]">
                 {heading}
               </h2>
               <button
@@ -133,30 +194,13 @@ export function AddSavingModal({
               </button>
             </div>
 
-            {/* Tab row + connected form panel share one wrapper so the active
-                tab reliably paints over the panel's top border (folder tab). */}
-            <div className="relative mt-6">
-              {/* Folder-tab shaping (sm+): Figma 2005:34229 layers a #f7f7f7 rect
-                  (2005:34249) with a rounded-bl-[20px] corner over a white bridge
-                  (2005:34230). Where the gray corner rounds away it reveals white,
-                  so the tab gap curves softly into the panel instead of meeting it
-                  square. The white reveal is a small BOTTOM strip only — it must
-                  never reach the tab tops, or it would fill in (square off) the
-                  active tab's rounded top corners. */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 z-0 hidden h-24 sm:block"
-              >
-                <div className="absolute bottom-0 left-[calc(50%-8px)] h-6 w-10 bg-white" />
-                <div className="absolute left-[calc(50%-2px)] right-0 top-0 h-full rounded-bl-[20px] rounded-br-[16px] rounded-tr-[16px] bg-[#f7f7f7]" />
-              </div>
-              <TabCards />
-              {isRetirement ? (
-                <RetirementForm onAdd={onAdd} onClose={onClose} />
-              ) : (
-                <OtherForm onAdd={onAdd} onClose={onClose} />
-              )}
-            </div>
+            {/* Body mounts only while open, so its tab state resets to "manual"
+                (and Smart Add re-runs its autotype) on every fresh open. */}
+            <ModalBody
+              isRetirement={isRetirement}
+              onAdd={onAdd}
+              onClose={onClose}
+            />
           </motion.div>
         </div>
       ) : null}
@@ -165,26 +209,151 @@ export function AddSavingModal({
 }
 
 /* ------------------------------------------------------------------ */
-/* Tab cards (connected-tab treatment; only "manual" active)          */
+/* Modal body (tab state + connected panel)                           */
+/* ------------------------------------------------------------------ */
+
+/** The tab row + connected panel. Kept as its own component so it mounts fresh
+ *  with each modal open — resetting to the manual tab and letting Smart Add
+ *  replay its autotype. */
+function ModalBody({
+  isRetirement,
+  onAdd,
+  onClose,
+}: {
+  isRetirement: boolean;
+  onAdd: (asset: SigAsset) => void;
+  onClose: () => void;
+}) {
+  const [mode, setMode] = useState<"manual" | "smart">("manual");
+
+  // Map the Smart-Add structured result into SigAssets, mirroring the details
+  // flow's handleDumpComplete field mapping (provider→name, accountType,
+  // taxStatus, balance→amount). Only surface accounts the used inputs mention.
+  const handleDumpComplete = (
+    result: StructuredResult,
+    completion: DumpCompletion,
+  ) => {
+    const mentioned: Array<{ provider: string; accountType: string }> = [
+      { provider: "Fidelity", accountType: "401(k)" },
+      { provider: "Vanguard", accountType: "Roth IRA" },
+    ];
+    if (completion.voiceUsed) {
+      mentioned.push({ provider: "Fidelity", accountType: "HSA" });
+    }
+    if (completion.scanUsed) {
+      mentioned.push({ provider: "Chase", accountType: "Savings" });
+    }
+    const detected = mentioned
+      .map((m) =>
+        result.accounts.find(
+          (a) => a.provider === m.provider && a.accountType === m.accountType,
+        ),
+      )
+      .filter((a): a is StructuredAccount => Boolean(a));
+
+    const stamp = Date.now();
+    detected.forEach((acc, i) => {
+      onAdd(
+        isRetirement
+          ? {
+              id: `sig-ai-${stamp}-${i}`,
+              name: acc.provider,
+              accountType: acc.accountType,
+              taxStatus: acc.taxStatus,
+              amount: acc.balance,
+            }
+          : {
+              // The dump is retirement-flavored, so for the "other" modal we
+              // map sensibly to a category/amount rather than a tax treatment.
+              id: `sig-ai-${stamp}-${i}`,
+              name: acc.provider,
+              accountType: acc.accountType,
+              category: "Other",
+              amount: acc.balance,
+            },
+      );
+    });
+    onClose();
+  };
+
+  return (
+    // Tab row + connected form panel share one wrapper so the active tab
+    // reliably paints over the panel's top border (folder tab).
+    <div className="relative mt-6">
+      {/* Folder-tab shaping (sm+): Figma 2005:34229 layers a #f7f7f7 rect
+          (2005:34249) with a rounded-bl-[20px] corner over a white bridge
+          (2005:34230). Where the gray corner rounds away it reveals white,
+          so the tab gap curves softly into the panel instead of meeting it
+          square. The white reveal is a small BOTTOM strip only — it must
+          never reach the tab tops, or it would fill in (square off) the
+          active tab's rounded top corners. Mirrored to whichever tab is
+          active (left for manual, right for smart). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 z-0 hidden h-24 sm:block"
+      >
+        <div className="absolute bottom-0 left-[calc(50%-8px)] h-6 w-10 bg-white" />
+        {mode === "manual" ? (
+          <div className="absolute left-[calc(50%-2px)] right-0 top-0 h-full rounded-bl-[20px] rounded-br-[16px] rounded-tr-[16px] bg-[#f7f7f7]" />
+        ) : (
+          <div className="absolute left-0 right-[calc(50%-2px)] top-0 h-full rounded-bl-[16px] rounded-br-[20px] rounded-tl-[16px] bg-[#f7f7f7]" />
+        )}
+      </div>
+      <TabCards mode={mode} onSelect={setMode} />
+      {mode === "smart" ? (
+        <FormPanel side="right">
+          <DumpCanvas
+            title={null}
+            continueLabel="Add to my accounts"
+            autotype
+            seedNotes={MODAL_SEED_NOTES}
+            seedItems={MODAL_SEED_ITEMS}
+            voiceTranscript={MODAL_VOICE_TRANSCRIPT}
+            makeScan={makeModalScan}
+            onComplete={handleDumpComplete}
+          />
+        </FormPanel>
+      ) : isRetirement ? (
+        <RetirementForm onAdd={onAdd} onClose={onClose} />
+      ) : (
+        <OtherForm onAdd={onAdd} onClose={onClose} />
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Tab cards (connected-tab treatment; selectable)                    */
 /* ------------------------------------------------------------------ */
 
 /** Figma 2005:34229: both tab cards are white on the #f7f7f7 modal with NO
  *  black strokes. The active card has no border at all (it merges into the
  *  white panel below); the inactive card carries a 1px #eee border and sits
- *  4px shorter so a sliver of the gray modal separates it from the panel. */
-function TabCards() {
+ *  4px shorter so a sliver of the gray modal separates it from the panel.
+ *  Both tabs are now selectable and toggle the modal body between the manual
+ *  form and the Smart-Add canvas. */
+function TabCards({
+  mode,
+  onSelect,
+}: {
+  mode: "manual" | "smart";
+  onSelect: (mode: "manual" | "smart") => void;
+}) {
   return (
     <div className="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-1">
       {TABS.map((tab) => {
-        const active = tab.id === "manual";
+        const active = tab.id === mode;
         return (
-          <div
+          <button
             key={tab.id}
+            type="button"
+            onClick={() => onSelect(tab.id)}
+            aria-pressed={active}
             className={cn(
-              "flex flex-1 items-center gap-4 bg-white p-6",
+              "flex flex-1 items-center gap-4 bg-white p-6 text-left transition-colors",
               active
                 ? "rounded-2xl sm:h-24 sm:rounded-b-none sm:rounded-t-[16px]"
-                : "cursor-default rounded-[16px] border border-[#eee] sm:h-[92px]",
+                : "rounded-[16px] border border-stroke-subtle hover:border-[#ddd] sm:h-[92px]",
             )}
           >
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-black/[0.05]">
@@ -192,7 +361,7 @@ function TabCards() {
               <img src={tab.iconSrc} alt="" aria-hidden className="size-5" />
             </span>
             <div className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-[20px] leading-[23.25px] text-black">
+              <span className="text-[20px] leading-[23.25px] text-title-ink">
                 {tab.title}
               </span>
               {/* Subtitle is filler → shimmer bar (with the Smart-Add info dot). */}
@@ -206,7 +375,7 @@ function TabCards() {
                 ) : null}
               </span>
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
@@ -424,9 +593,21 @@ function OtherForm({
 /** The white folder panel connected to the active "manual" tab. Per Figma
  *  2005:34238 it has no stroke — just white, rounded on every corner except
  *  the top-left where the active tab flows into it. */
-function FormPanel({ children }: { children: React.ReactNode }) {
+function FormPanel({
+  children,
+  side = "left",
+}: {
+  children: React.ReactNode;
+  /** Which top corner is squared so the panel flows out of the active tab. */
+  side?: "left" | "right";
+}) {
   return (
-    <div className="relative z-0 mt-3 flex flex-col gap-6 rounded-2xl bg-white p-5 sm:mt-0 sm:rounded-tl-none sm:p-8">
+    <div
+      className={cn(
+        "relative z-0 mt-3 flex flex-col gap-6 rounded-2xl bg-white p-5 sm:mt-0 sm:p-8",
+        side === "left" ? "sm:rounded-tl-none" : "sm:rounded-tr-none",
+      )}
+    >
       {children}
     </div>
   );

@@ -307,4 +307,7 @@ export type StepId =
   | "sig-home"
   | "sig-assets"
   | "sig-expense"
-  | "sig-goals";
+  | "sig-goals"
+  | "sig-outlook-loading"
+  | "sig-plan"
+  | "sig-refine";

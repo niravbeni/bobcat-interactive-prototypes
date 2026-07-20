@@ -1,8 +1,10 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ChevronDown } from "lucide-react";
 import { SIG_EASE } from "./shared";
+import { SIG_DEMO_CLEAR_EVENT } from "./SignatureShell";
 
 export type SidebarSection =
   | "about"
@@ -105,19 +107,63 @@ export function SignatureDetailsSidebar({
           ))}
         </div>
 
-        <div className="flex h-10 items-center justify-between rounded-full bg-black/[0.01] py-2 pl-4 pr-2 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
-          <span className="text-sm leading-6 text-gray-2">Ask a question</span>
-          {/* Gradient spiral exported verbatim from Figma 2015:56414 (Frame 21). */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/signature/ask-spiral.svg"
-            alt=""
-            aria-hidden
-            className="size-[30px] shrink-0"
-          />
-        </div>
+        <SidebarAskPill />
       </div>
     </aside>
+  );
+}
+
+/** The sidebar "Ask a question" pill. Single click is inert (matches the prior
+ *  static pill); a hidden demo shortcut fires on double-click, broadcasting
+ *  `SIG_DEMO_CLEAR_EVENT` so the current screen clears its fields to empty —
+ *  identical gesture to the shell's floating AskPill (the screens that use this
+ *  sidebar disable that one via `askPill={false}`). */
+function SidebarAskPill() {
+  const DOUBLE_CLICK_MS = 350;
+  const lastClickRef = useRef(0);
+  const [flash, setFlash] = useState(false);
+
+  const handleClick = () => {
+    const now = Date.now();
+    if (now - lastClickRef.current <= DOUBLE_CLICK_MS) {
+      lastClickRef.current = 0;
+      window.dispatchEvent(new CustomEvent(SIG_DEMO_CLEAR_EVENT));
+      setFlash(true);
+      window.setTimeout(() => setFlash(false), 420);
+    } else {
+      lastClickRef.current = now;
+    }
+  };
+
+  return (
+    <motion.button
+      type="button"
+      onClick={handleClick}
+      animate={
+        flash
+          ? {
+              scale: [1, 1.04, 1],
+              boxShadow: [
+                "0 2px 8px rgba(0,0,0,0.1)",
+                "0 6px 20px rgba(127,53,178,0.35)",
+                "0 2px 8px rgba(0,0,0,0.1)",
+              ],
+            }
+          : {}
+      }
+      transition={{ duration: 0.42, ease: SIG_EASE }}
+      className="flex h-10 w-full items-center justify-between rounded-full bg-black/[0.01] py-2 pl-4 pr-2 text-left shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
+    >
+      <span className="text-sm leading-6 text-gray-2">Ask a question</span>
+      {/* Gradient spiral exported verbatim from Figma 2015:56414 (Frame 21). */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/signature/ask-spiral.svg"
+        alt=""
+        aria-hidden
+        className="size-[30px] shrink-0"
+      />
+    </motion.button>
   );
 }
 

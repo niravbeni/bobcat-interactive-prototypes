@@ -251,6 +251,7 @@ export function AssetCurve({
   areaFill = false,
   revealMode,
   replayNonce = 0,
+  domainTop: domainTopProp,
 }: {
   current?: OutlookStats;
   personalized?: OutlookStats;
@@ -259,6 +260,13 @@ export function AssetCurve({
   fill?: boolean;
   /** Enhanced flow: animated gradient wash under each curve. */
   areaFill?: boolean;
+  /**
+   * Optional slider-independent y-domain (top value). When supplied, the curve
+   * animates smoothly within a fixed frame instead of re-snapping its scale as
+   * the sliders move. Undefined = the shared auto-fit behavior for every other
+   * flow (unchanged).
+   */
+  domainTop?: number;
   /**
    * PF v2 "purple reveals over grey" first-entry choreography. When set, the
    * grey (current) layer renders immediately at full and the violet
@@ -280,10 +288,9 @@ export function AssetCurve({
     current?.peak.value ?? 0,
     personalized?.peak.value ?? 0,
   );
-  const domainTop = Math.max(
-    1_750_000,
-    Math.ceil((maxVal * 1.12) / 250_000) * 250_000,
-  );
+  const domainTop =
+    domainTopProp ??
+    Math.max(1_750_000, Math.ceil((maxVal * 1.12) / 250_000) * 250_000);
   const heroPts = curvePoints(hero, domainTop);
   const peakPt = heroPts.reduce((a, b) => (b.y < a.y ? b : a));
   // Close a line's points down to the baseline so the stroke path becomes a

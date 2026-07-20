@@ -50,6 +50,8 @@ export interface VariantMeta {
   skipInFlow?: { label: string };
   /** Highlight this flow on the dashboard (e.g. the active client deliverable). */
   featured?: boolean;
+  /** Overrides the featured badge/section label (defaults to "Ready for testing"). */
+  featuredLabel?: string;
   /** Whether this is a standalone component prototype or an end-to-end flow. */
   kind: "flow" | "component";
   /** Older/superseded work. Drives default ordering (recent first, older last). */
@@ -364,7 +366,7 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
       "The Post Feedback Outlook Flow with a persistent hover-help box: point at any chart, highlighted term or sidebar control and a plain-language explanation appears in the bottom-left of the sidebar.",
     status: "ready",
     kind: "flow",
-    featured: true,
+    featured: false,
     created: "2026-07-07",
     modified: "2026-07-08",
     steps: ["current-outlook", "loading", "new-outlook", "refine-outlook"],
@@ -394,7 +396,7 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
       "The Details Flow with a persistent hover-help box: point at a section, value or highlighted term and a plain-language explanation appears in the bottom-left of the sidebar.",
     status: "ready",
     kind: "flow",
-    featured: true,
+    featured: false,
     created: "2026-07-08",
     modified: "2026-07-08",
     steps: [
@@ -433,9 +435,20 @@ export const VARIANTS: Record<VariantId, VariantMeta> = {
       "A motion-first take on the signature onboarding moments: tell your retirement story as a mad-lib, land on a Home Base hub, then aggregate every asset into one live net-worth picture.",
     status: "ready",
     kind: "flow",
+    featured: true,
+    featuredLabel: "Final deliverable",
     created: "2026-07-16",
     modified: "2026-07-16",
-    steps: ["sig-story", "sig-home", "sig-assets", "sig-expense", "sig-goals"],
+    steps: [
+      "sig-story",
+      "sig-home",
+      "sig-assets",
+      "sig-expense",
+      "sig-goals",
+      "sig-outlook-loading",
+      "sig-plan",
+      "sig-refine",
+    ],
   },
 };
 

@@ -56,28 +56,55 @@ const EXPO = [0.22, 1, 0.36, 1] as const;
 export function ComparisonToggle({
   on,
   onChange,
+  accent = "violet",
 }: {
   on: boolean;
   onChange: (next: boolean) => void;
+  /**
+   * Track/knob color. "violet" (default) keeps the shared Outlook look; the
+   * Signature flow uses "stratosphere" to match its Figma switch (pale-blue
+   * track with a solid-blue knob).
+   */
+  accent?: "violet" | "stratosphere";
 }) {
   const reduce = useReducedMotion();
+  const isBlue = accent === "stratosphere";
   return (
     <button
       type="button"
       role="switch"
       aria-checked={on}
       onClick={() => onChange(!on)}
-      className="flex shrink-0 items-center gap-2 rounded-full border border-stroke-subtle bg-white py-1.5 pl-3 pr-1.5 transition-colors hover:bg-ghost-white"
+      className={cn(
+        "flex shrink-0 items-center gap-2",
+        // Signature/Figma variant is a bare label + switch (no pill chrome);
+        // the shared Outlook look keeps the bordered white pill.
+        isBlue
+          ? ""
+          : "rounded-full border border-stroke-subtle bg-white py-1.5 pl-3 pr-1.5 transition-colors hover:bg-ghost-white",
+      )}
     >
-      <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-1">
+      <span
+        className={cn(
+          "text-[10px] font-semibold uppercase tracking-[0.1em]",
+          isBlue ? "text-deep-black" : "text-gray-1",
+        )}
+      >
         Comparison {on ? "on" : "off"}
       </span>
       <motion.span
         className={cn(
-          "flex h-5 w-9 items-center rounded-full p-0.5",
+          "flex h-5 items-center rounded-full p-0.5",
+          isBlue ? "w-10" : "w-9",
           on ? "justify-end" : "justify-start",
         )}
-        animate={{ backgroundColor: on ? "#7f35b2" : "#d9d9d9" }}
+        animate={{
+          backgroundColor: on
+            ? isBlue
+              ? "rgba(50,127,239,0.15)"
+              : "#7f35b2"
+            : "#d9d9d9",
+        }}
         transition={{ duration: reduce ? 0 : 0.32, ease: EXPO }}
       >
         <motion.span
@@ -86,7 +113,13 @@ export function ComparisonToggle({
           transition={
             reduce ? { duration: 0 } : { type: "spring", stiffness: 550, damping: 30 }
           }
-          className="size-4 rounded-full bg-white shadow-[0_1px_2px_rgba(16,24,32,0.25)]"
+          animate={
+            isBlue ? { backgroundColor: on ? "#327fef" : "#ffffff" } : undefined
+          }
+          className={cn(
+            "size-4 rounded-full shadow-[0_1px_2px_rgba(16,24,32,0.25)]",
+            !isBlue && "bg-white",
+          )}
         />
       </motion.span>
     </button>

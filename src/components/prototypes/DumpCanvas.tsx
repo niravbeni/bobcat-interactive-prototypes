@@ -452,6 +452,18 @@ function CanvasMode({
   onRemove: (id: string) => void;
   onStructure: () => void;
 }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Follow programmatic appends (voice dictation / on-mount autotype) by
+  // scrolling to the newest text. Skip when the textarea is focused so we never
+  // fight the user's caret during manual typing (the browser handles that).
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el && document.activeElement !== el) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [notes]);
+
   const empty = notes.trim() === "" && attachments.length === 0;
   return (
     <motion.div
@@ -485,6 +497,7 @@ function CanvasMode({
 
         {/* Notepad */}
         <textarea
+          ref={textareaRef}
           value={notes}
           onChange={(e) => onNotesChange(e.target.value)}
           placeholder="Start typing… paste notes, financial details, anything. Drop in documents and images below, or tap the mic to talk."

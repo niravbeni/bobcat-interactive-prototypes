@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import {
-  ChevronDown,
   ChevronLeft,
   Info,
   MoreVertical,
   Plus,
+  Trash2,
 } from "lucide-react";
 import { useFlow } from "@/components/flow/FlowProvider";
 import { ProviderLogo } from "@/components/ui/ProviderLogo";
 import { TAX_STATUS_LABEL, type TaxStatus } from "@/lib/institutions";
-import { SignatureShell, NavPill } from "./SignatureShell";
+import { SignatureShell, NavPill, SIG_DEMO_CLEAR_EVENT } from "./SignatureShell";
+import { SectionHeading } from "./SectionHeading";
+import { SignatureInfoCard } from "./SignatureInfoCard";
 import {
   SignatureDetailsSidebar,
   SignatureSummaryRow,
@@ -20,6 +23,7 @@ import {
 import { AddSavingModal } from "./AddSavingModal";
 import {
   SIG_EASE,
+  SIG_HERO_GRADIENT,
   SIG_SPRING,
   SIG_SPRING_SNAPPY,
   fmtMoneyCents,
@@ -77,12 +81,128 @@ const CATEGORY_ICON_SRC: Record<string, string> = {
   Other: "/signature/cat-vehicle.svg",
 };
 
+/* ------------------------------------------------------------------ */
+/* Figma 2165:29227 defaults — the screen renders pre-filled on load   */
+/* (double-tapping the AI pill clears both lists back to empty).        */
+/* ------------------------------------------------------------------ */
+
+/** Retirement savings accounts, in Figma order. Grouping is derived from each
+ *  row's taxStatus, so the two Figma tax-deferred blocks merge into one. */
+const INITIAL_RETIREMENT: SigAsset[] = [
+  {
+    id: "sig-seed-ret-1",
+    name: "Vanguard XXX",
+    accountType: "Roth IRA",
+    taxStatus: "tax-deferred",
+    amount: 543_000,
+    accentColor: "#96151d",
+  },
+  {
+    id: "sig-seed-ret-2",
+    name: "Fidelity Investments",
+    accountType: "Traditional IRA",
+    taxStatus: "tax-deferred",
+    amount: 543_000,
+    accentColor: "#368727",
+  },
+  {
+    id: "sig-seed-ret-3",
+    name: "Charles Schwab",
+    accountType: "SEP IRA",
+    taxStatus: "tax-deferred",
+    amount: 543_000,
+    accentColor: "#00a0df",
+  },
+  {
+    id: "sig-seed-ret-4",
+    name: "Fidelity Investments",
+    accountType: "Taxable Brokerage Account",
+    taxStatus: "tax-free",
+    amount: 750_000,
+    accentColor: "#368727",
+  },
+  {
+    id: "sig-seed-ret-5",
+    name: "Vanguard XXX",
+    accountType: "Roth IRA",
+    taxStatus: "tax-deferred",
+    amount: 543_000,
+    accentColor: "#96151d",
+  },
+  {
+    id: "sig-seed-ret-6",
+    name: "Fidelity Investments",
+    accountType: "Traditional IRA",
+    taxStatus: "tax-deferred",
+    amount: 543_000,
+    accentColor: "#368727",
+  },
+  {
+    id: "sig-seed-ret-7",
+    name: "T. Rowe Price",
+    accountType: "SIMPLE IRA",
+    taxStatus: "tax-advantaged",
+    amount: 150_000,
+  },
+  {
+    id: "sig-seed-ret-8",
+    name: "Merrill Lynch",
+    accountType: "403(b) Plan",
+    taxStatus: "tax-advantaged",
+    amount: 400_000,
+  },
+];
+
+/** Other assets, in Figma order (grouped by category on first appearance). */
+const INITIAL_OTHER: SigAsset[] = [
+  {
+    id: "sig-seed-other-1",
+    name: "Vintage watch collection",
+    accountType: "Watches",
+    category: "Valuables & collections",
+    amount: 58_000,
+  },
+  {
+    id: "sig-seed-other-2",
+    name: "Lakehouse",
+    accountType: "Vacation home",
+    category: "Property",
+    amount: 650_000,
+  },
+  {
+    id: "sig-seed-other-3",
+    name: "2021 sailboat",
+    accountType: "Vehicle",
+    category: "Other",
+    amount: 85_000,
+  },
+  {
+    id: "sig-seed-other-4",
+    name: "Stake in family business",
+    accountType: "Business interest",
+    category: "Other",
+    amount: 189_750,
+  },
+];
+
 export function SignatureAssetsScreen() {
   const { goTo } = useFlow();
 
-  const [retirement, setRetirement] = useState<SigAsset[]>([]);
-  const [other, setOther] = useState<SigAsset[]>([]);
+  const [retirement, setRetirement] = useState<SigAsset[]>(INITIAL_RETIREMENT);
+  const [other, setOther] = useState<SigAsset[]>(INITIAL_OTHER);
   const [modal, setModal] = useState<"retirement" | "other" | null>(null);
+
+  // Hidden demo shortcut: empty the accounts/holdings so net-worth-derived
+  // totals reset to $0. SSR-safe — listener added on the client only.
+  useEffect(() => {
+    const clear = () => {
+      setRetirement([]);
+      setOther([]);
+      setModal(null);
+    };
+    window.addEventListener(SIG_DEMO_CLEAR_EVENT, clear);
+    return () => window.removeEventListener(SIG_DEMO_CLEAR_EVENT, clear);
+  }, []);
 
   const retirementTotal = retirement.reduce((s, a) => s + a.amount, 0);
   const otherTotal = other.reduce((s, a) => s + a.amount, 0);
@@ -171,26 +291,18 @@ export function SignatureAssetsScreen() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: SIG_EASE }}
-            className="flex shrink-0 flex-col gap-6 rounded-card bg-white/75 p-6 sm:p-8"
+            className="flex shrink-0 flex-col gap-6 rounded-card bg-white p-6 sm:p-8"
           >
             {/* Heading with the violet left accent bar. */}
-            <div className="flex items-center gap-3">
-              <span
-                aria-hidden
-                className="h-[30px] w-[3px] shrink-0 rounded-full bg-violet"
-              />
-              <h1 className="text-[28px] font-medium leading-none tracking-[-0.64px] text-[#18181b] sm:text-[32px]">
-                Your retirement assets
-              </h1>
-            </div>
+            <SectionHeading>Your retirement assets</SectionHeading>
 
-            {/* Two collapsible info cards. */}
+            {/* Two collapsible info cards (shared SignatureInfoCard). */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
-              <InfoCard
+              <SignatureInfoCard
                 iconSrc="/signature/icon-plan.svg"
                 title="What you need to do"
               />
-              <InfoCard
+              <SignatureInfoCard
                 iconSrc="/signature/icon-info.svg"
                 title="How this affects your retirement plan"
               />
@@ -204,11 +316,10 @@ export function SignatureAssetsScreen() {
             transition={{ duration: 0.45, ease: SIG_EASE, delay: 0.1 }}
             className="relative flex shrink-0 items-start justify-between gap-6 overflow-hidden rounded-card p-6 text-white"
             style={{
-              // Hero gradient verbatim from Figma 1996:31021 (Banner/Advisor
-              // Banner). The black layer sits BENEATH the opaque gradient in
-              // Figma, so it never shows — no darkening here.
-              backgroundImage:
-                "linear-gradient(191.69deg, #742ca5 19.541%, #d124b8 137.51%)",
+              // Canonical signature purple hero gradient (shared token). The
+              // black layer sits BENEATH the opaque gradient in Figma, so it
+              // never shows — no darkening here.
+              backgroundImage: SIG_HERO_GRADIENT,
             }}
           >
             {/* Figma Banner/Advisor Banner texture image, soft-light blended. */}
@@ -264,7 +375,12 @@ export function SignatureAssetsScreen() {
             {retirement.length === 0 ? (
               <EmptyState caption="Your 401(k), IRA, and other savings accounts will show up here once you add them." />
             ) : (
-              <GroupedRetirement rows={retirement} />
+              <GroupedRetirement
+                rows={retirement}
+                onRemove={(id) =>
+                  setRetirement((prev) => prev.filter((a) => a.id !== id))
+                }
+              />
             )}
           </SectionCard>
 
@@ -279,7 +395,12 @@ export function SignatureAssetsScreen() {
             {other.length === 0 ? (
               <EmptyState caption="Property, vehicles, and collections will show up here once you add them." />
             ) : (
-              <GroupedOther rows={other} />
+              <GroupedOther
+                rows={other}
+                onRemove={(id) =>
+                  setOther((prev) => prev.filter((a) => a.id !== id))
+                }
+              />
             )}
           </SectionCard>
         </div>
@@ -345,7 +466,13 @@ function AllocationBreakdown() {
 /* Grouped lists                                                       */
 /* ------------------------------------------------------------------ */
 
-function GroupedRetirement({ rows }: { rows: SigAsset[] }) {
+function GroupedRetirement({
+  rows,
+  onRemove,
+}: {
+  rows: SigAsset[];
+  onRemove: (id: string) => void;
+}) {
   const groups = TAX_GROUPS.map((g) => ({
     ...g,
     items: rows.filter((r) => r.taxStatus === g.tax),
@@ -363,7 +490,7 @@ function GroupedRetirement({ rows }: { rows: SigAsset[] }) {
           className="flex flex-col gap-2"
         >
           <div className="flex flex-col">
-            <span className="text-base font-medium leading-[1.45] text-black">
+            <span className="text-base font-medium leading-[1.45] text-title-ink">
               {TAX_STATUS_LABEL[group.tax]}
             </span>
             <span className="text-xs leading-[1.9] text-gray-1">{group.desc}</span>
@@ -371,7 +498,12 @@ function GroupedRetirement({ rows }: { rows: SigAsset[] }) {
           <div className="flex flex-col gap-2">
             <AnimatePresence initial={false}>
               {group.items.map((row, i) => (
-                <AssetRow key={row.id} row={row} index={i} />
+                <AssetRow
+                  key={row.id}
+                  row={row}
+                  index={i}
+                  onRemove={onRemove}
+                />
               ))}
             </AnimatePresence>
           </div>
@@ -381,7 +513,13 @@ function GroupedRetirement({ rows }: { rows: SigAsset[] }) {
   );
 }
 
-function GroupedOther({ rows }: { rows: SigAsset[] }) {
+function GroupedOther({
+  rows,
+  onRemove,
+}: {
+  rows: SigAsset[];
+  onRemove: (id: string) => void;
+}) {
   const categories = Array.from(new Set(rows.map((r) => r.category ?? "Other")));
   return (
     <div className="flex flex-col gap-6">
@@ -396,13 +534,18 @@ function GroupedOther({ rows }: { rows: SigAsset[] }) {
             transition={SIG_SPRING}
             className="flex flex-col gap-2"
           >
-            <span className="text-base font-medium leading-[1.45] text-black">
+            <span className="text-base font-medium leading-[1.45] text-title-ink">
               {cat}
             </span>
             <div className="flex flex-col gap-2">
               <AnimatePresence initial={false}>
                 {items.map((row, i) => (
-                  <AssetRow key={row.id} row={row} index={i} />
+                  <AssetRow
+                    key={row.id}
+                    row={row}
+                    index={i}
+                    onRemove={onRemove}
+                  />
                 ))}
               </AnimatePresence>
             </div>
@@ -413,7 +556,15 @@ function GroupedOther({ rows }: { rows: SigAsset[] }) {
   );
 }
 
-function AssetRow({ row, index }: { row: SigAsset; index: number }) {
+function AssetRow({
+  row,
+  index,
+  onRemove,
+}: {
+  row: SigAsset;
+  index: number;
+  onRemove: (id: string) => void;
+}) {
   const categoryIcon = row.category
     ? CATEGORY_ICON_SRC[row.category] ?? CATEGORY_ICON_SRC.Other
     : null;
@@ -466,15 +617,115 @@ function AssetRow({ row, index }: { row: SigAsset; index: number }) {
               : "—"}
           </span>
         </span>
-        <button
-          type="button"
-          aria-label="More options"
-          className="rounded-full p-0.5 text-deep-black transition-colors hover:bg-black/5"
-        >
-          <MoreVertical className="size-6" strokeWidth={2} />
-        </button>
+        <RowMenu onRemove={() => onRemove(row.id)} />
       </span>
     </motion.div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Row "More options" menu (portal-anchored popover)                   */
+/* ------------------------------------------------------------------ */
+
+/** The three-dot (⋯) menu on each asset row. Opens a small popover anchored
+ *  to the trigger with a destructive "Remove" action. Rendered through a
+ *  portal so the SectionCard's `overflow-hidden` never clips it; closes on
+ *  outside click, Escape, scroll, and after choosing the action. */
+function RowMenu({ onRemove }: { onRemove: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const el = btnRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (
+        !menuRef.current?.contains(e.target as Node) &&
+        !btnRef.current?.contains(e.target as Node)
+      )
+        setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    const onScroll = () => setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        aria-label="More options"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="rounded-full p-0.5 text-deep-black transition-colors hover:bg-black/5"
+      >
+        <MoreVertical className="size-6" strokeWidth={2} />
+      </button>
+      {typeof document !== "undefined" && pos
+        ? createPortal(
+            <AnimatePresence>
+              {open ? (
+                <motion.div
+                  ref={menuRef}
+                  role="menu"
+                  initial={{ opacity: 0, scale: 0.96, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{
+                    opacity: 0,
+                    scale: 0.96,
+                    y: -4,
+                    transition: { duration: 0.12, ease: SIG_EASE },
+                  }}
+                  transition={{ duration: 0.14, ease: SIG_EASE }}
+                  style={{
+                    position: "fixed",
+                    top: pos.top,
+                    right: pos.right,
+                    transformOrigin: "top right",
+                  }}
+                  className="z-[70] min-w-[168px] overflow-hidden rounded-card border border-stroke-subtle bg-white py-1 shadow-lg"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setOpen(false);
+                      onRemove();
+                    }}
+                    className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-[#d92d20] transition-colors hover:bg-[#d92d20]/[0.07]"
+                  >
+                    <Trash2 className="size-4 shrink-0" strokeWidth={2} />
+                    Remove
+                  </button>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 
@@ -507,14 +758,14 @@ function SectionCard({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: SIG_EASE, delay, layout: SIG_SPRING }}
-      className="shrink-0 overflow-hidden rounded-card border border-[#eee] bg-white"
+      className="shrink-0 overflow-hidden rounded-card border border-stroke-subtle bg-white"
     >
       <motion.div
         layout="position"
         className="flex flex-wrap items-center justify-between gap-3 px-6 py-5"
       >
         <div className="flex flex-col gap-0.5">
-          <span className="text-xl leading-[23.25px] text-black">{title}</span>
+          <span className="text-xl leading-[23.25px] text-title-ink">{title}</span>
           <span className="flex items-center gap-1 text-xs leading-[1.4] tracking-[-0.12px] text-gray-1">
             {subtitle}
             <Info className="size-4 text-gray-1" strokeWidth={2} />
@@ -545,7 +796,7 @@ function SectionCard({
           </motion.button>
         </div>
       </motion.div>
-      <div className="border-t border-[#eee] px-6 pb-6 pt-4">{children}</div>
+      <div className="border-t border-stroke-subtle px-6 pb-6 pt-4">{children}</div>
     </motion.section>
   );
 }
@@ -576,82 +827,6 @@ function EmptyState({ caption }: { caption: string }) {
         <span className="h-2.5 w-[54%] rounded-full skeleton-shimmer" aria-hidden />
       </span>
     </motion.div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Collapsible info card                                              */
-/* ------------------------------------------------------------------ */
-
-function InfoCard({
-  iconSrc,
-  title,
-  defaultOpen = true,
-}: {
-  /** Color icon exported from the Figma frame (48px). */
-  iconSrc: string;
-  title: string;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div
-      className={`relative flex items-start gap-[22px] overflow-hidden rounded-card bg-black/[0.02] px-5 transition-[padding] duration-300 ${
-        open ? "py-5" : "py-2"
-      }`}
-    >
-      {/* Textured light-gray fill (Figma 1996:30999): the banner texture image
-          overlaid very faintly. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/signature/banner-texture.png"
-          alt=""
-          className="absolute left-0 top-[-120%] h-[340%] w-full max-w-none opacity-[0.06]"
-        />
-      </div>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={iconSrc} alt="" aria-hidden className="relative size-12 shrink-0" />
-      <div className="relative flex min-w-0 flex-1 flex-col">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className={`flex items-center justify-between gap-2 text-left transition-[min-height] duration-300 ${
-            open ? "min-h-5" : "min-h-12"
-          }`}
-        >
-          {/* Card heading is essential → real text. */}
-          <span className="text-sm font-medium leading-[1.4] tracking-[-0.42px] text-black">
-            {title}
-          </span>
-          <motion.span
-            animate={{ rotate: open ? 180 : 0 }}
-            transition={{ duration: 0.25, ease: SIG_EASE }}
-          >
-            <ChevronDown className="size-[18px] text-gray-2" strokeWidth={2} />
-          </motion.span>
-        </button>
-        <AnimatePresence initial={false}>
-          {open ? (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={SIG_SPRING}
-              className="overflow-hidden"
-            >
-              {/* Body copy is non-essential → shimmer placeholder bars. */}
-              <div className="flex flex-col gap-1.5 pt-3" aria-hidden>
-                <span className="h-2.5 w-full rounded-full skeleton-shimmer" />
-                <span className="h-2.5 w-[92%] rounded-full skeleton-shimmer" />
-                <span className="h-2.5 w-[60%] rounded-full skeleton-shimmer" />
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
-    </div>
   );
 }
 

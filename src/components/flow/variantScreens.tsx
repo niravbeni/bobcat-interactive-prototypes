@@ -55,6 +55,9 @@ import { SignatureHomeScreen } from "@/components/screens/variants/signature/Sig
 import { SignatureAssetsScreen } from "@/components/screens/variants/signature/SignatureAssetsScreen";
 import { SignatureExpenseScreen } from "@/components/screens/variants/signature/SignatureExpenseScreen";
 import { SignatureGoalsScreen } from "@/components/screens/variants/signature/SignatureGoalsScreen";
+import { SignaturePlanScreen } from "@/components/screens/variants/signature/SignaturePlanScreen";
+import { SignatureRefineScreen } from "@/components/screens/variants/signature/SignatureRefineScreen";
+import { SignatureOutlookLoadingScreen } from "@/components/screens/variants/signature/SignatureOutlookLoadingScreen";
 
 /** The income/summary/spending/complete steps are identical across variants. */
 function sharedStep(step: StepId) {
@@ -179,6 +182,10 @@ export function VariantScreen({
       if (step === "sig-assets") return <SignatureAssetsScreen />;
       if (step === "sig-expense") return <SignatureExpenseScreen />;
       if (step === "sig-goals") return <SignatureGoalsScreen />;
+      if (step === "sig-outlook-loading")
+        return <SignatureOutlookLoadingScreen />;
+      if (step === "sig-plan") return <SignaturePlanScreen />;
+      if (step === "sig-refine") return <SignatureRefineScreen />;
       return null;
     case "hybrid-quick":
       if (step === "profile")
