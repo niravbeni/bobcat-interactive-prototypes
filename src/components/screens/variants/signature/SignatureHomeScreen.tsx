@@ -110,16 +110,16 @@ function StatusLine({
 export function SignatureHomeScreen() {
   const { goTo } = useFlow();
 
-  // Hidden demo shortcut: double-tapping the shell's Ask pill dispatches
-  // SIG_DEMO_CLEAR_EVENT. On the Home base that flips the "Your details" rows to
-  // match Figma frame 2165:28956 exactly — the early/first-run progression:
-  // Income "In progress", Spending "Not yet started", and Goals "Locked".
-  // Default render is unchanged. Listener is added only in the effect (SSR-safe).
-  const [locked, setLocked] = useState(false);
+  // The Home base STARTS in the Figma "locked"/first-run progression (frame
+  // 2165:28956): Income "In progress", Spending "Not yet started", Goals
+  // "Locked". Double-tapping the shell's Ask pill dispatches SIG_DEMO_CLEAR_EVENT,
+  // which toggles between that locked state and the fully-unlocked state (Spending
+  // + Goals navigable). Listener is added only in the effect (SSR-safe).
+  const [locked, setLocked] = useState(true);
   useEffect(() => {
-    const onClear = () => setLocked(true);
-    window.addEventListener(SIG_DEMO_CLEAR_EVENT, onClear);
-    return () => window.removeEventListener(SIG_DEMO_CLEAR_EVENT, onClear);
+    const onToggle = () => setLocked((v) => !v);
+    window.addEventListener(SIG_DEMO_CLEAR_EVENT, onToggle);
+    return () => window.removeEventListener(SIG_DEMO_CLEAR_EVENT, onToggle);
   }, []);
 
   const rows: StatusRowData[] = [
