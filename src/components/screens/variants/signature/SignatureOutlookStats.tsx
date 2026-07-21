@@ -367,7 +367,7 @@ export function SignatureOutlookStats({
                 personalized={personalized}
                 allocation={allocation}
                 sparkDomains={sparkDomains}
-                onOpen={() => setTab("income")}
+                onOpen={() => setTab("loss")}
               />
               <SummaryCard
                 kind="assets"
